@@ -4,24 +4,33 @@ Implementations of cryptographic algorithms for encryption and decryption in Dar
 
 ## Features
 
-TODO: List what your package can do. Maybe include images, gifs, or videos.
+| Ciphers | Available methods |  Source   |
+| ------- | ----------------- | :-------: |
+| XOR     | `XOR`, `xor`      | Wikipedia |
 
 ## Getting started
 
-TODO: List prerequisites and provide or point to information on how to
-start using the package.
+The following import will give you access to all of the algorithms in this package.
+
+```dart
+import 'package:cipherlib/cipherlib.dart';
+```
+
+Check the [API Reference](https://pub.dev/documentation/cipherlib/latest/cipherlib/cipherlib-library.html) for details.
 
 ## Usage
 
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder.
+Examples can be found inside the `example` folder.
 
 ```dart
-const like = 'sample';
+import 'package:cipherlib/cipherlib.dart';
+import 'package:hashlib_codecs/hashlib_codecs.dart';
+
+void main() {
+  var key = [0x54];
+  var inp = [0x03, 0xF1];
+  print('text: ${toBinary(inp)}');
+  print(' key: ${toBinary(key)}');
+  print(' XOR: ${toBinary(xor(inp, key))}');
+}
 ```
-
-## Additional information
-
-TODO: Tell users more about the package: where to find more information, how to
-contribute to the package, how to file issues, what response they can expect
-from the package authors, and more.
