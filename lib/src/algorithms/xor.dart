@@ -8,7 +8,11 @@ import 'package:cipherlib/src/core/cipher.dart';
 /// XOR (exclusive or) cipher is a simple and lightweight method of encrypting
 /// data. It is often used for basic data obfuscation.
 ///
-/// **WARNING**: This cipher is not intended to be used for secure purposes.
+/// **WARNING**: This cipher is not intended to be used for security purposes.
+///
+/// This implementation is based on [XOR cipher][xor_wiki] from Wikipedia.
+///
+/// [xor_wiki]: https://en.wikipedia.org/wiki/XOR_cipher
 class XOR extends SymmetricCipher {
   final Uint8List key;
 

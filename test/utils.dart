@@ -22,6 +22,17 @@ Uint8List randomBytes(int length) {
   return data;
 }
 
+/// Generate a list of random 32-bit numbers of size [length]
+Uint8List randomNumbers(int length) {
+  var max = pow(2, 32).toInt();
+  var random = _generator();
+  var data = Uint8List(length);
+  for (int i = 0; i < data.length; i++) {
+    data[i] = random.nextInt(max);
+  }
+  return data;
+}
+
 /// Fill the [buffer] with random numbers
 void fillRandom(
   ByteBuffer buffer, [
