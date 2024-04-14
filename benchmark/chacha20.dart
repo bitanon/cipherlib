@@ -12,32 +12,36 @@ Random random = Random();
 
 class CipherlibBenchmark extends Benchmark {
   final Uint8List key;
+  final Uint8List nonce;
 
   CipherlibBenchmark(int size, int iter)
-      : key = Uint8List.fromList(List.filled(1000, 0x9f)),
+      : key = Uint8List.fromList(List.filled(32, 0x9f)),
+        nonce = Uint8List.fromList(List.filled(12, 0x2f)),
         super('cipherlib', size, iter);
 
   @override
   void run() {
-    cipher.xor(input, key);
+    cipher.chacha20(input, key);
   }
 }
 
 class CipherlibStreamBenchmark extends Benchmark {
   final Uint8List key;
+  final Uint8List nonce;
 
   CipherlibStreamBenchmark(int size, int iter)
-      : key = Uint8List.fromList(List.filled(1000, 0x9f)),
+      : key = Uint8List.fromList(List.filled(32, 0x9f)),
+        nonce = Uint8List.fromList(List.filled(12, 0x2f)),
         super('cipherlib', size, iter);
 
   @override
   void run() {
-    cipher.xorPipe(inputStream, key);
+    cipher.chacha20Pipe(inputStream, key);
   }
 }
 
 void main() {
-  print('--------- XOR ----------');
+  print('--------- ChaCha20 ----------');
   final conditions = [
     [5 << 20, 10],
     [1 << 10, 5000],

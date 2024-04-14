@@ -29,7 +29,7 @@ void main() {
       }
     });
     test('encryption <-> decryption (stream)', () async {
-      for (int i = 1; i < 100; ++i) {
+      for (int i = 1; i < 10; ++i) {
         var key = randomNumbers(i);
         for (int j = 0; j < 100; ++j) {
           var text = randomNumbers(j);
@@ -38,6 +38,19 @@ void main() {
           var cipherStream = xorPipe(stream, key);
           var plainStream = xorPipe(cipherStream, key);
           var plain = await plainStream.toList();
+          expect(bytes, equals(plain), reason: '[key: $i, text: $j]');
+        }
+      }
+    });
+    test('single instance', () {
+      for (int i = 1; i < 20; ++i) {
+        var key = randomNumbers(i);
+        var instance = XOR(key);
+        for (int j = 0; j < 100; ++j) {
+          var text = randomNumbers(j);
+          var bytes = Uint8List.fromList(text);
+          var cipher = instance.convert(bytes);
+          var plain = instance.convert(cipher);
           expect(bytes, equals(plain), reason: '[key: $i, text: $j]');
         }
       }

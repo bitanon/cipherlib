@@ -1,3 +1,4 @@
-## 0.0.1-pre
+## 0.0.3
 
-- XOR cipher.
+- `XOR` cipher.
+- `ChaCha20` cipher.

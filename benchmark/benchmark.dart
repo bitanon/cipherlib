@@ -6,6 +6,7 @@ import 'dart:math';
 
 import 'base.dart';
 import 'xor.dart' as xor;
+import 'chacha20.dart' as chacha20;
 
 IOSink sink = stdout;
 RandomAccessFile? raf;
@@ -30,14 +31,16 @@ void measureSymmetricCiphers() {
 
     var algorithms = {
       "XOR": [
-        xor.CipherlibBenchmark(size, 10, iter),
-        xor.CipherlibBenchmark(size, 1 << 10, iter),
-        xor.CipherlibBenchmark(size, 5 << 20, iter),
+        xor.CipherlibBenchmark(size, iter),
       ],
       "XOR(pipe)": [
-        xor.CipherlibStreamBenchmark(size, 10, iter),
-        xor.CipherlibStreamBenchmark(size, 1 << 10, iter),
-        xor.CipherlibStreamBenchmark(size, 5 << 20, iter),
+        xor.CipherlibStreamBenchmark(size, iter),
+      ],
+      "ChaCha20": [
+        chacha20.CipherlibBenchmark(size, iter),
+      ],
+      "ChaCha20(pipe)": [
+        chacha20.CipherlibStreamBenchmark(size, iter),
       ],
     };
 

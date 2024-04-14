@@ -2,7 +2,6 @@
 // All rights reserved. Check LICENSE file for details.
 
 import 'dart:math';
-import 'dart:typed_data';
 
 import 'package:benchmark_harness/benchmark_harness.dart';
 
@@ -62,14 +61,6 @@ abstract class Benchmark extends BenchmarkBase {
       print(message);
     }
   }
-}
-
-abstract class SymmetricKeyBenchmark extends Benchmark {
-  final Uint8List key;
-
-  SymmetricKeyBenchmark(String name, int size, int keySize, int iter)
-      : key = Uint8List.fromList(List.filled(keySize, 0x9f)),
-        super('$name[key:${formatSize(keySize)}]', size, iter);
 }
 
 Map<String, int> measureDiff(Iterable<BenchmarkBase> benchmarks) {

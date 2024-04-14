@@ -1,0 +1,12 @@
+# package:test configuration
+# https://github.com/dart-lang/test/blob/master/pkgs/test/doc/configuration.md
+
+timeout: 1m
+concurrency: 8
+platforms: [vm, node]
+
+tags:
+  skip-js:
+    on_platform:
+      node:
+        skip: true

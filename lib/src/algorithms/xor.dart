@@ -16,18 +16,14 @@ import 'package:cipherlib/src/core/cipher.dart';
 class XOR extends SymmetricCipher {
   final Uint8List key;
 
-  /// Create a new instance for XOR Encryption
   const XOR._(this.key);
 
+  /// Create a new instance for XOR encryption or decryption
   factory XOR(List<int> key) {
     if (key.isEmpty) {
       throw ArgumentError('The key must not be empty');
     }
-    if (key is Uint8List) {
-      return XOR._(key);
-    } else {
-      return XOR._(Uint8List.fromList(key));
-    }
+    return XOR._(key is Uint8List ? key : Uint8List.fromList(key));
   }
 
   @override
