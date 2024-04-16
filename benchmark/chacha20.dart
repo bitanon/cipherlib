@@ -1,6 +1,7 @@
 // Copyright (c) 2023, Sudipto Chandra
 // All rights reserved. Check LICENSE file for details.
 
+import 'dart:async';
 import 'dart:math';
 import 'dart:typed_data';
 
@@ -25,7 +26,7 @@ class CipherlibBenchmark extends Benchmark {
   }
 }
 
-class CipherlibStreamBenchmark extends Benchmark {
+class CipherlibStreamBenchmark extends AsyncBenchmark {
   final Uint8List key;
   final Uint8List nonce;
 
@@ -35,12 +36,12 @@ class CipherlibStreamBenchmark extends Benchmark {
         super('cipherlib', size, iter);
 
   @override
-  void run() {
-    cipher.chacha20Pipe(inputStream, key);
+  Future<void> run() async {
+    await cipher.chacha20Pipe(inputStream, key).drain();
   }
 }
 
-void main() {
+void main() async {
   print('--------- ChaCha20 ----------');
   final conditions = [
     [5 << 20, 10],
@@ -51,9 +52,9 @@ void main() {
     int size = condition[0];
     int iter = condition[1];
     print('---- message: ${formatSize(size)} | iterations: $iter ----');
-    CipherlibBenchmark(size, iter).showDiff([]);
+    CipherlibBenchmark(size, iter).measureRate();
     print('---- stream: ${formatSize(size)} | iterations: $iter ----');
-    CipherlibStreamBenchmark(size, iter).showDiff([]);
+    await CipherlibStreamBenchmark(size, iter).measureRate();
     print('');
   }
 }

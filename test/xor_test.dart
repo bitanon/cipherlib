@@ -16,7 +16,7 @@ void main() {
     test('empty message', () {
       expect(xor([], [1]), equals([]));
     });
-    test('encryption <-> decryption', () {
+    test('encryption <-> decryption (convert)', () {
       for (int i = 1; i < 100; ++i) {
         var key = randomNumbers(i);
         for (int j = 0; j < 100; ++j) {

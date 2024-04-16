@@ -2,4 +2,5 @@
 // All rights reserved. Check LICENSE file for details.
 
 export 'chacha20.dart';
+export 'chacha20_poly1305.dart';
 export 'xor.dart';

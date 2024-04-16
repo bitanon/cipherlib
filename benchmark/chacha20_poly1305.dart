@@ -1,7 +1,6 @@
 // Copyright (c) 2023, Sudipto Chandra
 // All rights reserved. Check LICENSE file for details.
 
-import 'dart:async';
 import 'dart:math';
 import 'dart:typed_data';
 
@@ -13,32 +12,36 @@ Random random = Random();
 
 class CipherlibBenchmark extends Benchmark {
   final Uint8List key;
+  final Uint8List nonce;
 
   CipherlibBenchmark(int size, int iter)
-      : key = Uint8List.fromList(List.filled(1000, 0x9f)),
+      : key = Uint8List.fromList(List.filled(32, 0x9f)),
+        nonce = Uint8List.fromList(List.filled(12, 0x2f)),
         super('cipherlib', size, iter);
 
   @override
   void run() {
-    cipher.xor(input, key);
+    cipher.chacha20poly1305(input, key);
   }
 }
 
-class CipherlibStreamBenchmark extends AsyncBenchmark {
+class CipherlibDigestBenchmark extends Benchmark {
   final Uint8List key;
+  final Uint8List nonce;
 
-  CipherlibStreamBenchmark(int size, int iter)
-      : key = Uint8List.fromList(List.filled(1000, 0x9f)),
+  CipherlibDigestBenchmark(int size, int iter)
+      : key = Uint8List.fromList(List.filled(32, 0x9f)),
+        nonce = Uint8List.fromList(List.filled(12, 0x2f)),
         super('cipherlib', size, iter);
 
   @override
-  Future<void> run() async {
-    await cipher.xorPipe(inputStream, key).drain();
+  void run() {
+    cipher.ChaCha20Poly1305(key).digest(input, nonce: nonce);
   }
 }
 
-void main() async {
-  print('--------- XOR ----------');
+void main() {
+  print('--------- ChaCha20/Poly1305 ----------');
   final conditions = [
     [5 << 20, 10],
     [1 << 10, 5000],
@@ -50,7 +53,7 @@ void main() async {
     print('---- message: ${formatSize(size)} | iterations: $iter ----');
     CipherlibBenchmark(size, iter).measureRate();
     print('---- stream: ${formatSize(size)} | iterations: $iter ----');
-    await CipherlibStreamBenchmark(size, iter).measureRate();
+    CipherlibDigestBenchmark(size, iter).measureRate();
     print('');
   }
 }

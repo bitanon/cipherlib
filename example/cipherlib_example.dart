@@ -22,12 +22,18 @@ void main() {
     var key = fromHex(
         "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f");
     var nonce = fromHex("000000000000004a00000000");
-    var cipher = chacha20(utf8.encode(text), key, nonce);
-    var plain = chacha20(cipher, key, nonce);
+    var result = chacha20poly1305(utf8.encode(text), key, nonce: nonce);
+    var plain = chacha20poly1305(
+      result.cipher,
+      key,
+      nonce: nonce,
+      tag: result.tag.bytes,
+    );
     print('  Text: $text');
     print('   Key: ${toHex(key)}');
     print(' Nonce: ${toHex(nonce)}');
-    print('Cipher: ${toHex(cipher)}');
-    print(' Plain: ${utf8.decode(plain)}');
+    print('Cipher: ${toHex(result.cipher)}');
+    print('   Tag: ${result.tag.hex()}');
+    print(' Plain: ${utf8.decode(plain.cipher)}');
   }
 }

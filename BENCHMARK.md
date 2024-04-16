@@ -6,30 +6,30 @@ Libraries:
 
 With 5MB message (10 iterations):
 
-| Algorithms     | `cipherlib`    |
-| -------------- | -------------- |
-| XOR            | **243.84MB/s** |
-| XOR(pipe)      | **66.57TB/s**  |
-| ChaCha20       | **125.40MB/s** |
-| ChaCha20(pipe) | **58.43TB/s**  |
+| Algorithms                | `cipherlib`    |
+| ------------------------- | -------------- |
+| XOR                       | **235.83MB/s** |
+| ChaCha20                  | **108.76MB/s** |
+| ChaCha20/Poly1305         | **76.83MB/s**  |
+| ChaCha20/Poly1305(digest) | **249.10MB/s** |
 
 With 1KB message (5000 iterations):
 
-| Algorithms     | `cipherlib`    |
-| -------------- | -------------- |
-| XOR            | **266.28MB/s** |
-| XOR(pipe)      | **13.71GB/s**  |
-| ChaCha20       | **129.03MB/s** |
-| ChaCha20(pipe) | **11.86GB/s**  |
+| Algorithms                | `cipherlib`    |
+| ------------------------- | -------------- |
+| XOR                       | **257.71MB/s** |
+| ChaCha20                  | **112.43MB/s** |
+| ChaCha20/Poly1305         | **74.40MB/s**  |
+| ChaCha20/Poly1305(digest) | **210.84MB/s** |
 
 With 10B message (100000 iterations):
 
-| Algorithms     | `cipherlib`    |
-| -------------- | -------------- |
-| XOR            | **190.05MB/s** |
-| XOR(pipe)      | **136.98MB/s** |
-| ChaCha20       | **31.78MB/s**  |
-| ChaCha20(pipe) | **118.66MB/s** |
+| Algorithms                | `cipherlib`    |
+| ------------------------- | -------------- |
+| XOR                       | **183.72MB/s** |
+| ChaCha20                  | **30.74MB/s**  |
+| ChaCha20/Poly1305         | **9.59MB/s**   |
+| ChaCha20/Poly1305(digest) | **14.06MB/s**  |
 
 > All benchmarks are done on _AMD Ryzen 7 5800X_ processor and _3200MHz_ RAM using compiled _exe_
 >

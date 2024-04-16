@@ -5,8 +5,9 @@ import "dart:io";
 import 'dart:math';
 
 import 'base.dart';
-import 'xor.dart' as xor;
 import 'chacha20.dart' as chacha20;
+import 'chacha20_poly1305.dart' as chacha20poly1305;
+import 'xor.dart' as xor;
 
 IOSink sink = stdout;
 RandomAccessFile? raf;
@@ -33,23 +34,26 @@ void measureSymmetricCiphers() {
       "XOR": [
         xor.CipherlibBenchmark(size, iter),
       ],
-      "XOR(pipe)": [
-        xor.CipherlibStreamBenchmark(size, iter),
-      ],
       "ChaCha20": [
         chacha20.CipherlibBenchmark(size, iter),
       ],
-      "ChaCha20(pipe)": [
-        chacha20.CipherlibStreamBenchmark(size, iter),
+      "ChaCha20/Poly1305": [
+        chacha20poly1305.CipherlibBenchmark(size, iter),
+      ],
+      "ChaCha20/Poly1305(digest)": [
+        chacha20poly1305.CipherlibDigestBenchmark(size, iter),
       ],
     };
 
-    var names = Set<String>.from(
-      algorithms.entries.fold<List<String>>(
-        [],
-        (p, v) => p..addAll(v.value.map((b) => b.name)),
-      ),
-    );
+    var nameFreq = {};
+    for (var entry in algorithms.entries) {
+      for (var benchmark in entry.value) {
+        nameFreq[benchmark.name] ??= 0;
+        nameFreq[benchmark.name]++;
+      }
+    }
+    var names = nameFreq.keys.toList();
+    names.sort((a, b) => nameFreq[b] - nameFreq[a]);
     var separator = names.map((e) => ('-' * (e.length + 4)));
 
     dump("With ${formatSize(size)} message ($iter iterations):");

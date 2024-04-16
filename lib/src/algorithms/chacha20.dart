@@ -4,6 +4,7 @@
 import 'dart:typed_data';
 
 import 'package:cipherlib/src/core/cipher.dart';
+import 'package:cipherlib/src/core/utils.dart';
 
 const int _mask32 = 0xFFFFFFFF;
 
@@ -15,40 +16,38 @@ const int _mask32 = 0xFFFFFFFF;
 ///
 /// [rfc]: https://datatracker.ietf.org/doc/html/rfc8439
 class ChaCha20 extends SymmetricCipher {
-  final int counter;
-  final Uint8List key;
-  final Uint8List nonce;
+  @override
+  final String name = "ChaCha20";
 
-  const ChaCha20._(this.counter, this.key, this.nonce);
-
-  factory ChaCha20({
-    int counter = 1,
-    required List<int> key,
-    required List<int> nonce,
-  }) {
+  ChaCha20(List<int> key) : super(key.toUint8List()) {
     if (key.length != 32) {
       throw ArgumentError('The key should be 32 bytes');
     }
-    if (nonce.length != 12) {
-      throw ArgumentError('The nonce should be 12 bytes');
-    }
-    var key8 = key is Uint8List ? key : Uint8List.fromList(key);
-    var nonce8 = nonce is Uint8List ? nonce : Uint8List.fromList(nonce);
-    return ChaCha20._(counter, key8, nonce8);
   }
 
   @override
-  Uint8List convert(List<int> message) {
+  Uint8List convert(
+    List<int> message, {
+    List<int>? nonce,
+    int blockCount = 1,
+  }) {
+    if (nonce != null && nonce.length != 12) {
+      throw ArgumentError('The nonce should be 12 bytes');
+    }
     int pos = 0;
-    int nos = counter;
-    Uint32List state = Uint32List(16);
-    Uint8List state8 = state.buffer.asUint8List();
-    Uint32List key32 = key.buffer.asUint32List();
-    Uint32List nonce32 = nonce.buffer.asUint32List();
-    Uint8List result = Uint8List.fromList(message);
+    var state = Uint32List(16);
+    var state8 = state.buffer.asUint8List();
+    var key32 = key.buffer.asUint32List();
+    var nonce8 = nonce is Uint8List
+        ? nonce
+        : nonce == null
+            ? Uint8List(12)
+            : Uint8List.fromList(nonce);
+    var nonce32 = nonce8.buffer.asUint32List();
+    var result = Uint8List.fromList(message);
     for (int i = 0; i < message.length; ++i) {
       if (pos == 0 || pos == 64) {
-        _block(state, key32, nonce32, nos++);
+        _block(state, key32, nonce32, blockCount++);
         pos = 0;
       }
       result[i] ^= state8[pos++];
@@ -57,19 +56,53 @@ class ChaCha20 extends SymmetricCipher {
   }
 
   @override
-  Stream<int> pipe(Stream<int> stream) async* {
+  Stream<int> pipe(
+    Stream<int> stream, {
+    List<int>? nonce,
+    int blockCount = 1,
+  }) async* {
+    if (nonce != null && nonce.length != 12) {
+      throw ArgumentError('The nonce should be 12 bytes');
+    }
     int pos = 0;
-    int nos = counter;
-    Uint32List state = Uint32List(16);
-    Uint8List state8 = state.buffer.asUint8List();
-    Uint32List key32 = key.buffer.asUint32List();
-    Uint32List nonce32 = nonce.buffer.asUint32List();
+    var state = Uint32List(16);
+    var state8 = state.buffer.asUint8List();
+    var key32 = key.buffer.asUint32List();
+    var nonce8 = nonce is Uint8List
+        ? nonce
+        : nonce == null
+            ? Uint8List(12)
+            : Uint8List.fromList(nonce);
+    var nonce32 = nonce8.buffer.asUint32List();
     await for (var x in stream) {
       if (pos == 0 || pos == 64) {
-        _block(state, key32, nonce32, nos++);
+        _block(state, key32, nonce32, blockCount++);
         pos = 0;
       }
       yield x ^ state8[pos++];
+    }
+  }
+
+  /// ChaCha20 block generator
+  Iterable<int> generate([
+    List<int>? nonce,
+    int blockCount = 1,
+  ]) sync* {
+    if (nonce != null && nonce.length != 12) {
+      throw ArgumentError('The nonce should be 12 bytes');
+    }
+    var state = Uint32List(16);
+    var state8 = state.buffer.asUint8List();
+    var key32 = key.buffer.asUint32List();
+    var nonce8 = nonce is Uint8List
+        ? nonce
+        : nonce == null
+            ? Uint8List(12)
+            : Uint8List.fromList(nonce);
+    var nonce32 = nonce8.buffer.asUint32List();
+    while (true) {
+      _block(state, key32, nonce32, blockCount++);
+      yield* state8;
     }
   }
 

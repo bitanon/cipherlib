@@ -3,7 +3,7 @@
 
 import 'dart:typed_data';
 
-import 'algorithms/xor.dart';
+import 'package:cipherlib/src/algorithms/xor.dart';
 
 export 'algorithms/xor.dart' show XOR;
 
@@ -12,15 +12,13 @@ export 'algorithms/xor.dart' show XOR;
 /// Both the encryption and decryption can be done using this same method.
 ///
 /// **WARNING**: This is not intended to be used for security purposes.
-Uint8List xor(List<int> message, List<int> key) {
-  return XOR(key).convert(message);
-}
+@pragma('vm:prefer-inline')
+Uint8List xor(List<int> message, List<int> key) => XOR(key).convert(message);
 
 /// Apply [XOR] cipher to the message [stream] using the [key].
 ///
 /// Both the encryption and decryption can be done using this same method.
 ///
 /// **WARNING**: This is not intended to be used for security purposes.
-Stream<int> xorPipe(Stream<int> stream, List<int> key) {
-  return XOR(key).pipe(stream);
-}
+@pragma('vm:prefer-inline')
+Stream<int> xorPipe(Stream<int> stream, List<int> key) => XOR(key).pipe(stream);

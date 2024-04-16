@@ -4,6 +4,7 @@
 import 'dart:typed_data';
 
 import 'package:cipherlib/src/core/cipher.dart';
+import 'package:cipherlib/src/core/utils.dart';
 
 /// XOR (exclusive or) cipher is a simple and lightweight method of encrypting
 /// data. It is often used for basic data obfuscation.
@@ -14,16 +15,17 @@ import 'package:cipherlib/src/core/cipher.dart';
 ///
 /// [xor_wiki]: https://en.wikipedia.org/wiki/XOR_cipher
 class XOR extends SymmetricCipher {
-  final Uint8List key;
+  @override
+  final String name = "XOR";
 
-  const XOR._(this.key);
+  const XOR._(Uint8List key) : super(key);
 
   /// Create a new instance for XOR encryption or decryption
   factory XOR(List<int> key) {
     if (key.isEmpty) {
       throw ArgumentError('The key must not be empty');
     }
-    return XOR._(key is Uint8List ? key : Uint8List.fromList(key));
+    return XOR._(key.toUint8List());
   }
 
   @override
