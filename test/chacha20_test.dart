@@ -11,37 +11,30 @@ import 'utils.dart';
 
 void main() {
   group('Test ChaCha20 cipher', () {
-    test('empty key', () {
-      expect(() => chacha20([], []), throwsArgumentError);
-    });
-    test('key length < 32', () {
-      expect(() => chacha20([], Uint8List(31)), throwsArgumentError);
-    });
-    test('key length > 32', () {
-      expect(() => chacha20([], Uint8List(33)), throwsArgumentError);
-    });
     test('empty message', () {
       var key = randomNumbers(32);
       var nonce = randomBytes(12);
       expect(chacha20([], key, nonce), equals([]));
     });
-    test('without nonce', () {
+    test('key length is not 32 bytes', () {
+      var text = randomNumbers(32);
+      expect(() => chacha20(text, []), throwsArgumentError);
+      expect(() => chacha20(text, Uint8List(33)), throwsArgumentError);
+      expect(() => chacha20(text, Uint8List(31)), throwsArgumentError);
+    });
+    test('nonce is null', () {
       var key = randomNumbers(32);
       var text = randomBytes(100);
       var cipher = chacha20(text, key);
       var plain = chacha20(cipher, key);
       expect(text, equals(plain));
     });
-    test('nonce length < 12', () {
+    test('nonce length is not 12 bytes', () {
       var key = Uint8List(32);
       var text = Uint8List(100);
       expect(() => chacha20(text, key, []), throwsArgumentError);
-    });
-    test('nonce length > 12', () {
-      var key = Uint8List(32);
-      var nonce = Uint8List(13);
-      var text = Uint8List(100);
-      expect(() => chacha20(text, key, nonce), throwsArgumentError);
+      expect(() => chacha20(text, key, Uint8List(11)), throwsArgumentError);
+      expect(() => chacha20(text, key, Uint8List(13)), throwsArgumentError);
     });
     test('specific round', () {
       int nos = 113;

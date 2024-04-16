@@ -16,12 +16,12 @@ class CipherlibBenchmark extends Benchmark {
 
   CipherlibBenchmark(int size, int iter)
       : key = Uint8List.fromList(List.filled(32, 0x9f)),
-        nonce = Uint8List.fromList(List.filled(12, 0x2f)),
+        nonce = Uint8List.fromList(List.filled(16, 0x2f)),
         super('cipherlib', size, iter);
 
   @override
   void run() {
-    cipher.chacha20poly1305(input, key);
+    cipher.salsa20poly1305(input, key);
   }
 }
 
@@ -31,17 +31,17 @@ class CipherlibDigestBenchmark extends Benchmark {
 
   CipherlibDigestBenchmark(int size, int iter)
       : key = Uint8List.fromList(List.filled(32, 0x9f)),
-        nonce = Uint8List.fromList(List.filled(12, 0x2f)),
+        nonce = Uint8List.fromList(List.filled(16, 0x2f)),
         super('cipherlib', size, iter);
 
   @override
   void run() {
-    cipher.chacha20poly1305digest(input, key, nonce: nonce);
+    cipher.salsa20poly1305digest(input, key, nonce: nonce);
   }
 }
 
 void main() {
-  print('--------- ChaCha20/Poly1305 ----------');
+  print('--------- Salsa20/Poly1305 ----------');
   final conditions = [
     [5 << 20, 10],
     [1 << 10, 5000],

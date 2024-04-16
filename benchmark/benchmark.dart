@@ -7,6 +7,8 @@ import 'dart:math';
 import 'base.dart';
 import 'chacha20.dart' as chacha20;
 import 'chacha20_poly1305.dart' as chacha20poly1305;
+import 'salsa20.dart' as salsa20;
+import 'salsa20_poly1305.dart' as salsa20poly1305;
 import 'xor.dart' as xor;
 
 IOSink sink = stdout;
@@ -42,6 +44,15 @@ void measureSymmetricCiphers() {
       ],
       "ChaCha20/Poly1305(digest)": [
         chacha20poly1305.CipherlibDigestBenchmark(size, iter),
+      ],
+      "Salsa20": [
+        salsa20.CipherlibBenchmark(size, iter),
+      ],
+      "Salsa20/Poly1305": [
+        salsa20poly1305.CipherlibBenchmark(size, iter),
+      ],
+      "Salsa20/Poly1305(digest)": [
+        salsa20poly1305.CipherlibDigestBenchmark(size, iter),
       ],
     };
 

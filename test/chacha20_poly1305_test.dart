@@ -1,7 +1,7 @@
 // Copyright (c) 2024, Sudipto Chandra
 // All rights reserved. Check LICENSE file for details.
 
-import 'package:cipherlib/src/chacha20_poly1305.dart';
+import 'package:cipherlib/cipherlib.dart';
 import 'package:hashlib_codecs/hashlib_codecs.dart';
 import 'package:test/test.dart';
 

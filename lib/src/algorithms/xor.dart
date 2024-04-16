@@ -18,7 +18,10 @@ class XOR extends SymmetricCipher {
   @override
   final String name = "XOR";
 
-  const XOR._(Uint8List key) : super(key);
+  @override
+  final Uint8List key;
+
+  const XOR._(this.key);
 
   /// Create a new instance for XOR encryption or decryption
   factory XOR(List<int> key) {

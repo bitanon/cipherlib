@@ -1,6 +1,7 @@
 // Copyright (c) 2023, Sudipto Chandra
 // All rights reserved. Check LICENSE file for details.
 
+import 'dart:async';
 import 'dart:math';
 import 'dart:typed_data';
 
@@ -16,32 +17,32 @@ class CipherlibBenchmark extends Benchmark {
 
   CipherlibBenchmark(int size, int iter)
       : key = Uint8List.fromList(List.filled(32, 0x9f)),
-        nonce = Uint8List.fromList(List.filled(12, 0x2f)),
+        nonce = Uint8List.fromList(List.filled(16, 0x2f)),
         super('cipherlib', size, iter);
 
   @override
   void run() {
-    cipher.chacha20poly1305(input, key);
+    cipher.salsa20(input, key);
   }
 }
 
-class CipherlibDigestBenchmark extends Benchmark {
+class CipherlibStreamBenchmark extends AsyncBenchmark {
   final Uint8List key;
   final Uint8List nonce;
 
-  CipherlibDigestBenchmark(int size, int iter)
+  CipherlibStreamBenchmark(int size, int iter)
       : key = Uint8List.fromList(List.filled(32, 0x9f)),
-        nonce = Uint8List.fromList(List.filled(12, 0x2f)),
+        nonce = Uint8List.fromList(List.filled(16, 0x2f)),
         super('cipherlib', size, iter);
 
   @override
-  void run() {
-    cipher.chacha20poly1305digest(input, key, nonce: nonce);
+  Future<void> run() async {
+    await cipher.salsa20Pipe(inputStream, key).drain();
   }
 }
 
-void main() {
-  print('--------- ChaCha20/Poly1305 ----------');
+void main() async {
+  print('--------- Salsa20 ----------');
   final conditions = [
     [5 << 20, 10],
     [1 << 10, 5000],
@@ -53,7 +54,7 @@ void main() {
     print('---- message: ${formatSize(size)} | iterations: $iter ----');
     CipherlibBenchmark(size, iter).measureRate();
     print('---- stream: ${formatSize(size)} | iterations: $iter ----');
-    CipherlibDigestBenchmark(size, iter).measureRate();
+    await CipherlibStreamBenchmark(size, iter).measureRate();
     print('');
   }
 }

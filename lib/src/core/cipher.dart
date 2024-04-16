@@ -4,42 +4,32 @@
 import 'dart:typed_data';
 
 /// A template for encryption and decryption algorithms.
-abstract class Cipher<T> {
+abstract class Cipher {
   const Cipher();
 
   /// Name of the Cipher
   String get name;
-
-  /// Transforms the plain text [message] into encrypted cipher code.
-  T encrypt(List<int> message);
-
-  /// Transforms the encrypted [cipher] code back to the plain text.
-  T decrypt(List<int> cipher);
 }
 
 /// A template for Symmetric Ciphers that use the same operation for both
 /// encryption and decryption.
-abstract class SymmetricCipher extends Cipher<Uint8List> {
-  final Uint8List key;
+abstract class SymmetricCipher extends Cipher {
+  /// The symmetric key for both encryption and decryption
+  List<int> get key;
 
-  const SymmetricCipher(this.key);
+  /// Create new instance
+  const SymmetricCipher();
 
   /// Transforms the [message].
   Uint8List convert(List<int> message);
 
   /// Transforms the message [stream].
   Stream<int> pipe(Stream<int> stream);
-
-  @override
-  Uint8List encrypt(List<int> message) => convert(message);
-
-  @override
-  Uint8List decrypt(List<int> cipher) => convert(cipher);
 }
 
 /// A template for Asymmetric Ciphers that use different operations for
 /// encryption and decryption.
-abstract class AsymmetricCipher extends Cipher<Uint8List> {
+abstract class AsymmetricCipher extends Cipher {
   const AsymmetricCipher();
 
   /// The cipher algorithm for encryption.
@@ -48,9 +38,9 @@ abstract class AsymmetricCipher extends Cipher<Uint8List> {
   /// The cipher algorithm for decryption.
   SymmetricCipher get decryptor;
 
-  @override
+  /// Transforms the plain text [message] into encrypted cipher code.
   Uint8List encrypt(List<int> message) => encryptor.convert(message);
 
-  @override
+  /// Transforms the encrypted [cipher] code back to the plain text.
   Uint8List decrypt(List<int> cipher) => decryptor.convert(cipher);
 }

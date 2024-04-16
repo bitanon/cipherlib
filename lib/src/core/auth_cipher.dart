@@ -6,7 +6,7 @@ import 'dart:typed_data';
 import 'package:hashlib/hashlib.dart' show HashDigest;
 
 /// Mixin for ciphers relying on authentication tag.
-mixin Authenticator {
+abstract class Authenticator {
   /// Generates the authentication tag for the [message].
   HashDigest digest(List<int> message);
 
@@ -18,13 +18,13 @@ mixin Authenticator {
 }
 
 /// Combined result of encrypted [cipher] text with the authentication [tag].
-class AuthCipherResult {
+class CipherMAC {
   /// The authentication tag.
   final HashDigest tag;
 
   /// The cipher text.
   final Uint8List cipher;
 
-  /// Creates a new instance of [AuthCipherResult]
-  const AuthCipherResult(this.cipher, this.tag);
+  /// Creates a new instance of [CipherMAC]
+  const CipherMAC(this.cipher, this.tag);
 }

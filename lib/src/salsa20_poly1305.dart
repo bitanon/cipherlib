@@ -1,14 +1,14 @@
 // Copyright (c) 2024, Sudipto Chandra
 // All rights reserved. Check LICENSE file for details.
 
-import 'package:cipherlib/src/algorithms/chacha20_poly1305.dart';
+import 'package:cipherlib/src/algorithms/salsa20_poly1305.dart';
 import 'package:cipherlib/src/core/auth_cipher.dart';
 import 'package:hashlib/hashlib.dart';
 
 export 'algorithms/chacha20_poly1305.dart' show ChaCha20Poly1305;
 
-/// Transforms [message] with ChaCha20 algorithm and generates the message
-/// digest with Poly1305 authentication code generator.
+/// Transforms [message] with Salsa20 algorithm and generates the message digest
+/// with Poly1305 authentication code generator.
 ///
 /// Parameters:
 /// - [message] : arbitrary length plain-text.
@@ -18,14 +18,14 @@ export 'algorithms/chacha20_poly1305.dart' show ChaCha20Poly1305;
 /// - [tag] : A 128-bit or 16-bytes long authentication tag for verification.
 ///
 /// Both the encryption and decryption can be done using this same method.
-CipherMAC chacha20poly1305(
+CipherMAC salsa20poly1305(
   List<int> message,
   List<int> key, {
   List<int>? tag,
   List<int>? nonce,
   List<int>? aad,
 }) {
-  var instance = ChaCha20Poly1305(key);
+  var instance = Salsa20Poly1305(key);
   if (tag != null) {
     if (!instance.verify(message, tag, nonce: nonce, aad: aad)) {
       throw StateError('Invalid tag');
@@ -36,7 +36,7 @@ CipherMAC chacha20poly1305(
   return CipherMAC(cipher, cipherTag);
 }
 
-/// Generate only the [message] digest using [ChaCha20Poly1305].
+/// Generate only the [message] digest using [Salsa20Poly1305].
 ///
 /// Parameters:
 /// - [message] : arbitrary length plain-text.
@@ -45,11 +45,11 @@ CipherMAC chacha20poly1305(
 /// - [aad] : Additional authenticated data.
 ///
 /// Both the encryption and decryption can be done using this same method.
-HashDigest chacha20poly1305digest(
+HashDigest salsa20poly1305digest(
   List<int> message,
   List<int> key, {
   List<int>? nonce,
   List<int>? aad,
 }) {
-  return ChaCha20Poly1305(key).digest(message, nonce: nonce, aad: aad);
+  return Salsa20Poly1305(key).digest(message, nonce: nonce, aad: aad);
 }

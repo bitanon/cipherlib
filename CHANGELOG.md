@@ -1,5 +1,5 @@
-## 0.0.4
+## 0.0.5
 
 - `XOR` cipher.
-- `ChaCha20` cipher.
-- `ChaCha20Poly1305` cipher with digest.
+- `Salsa20` cipher with `Poly1305` digest generator.
+- `ChaCha20` cipher with `Poly1305` digest generator.

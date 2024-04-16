@@ -3,70 +3,27 @@
 
 import 'dart:typed_data';
 
-import 'package:cipherlib/src/core/auth_cipher.dart';
-import 'package:hashlib/hashlib.dart' show HashDigest, Poly1305;
-
 import 'chacha20.dart';
+import 'poly1305.dart';
 
-class ChaCha20Poly1305 extends ChaCha20 with Authenticator {
+/// ChaCha20-Poly1305 is a cryptographic algorithm combining the [ChaCha20]
+/// stream cipher for encryption and the [Poly1305Authenticator] for message
+/// authentication. It provides both confidentiality and integrity protection,
+/// making it a popular choice for secure communication protocols like TLS.
+///
+/// This implementation is based on the [RFC-8439][rfc]
+///
+/// [rfc]: https://www.rfc-editor.org/rfc/rfc8439.html
+class ChaCha20Poly1305 extends ChaCha20 with Poly1305Authenticator {
   @override
-  String get name => "ChaCha20/Poly1305";
+  String get name => "${super.name}/Poly1305";
 
-  ChaCha20Poly1305(List<int> key) : super(key);
-
-  @override
-  HashDigest digest(
-    List<int> message, {
-    List<int>? nonce,
-    List<int>? aad,
-  }) {
-    // create key
-    var otk = convert(
-      Uint8List(32),
-      nonce: nonce,
-      blockCount: 0,
-    );
-
-    // create sink
-    var sink = Poly1305(otk).createSink();
-
-    // add AAD
-    int aadLength = aad?.length ?? 0;
-    if (aad != null && aadLength > 0) {
-      sink.add(aad);
-      sink.add(Uint8List(16 - (aadLength & 15)));
-    }
-
-    // add cipher text
-    int messageLength = message.length;
-    if (messageLength > 0) {
-      sink.add(message);
-      sink.add(Uint8List(16 - (messageLength & 15)));
-    }
-
-    // add lengths
-    sink.add(Uint32List.fromList([
-      aadLength,
-      aadLength >>> 32,
-      messageLength,
-      messageLength >>> 32,
-    ]).buffer.asUint8List());
-
-    return sink.digest();
-  }
+  const ChaCha20Poly1305(List<int> key) : super(key);
 
   @override
-  bool verify(
-    List<int> message,
-    List<int> tag, {
-    List<int>? nonce,
-    List<int>? aad,
-  }) {
-    var current = digest(
-      message,
-      nonce: nonce,
-      aad: aad,
-    );
-    return current.isEqual(tag);
-  }
+  Uint8List generateOTK([List<int>? nonce]) => convert(
+        Uint8List(32),
+        nonce: nonce,
+        blockCount: 0,
+      );
 }
