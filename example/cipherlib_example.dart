@@ -27,13 +27,13 @@ void main() {
       result.cipher,
       key,
       nonce: nonce,
-      tag: result.tag.bytes,
+      mac: result.mac.bytes,
     );
     print('  Text: $text');
     print('   Key: ${toHex(key)}');
     print(' Nonce: ${toHex(nonce)}');
     print('Cipher: ${toHex(result.cipher)}');
-    print('   Tag: ${result.tag.hex()}');
+    print('   Tag: ${result.mac.hex()}');
     print(' Plain: ${utf8.decode(plain.cipher)}');
   }
 }

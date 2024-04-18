@@ -9,10 +9,11 @@ export 'algorithms/chacha20.dart' show ChaCha20;
 
 /// Apply [ChaCha20] cipher with the follwing parameters:
 ///
-/// - Arbitrary length plaintext [message] to transform.
-/// - A 16 or 32-bytes long [key].
-/// - (Optional) A 16-bytes long [nonce]. Default: 0
-/// - (Optional) The initial block number as [blockCount]. Default: 1.
+/// Parameters:
+/// - [message] : arbitrary length plain-text.
+/// - [key] : A 32-bytes long key.
+/// - [nonce] : A 12-bytes long nonce. Deafult: 0
+/// - [blockId] :  The initial block number. Default: 1.
 ///
 /// Both the encryption and decryption can be done using this same method.
 @pragma('vm:prefer-inline')
@@ -20,31 +21,32 @@ Uint8List chacha20(
   List<int> message,
   List<int> key, [
   List<int>? nonce,
-  int blockCount = 1,
+  int blockId = 1,
 ]) =>
     ChaCha20(key).convert(
       message,
       nonce: nonce,
-      blockCount: blockCount,
+      blockId: blockId,
     );
 
 /// Apply [ChaCha20] cipher with the follwing parameters:
 ///
-/// - Plaintext message [stream] to transform.
-/// - A 16 or 32-bytes long [key].
-/// - (Optional) A 16-bytes long [nonce]. Default: 0
-/// - (Optional) The initial block number as [blockCount]. Default: 1.
+/// Parameters:
+/// - [stream] : arbitrary length plain-text.
+/// - [key] : A 32-bytes long key.
+/// - [nonce] : A 12-bytes long nonce. Deafult: 0
+/// - [blockId] :  The initial block number. Default: 1.
 ///
 /// Both the encryption and decryption can be done using this same method.
 @pragma('vm:prefer-inline')
-Stream<int> chacha20Pipe(
+Stream<int> chacha20Stream(
   Stream<int> stream,
   List<int> key, [
   List<int>? nonce,
-  int blockCount = 1,
+  int blockId = 1,
 ]) =>
-    ChaCha20(key).pipe(
+    ChaCha20(key).bind(
       stream,
       nonce: nonce,
-      blockId: blockCount,
+      blockId: blockId,
     );

@@ -33,7 +33,7 @@ class CipherlibStreamBenchmark extends AsyncBenchmark {
 
   @override
   Future<void> run() async {
-    await cipher.xorPipe(inputStream, key).drain();
+    await cipher.xorStream(inputStream, key).drain();
   }
 }
 

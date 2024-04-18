@@ -11,13 +11,13 @@ Implementations of cryptographic algorithms for encryption and decryption in Dar
 
 ## Features
 
-| Ciphers           | Public class and methods                                         |    Source    |
-| ----------------- | ---------------------------------------------------------------- | :----------: |
-| XOR               | `XOR`, `xor`, `xorPipe`                                          |  Wikipedia   |
-| ChaCha20          | `ChaCha20`, `chacha20`, `chacha20Pipe`                           |   RFC-8439   |
-| ChaCha20/Poly1305 | `ChaCha20Poly1305`, `chacha20poly1305`, `chacha20poly1305digest` |   RFC-8439   |
-| Salsa20           | `Salsa20`, `salsa20`, `salsa20Pipe`                              | Snuffle 2005 |
-| Salsa20/Poly1305  | `Salsa20Poly1305`, `salsa20poly1305`, `salsa20poly1305digest`    | Snuffle 2005 |
+| Ciphers           | Public class and methods                                                                                             |    Source    |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------- | :----------: |
+| XOR               | `XOR`, `xor`, `xorStream`                                                                                            |  Wikipedia   |
+| ChaCha20          | `ChaCha20`, `chacha20`, `chacha20Stream`                                                                             |   RFC-8439   |
+| ChaCha20/Poly1305 | `ChaCha20Poly1305`, `chacha20poly1305digest`, `chacha20poly1305verify`, `chacha20poly1305`, `chacha20poly1305Stream` |   RFC-8439   |
+| Salsa20           | `Salsa20`, `salsa20`, `salsa20Stream`                                                                                | Snuffle 2005 |
+| Salsa20/Poly1305  | `Salsa20Poly1305`, `salsa20poly1305digest`, `salsa20poly1305verify`, `salsa20poly1305`, `salsa20poly1305Stream`      | Snuffle 2005 |
 
 ## Getting started
 

@@ -27,7 +27,7 @@ class ChaCha20 extends SymmetricCipher {
   Uint8List convert(
     List<int> message, {
     List<int>? nonce,
-    int blockCount = 1,
+    int blockId = 1,
   }) {
     if (message.isEmpty) {
       return Uint8List(0);
@@ -42,7 +42,7 @@ class ChaCha20 extends SymmetricCipher {
     var result = Uint8List.fromList(message);
     for (int i = 0; i < message.length; ++i) {
       if (pos == 0 || pos == 64) {
-        _block(state, key32, nonce32, blockCount++);
+        _block(state, key32, nonce32, blockId++);
         pos = 0;
       }
       result[i] ^= state8[pos++];
@@ -51,7 +51,7 @@ class ChaCha20 extends SymmetricCipher {
   }
 
   @override
-  Stream<int> pipe(
+  Stream<int> bind(
     Stream<int> stream, {
     List<int>? nonce,
     int blockId = 1,

@@ -1,9 +1,14 @@
 // Copyright (c) 2024, Sudipto Chandra
 // All rights reserved. Check LICENSE file for details.
 
+import 'dart:async';
+import 'dart:typed_data';
+
 import 'package:cipherlib/cipherlib.dart';
 import 'package:hashlib_codecs/hashlib_codecs.dart';
 import 'package:test/test.dart';
+
+import 'utils.dart';
 
 void main() {
   group('Test ChaCha20/Poly1305 cipher', () {
@@ -27,7 +32,6 @@ void main() {
         "3ff4def08e4b7a9de576d26586cec64b"
         "6116",
       );
-      var tag = fromHex("1ae10b594f09e26a7e902ecbd0600691");
       test('convert', () {
         var res = chacha20poly1305(
           sample.codeUnits,
@@ -36,9 +40,30 @@ void main() {
           aad: aad,
         );
         expect(cipher, equals(res.cipher));
-        expect(tag, equals(res.tag));
+        expect('1ae10b594f09e26a7e902ecbd0600691', equals(res.mac.hex()));
       });
-      test('verify', () {
+      test('stream', () async {
+        var stream = Stream.fromIterable(sample.codeUnits);
+        var res = chacha20poly1305Stream(
+          stream,
+          key,
+          nonce: nonce,
+          aad: aad,
+        );
+        var mac = await res.mac;
+        expect(cipher, equals(await res.cipher.toList()));
+        expect('1ae10b594f09e26a7e902ecbd0600691', equals(mac.hex()));
+      });
+      test('convert without aad', () {
+        var res = chacha20poly1305(
+          sample.codeUnits,
+          key,
+          nonce: nonce,
+        );
+        expect(cipher, equals(res.cipher));
+        expect('6a23a4681fd59456aea1d29f82477216', equals(res.mac.hex()));
+      });
+      test('verify and decrypt', () {
         var res = chacha20poly1305(
           sample.codeUnits,
           key,
@@ -48,12 +73,79 @@ void main() {
         var verified = chacha20poly1305(
           res.cipher,
           key,
-          tag: res.tag.bytes,
+          mac: res.mac.bytes,
           nonce: nonce,
           aad: aad,
         );
-        expect(sample.codeUnits, equals(verified.cipher));
+        expect(verified.cipher, equals(sample.codeUnits));
+        expect('661e943467edb1963bfe9015190609f0', equals(verified.mac.hex()));
       });
+      test('stream verify and decrypt', () async {
+        var stream = Stream.fromIterable(sample.codeUnits);
+        var res = chacha20poly1305Stream(
+          stream,
+          key,
+          nonce: nonce,
+          aad: aad,
+        );
+        var verified = chacha20poly1305Stream(
+          res.cipher,
+          key,
+          mac: res.mac,
+          nonce: nonce,
+          aad: aad,
+        );
+        var finalMac = await verified.mac;
+        expect(sample.codeUnits, equals(await verified.cipher.toList()));
+        expect('1ae10b594f09e26a7e902ecbd0600691', equals(await res.mac));
+        expect('661e943467edb1963bfe9015190609f0', equals(finalMac.hex()));
+      });
+    });
+    test('encryption <-> decryption (convert)', () {
+      for (int i = 1; i < 100; ++i) {
+        var key = randomNumbers(32);
+        var nonce = randomBytes(12);
+        for (int j = 0; j < 100; ++j) {
+          var text = randomNumbers(j);
+          var plain = Uint8List.fromList(text);
+          var res = chacha20poly1305(
+            plain,
+            key,
+            nonce: nonce,
+          );
+          var verified = chacha20poly1305(
+            res.cipher,
+            key,
+            mac: res.mac.bytes,
+            nonce: nonce,
+          );
+          expect(plain, equals(verified.cipher), reason: '[key: $i, text: $j]');
+        }
+      }
+    });
+    test('encryption <-> decryption (stream)', () async {
+      for (int i = 1; i < 10; ++i) {
+        var key = randomNumbers(32);
+        var nonce = randomBytes(12);
+        for (int j = 0; j < 100; ++j) {
+          var text = randomNumbers(j);
+          var bytes = Uint8List.fromList(text);
+          var stream = Stream.fromIterable(text);
+          var res = chacha20poly1305Stream(
+            stream,
+            key,
+            nonce: nonce,
+          );
+          var verified = chacha20poly1305Stream(
+            res.cipher,
+            key,
+            nonce: nonce,
+            mac: res.mac,
+          );
+          var plain = await verified.cipher.toList();
+          expect(bytes, equals(plain), reason: '[key: $i, text: $j]');
+        }
+      }
     });
   });
 }

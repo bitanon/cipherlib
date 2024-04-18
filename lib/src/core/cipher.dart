@@ -1,9 +1,10 @@
 // Copyright (c) 2023, Sudipto Chandra
 // All rights reserved. Check LICENSE file for details.
 
+import 'dart:async';
 import 'dart:typed_data';
 
-/// A template for encryption and decryption algorithms.
+/// Template for encryption and decryption algorithms.
 abstract class Cipher {
   const Cipher();
 
@@ -11,23 +12,27 @@ abstract class Cipher {
   String get name;
 }
 
-/// A template for Symmetric Ciphers that use the same operation for both
+/// Template for Symmetric Ciphers that uses the same operation for both
 /// encryption and decryption.
-abstract class SymmetricCipher extends Cipher {
+abstract class SymmetricCipher extends Cipher
+    implements StreamTransformer<int, int> {
+  const SymmetricCipher();
+
   /// The symmetric key for both encryption and decryption
   List<int> get key;
-
-  /// Create new instance
-  const SymmetricCipher();
 
   /// Transforms the [message].
   Uint8List convert(List<int> message);
 
-  /// Transforms the message [stream].
-  Stream<int> pipe(Stream<int> stream);
+  @override
+  Stream<int> bind(Stream<int> stream);
+
+  @override
+  StreamTransformer<RS, RT> cast<RS, RT>() =>
+      StreamTransformer.castFrom<int, int, RS, RT>(this);
 }
 
-/// A template for Asymmetric Ciphers that use different operations for
+/// Template for Asymmetric Ciphers that uses different operations for
 /// encryption and decryption.
 abstract class AsymmetricCipher extends Cipher {
   const AsymmetricCipher();
@@ -38,9 +43,15 @@ abstract class AsymmetricCipher extends Cipher {
   /// The cipher algorithm for decryption.
   SymmetricCipher get decryptor;
 
-  /// Transforms the plain text [message] into encrypted cipher code.
+  /// Encrypts the [message] using the algorithm
   Uint8List encrypt(List<int> message) => encryptor.convert(message);
 
-  /// Transforms the encrypted [cipher] code back to the plain text.
+  /// Decrypts the [cipher] using the algorithm
   Uint8List decrypt(List<int> cipher) => decryptor.convert(cipher);
+
+  /// Encrypts the [stream] using the algorithm
+  Stream<int> encryptStream(Stream<int> stream) => encryptor.bind(stream);
+
+  /// Decrypts the [stream] using the algorithm
+  Stream<int> decryptStream(Stream<int> stream) => decryptor.bind(stream);
 }

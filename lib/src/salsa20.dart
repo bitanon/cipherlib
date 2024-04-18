@@ -9,9 +9,10 @@ export 'algorithms/salsa20.dart' show Salsa20;
 
 /// Apply [Salsa20] cipher with the follwing parameters:
 ///
-/// - Arbitrary length plaintext [message] to transform.
-/// - A 16 or 32-bytes long [key].
-/// - (Optional) A 16-bytes long [nonce]. Default: 0
+/// Parameters:
+/// - [message] : arbitrary length plain-text.
+/// - [key] : A 16 or 32-bytes long key.
+/// - [nonce] : A 16-bytes long nonce. Deafult: 0
 ///
 /// Both the encryption and decryption can be done using this same method.
 @pragma('vm:prefer-inline')
@@ -27,18 +28,19 @@ Uint8List salsa20(
 
 /// Apply [Salsa20] cipher with the follwing parameters:
 ///
-/// - Plaintext message [stream] to transform.
-/// - A 16 or 32-bytes long [key].
-/// - (Optional) A 16-bytes long [nonce]. Default: 0
+/// Parameters:
+/// - [stream] : arbitrary length plain-text.
+/// - [key] : A 16 or 32-bytes long key.
+/// - [nonce] : A 16-bytes long nonce. Deafult: 0
 ///
 /// Both the encryption and decryption can be done using this same method.
 @pragma('vm:prefer-inline')
-Stream<int> salsa20Pipe(
+Stream<int> salsa20Stream(
   Stream<int> stream,
   List<int> key, [
   List<int>? nonce,
 ]) =>
-    Salsa20(key).pipe(
+    Salsa20(key).bind(
       stream,
       nonce: nonce,
     );

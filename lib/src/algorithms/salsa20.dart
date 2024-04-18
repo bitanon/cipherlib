@@ -50,7 +50,7 @@ class Salsa20 extends SymmetricCipher {
   }
 
   @override
-  Stream<int> pipe(
+  Stream<int> bind(
     Stream<int> stream, {
     List<int>? nonce,
   }) async* {

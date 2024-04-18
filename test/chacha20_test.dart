@@ -42,8 +42,8 @@ void main() {
       var iv = randomNumbers(12);
       var text = randomBytes(100);
       var instance = ChaCha20(key);
-      var cipher = instance.convert(text, nonce: iv, blockCount: nos);
-      var plain = instance.convert(cipher, nonce: iv, blockCount: nos);
+      var cipher = instance.convert(text, nonce: iv, blockId: nos);
+      var plain = instance.convert(cipher, nonce: iv, blockId: nos);
       expect(text, equals(plain));
     });
     test('RFC 8439 example-1', () {
@@ -109,8 +109,8 @@ void main() {
           var text = randomNumbers(j);
           var bytes = Uint8List.fromList(text);
           var stream = Stream.fromIterable(text);
-          var cipherStream = chacha20Pipe(stream, key, nonce);
-          var plainStream = chacha20Pipe(cipherStream, key, nonce);
+          var cipherStream = chacha20Stream(stream, key, nonce);
+          var plainStream = chacha20Stream(cipherStream, key, nonce);
           var plain = await plainStream.toList();
           expect(bytes, equals(plain), reason: '[key: $i, text: $j]');
         }

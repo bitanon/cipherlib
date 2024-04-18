@@ -35,8 +35,8 @@ void main() {
           var text = randomNumbers(j);
           var bytes = Uint8List.fromList(text);
           var stream = Stream.fromIterable(text);
-          var cipherStream = xorPipe(stream, key);
-          var plainStream = xorPipe(cipherStream, key);
+          var cipherStream = xorStream(stream, key);
+          var plainStream = xorStream(cipherStream, key);
           var plain = await plainStream.toList();
           expect(bytes, equals(plain), reason: '[key: $i, text: $j]');
         }

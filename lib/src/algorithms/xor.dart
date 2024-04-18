@@ -45,7 +45,7 @@ class XOR extends SymmetricCipher {
   }
 
   @override
-  Stream<int> pipe(Stream<int> stream) async* {
+  Stream<int> bind(Stream<int> stream) async* {
     int i = 0;
     await for (var x in stream) {
       yield x ^ key[i++];

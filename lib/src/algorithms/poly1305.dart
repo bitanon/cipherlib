@@ -3,69 +3,66 @@
 
 import 'dart:typed_data';
 
-import 'package:cipherlib/src/core/auth_cipher.dart';
-import 'package:hashlib/hashlib.dart' show HashDigest, Poly1305;
+import 'package:hashlib/hashlib.dart' show HashDigest, Poly1305, Poly1305Sink;
 
 /// [Poly1305] is an authentication algorithm used for verifying the integrity
 /// of messages. It generates a short, fixed-length tag based on a secret key
 /// and the message, providing assurance that the message has not been
 /// tampered with.
-///
-/// This is intended to be used as a mixin with the original ChaCha20 or Salsa20
-/// algorithms to generate message digests.
-abstract class Poly1305Authenticator implements Authenticator {
-  // Generate a 32-bytes long One-Time-Key for Poly1305 digest
-  Uint8List generateOTK([List<int>? nonce]);
+class Poly1305Mac extends Poly1305 {
+  final List<int>? aad;
+
+  /// Creates a new instance
+  ///
+  /// Parameters:
+  /// - [keypair] : A 32-bytes long key.
+  /// - [aad] : Additional authenticated data.
+  const Poly1305Mac(
+    List<int> keypair, {
+    this.aad,
+  }) : super(keypair);
 
   @override
-  HashDigest digest(
-    List<int> message, {
-    List<int>? nonce,
-    List<int>? aad,
-  }) {
-    // create key
-    var otk = generateOTK(nonce);
+  Poly1305AuthenticatorSink createSink() =>
+      Poly1305AuthenticatorSink()..init(key, aad);
+}
 
-    // create sink
-    var sink = Poly1305(otk).createSink();
+/// Extends the base [Poly1305Sink] to generate message digest for cipher
+/// algorithms.
+class Poly1305AuthenticatorSink extends Poly1305Sink {
+  int _aadLength = 0;
+  int _messageLength = 0;
 
-    // add AAD
-    int aadLength = aad?.length ?? 0;
-    if (aad != null && aadLength > 0) {
-      sink.add(aad);
-      sink.add(Uint8List(16 - (aadLength & 15)));
+  @override
+  void init(List<int> keypair, [List<int>? aad]) {
+    super.init(keypair);
+    _aadLength = aad?.length ?? 0;
+    if (aad != null && _aadLength > 0) {
+      super.add(aad);
+      super.add(Uint8List(16 - (_aadLength & 15)));
     }
-
-    // add cipher text
-    int messageLength = message.length;
-    if (messageLength > 0) {
-      sink.add(message);
-      sink.add(Uint8List(16 - (messageLength & 15)));
-    }
-
-    // add lengths
-    sink.add(Uint32List.fromList([
-      aadLength,
-      aadLength >>> 32,
-      messageLength,
-      messageLength >>> 32,
-    ]).buffer.asUint8List());
-
-    return sink.digest();
+    _messageLength = 0;
   }
 
   @override
-  bool verify(
-    List<int> message,
-    List<int> tag, {
-    List<int>? nonce,
-    List<int>? aad,
-  }) {
-    var current = digest(
-      message,
-      nonce: nonce,
-      aad: aad,
-    );
-    return current.isEqual(tag);
+  void add(List<int> data, [int start = 0, int? end]) {
+    end ??= data.length;
+    _messageLength += end - start;
+    super.add(data, start, end);
+  }
+
+  @override
+  HashDigest digest() {
+    if (_messageLength > 0) {
+      super.add(Uint8List(16 - (_messageLength & 15)));
+    }
+
+    super.add(Uint32List.fromList([
+      _aadLength,
+      _aadLength >>> 32,
+      _messageLength,
+      _messageLength >>> 32,
+    ]).buffer.asUint8List());
+    return super.digest();
   }
 }
