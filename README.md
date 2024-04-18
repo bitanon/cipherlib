@@ -1,13 +1,19 @@
 # cipherlib
 
 [![plugin version](https://img.shields.io/pub/v/cipherlib?label=pub)](https://pub.dev/packages/cipherlib)
-[![dependencies](https://img.shields.io/badge/dependencies-zero-889)](https://github.com/bitanon/cipherlib/blob/master/pubspec.yaml)
 [![dart support](https://img.shields.io/badge/dart-%3e%3d%202.14.0-39f?logo=dart)](https://dart.dev/guides/whats-new#september-8-2021-214-release)
 [![likes](https://img.shields.io/pub/likes/cipherlib?logo=dart)](https://pub.dev/packages/cipherlib/score)
 [![pub points](https://img.shields.io/pub/points/cipherlib?logo=dart&color=teal)](https://pub.dev/packages/cipherlib/score)
 [![popularity](https://img.shields.io/pub/popularity/cipherlib?logo=dart)](https://pub.dev/packages/cipherlib/score)
 
 Implementations of cryptographic algorithms for encryption and decryption in Dart.
+
+## Depencencies
+
+There are only 2 dependencies used by this package:
+
+- [hashlib](https://pub.dev/packages/hashlib)
+- [hashlib_codecs](https://pub.dev/packages/hashlib_codecs)
 
 ## Features
 
