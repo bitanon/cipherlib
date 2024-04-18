@@ -18,7 +18,7 @@ class ChaCha20 extends SymmetricCipher {
   @override
   final String name = "ChaCha20";
 
-  @override
+  /// Key for the cipher
   final List<int> key;
 
   const ChaCha20(this.key);
@@ -68,12 +68,12 @@ class ChaCha20 extends SymmetricCipher {
         _block(state, key32, nonce32, blockId++);
         pos = 0;
       }
-      yield x ^ state8[pos++];
+      yield (x ^ state8[pos++]) & 0xFF;
     }
   }
 
   /// ChaCha20 block generator
-  Iterable<int> generate([
+  Iterable<int> rounds([
     List<int>? nonce,
     int blockId = 1,
   ]) sync* {
@@ -94,21 +94,20 @@ class ChaCha20 extends SymmetricCipher {
 
   @pragma('vm:prefer-inline')
   static Uint8List _validateKey(List<int> key) {
-    if (key.length == 32) {
+    if (key.length == 8 || key.length == 32) {
       return key is Uint8List ? key : Uint8List.fromList(key);
     }
-    throw ArgumentError('The key should be 32 bytes');
+    throw ArgumentError('The key should be either 8 or 32 bytes');
   }
 
-  // Validates the nonce and transform it to Uint8List
   @pragma('vm:prefer-inline')
   static Uint8List _validateNonce(List<int>? nonce) {
     if (nonce == null) {
       return Uint8List(12);
-    } else if (nonce.length == 12) {
+    } else if (nonce.length == 8 || nonce.length == 12) {
       return nonce is Uint8List ? nonce : Uint8List.fromList(nonce);
     }
-    throw ArgumentError('The nonce should be 16 bytes');
+    throw ArgumentError('The nonce should be either 8 or 16 bytes');
   }
 
   @pragma('vm:prefer-inline')
@@ -117,23 +116,47 @@ class ChaCha20 extends SymmetricCipher {
 
   static void _block(Uint32List B, Uint32List K, Uint32List N, int blockId) {
     int i, s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15;
-    s0 = B[0] = 0x61707865;
-    s1 = B[1] = 0x3320646e;
-    s2 = B[2] = 0x79622d32;
-    s3 = B[3] = 0x6b206574;
-    s4 = B[4] = K[0];
-    s5 = B[5] = K[1];
-    s6 = B[6] = K[2];
-    s7 = B[7] = K[3];
-    s8 = B[8] = K[4];
-    s9 = B[9] = K[5];
-    s10 = B[10] = K[6];
-    s11 = B[11] = K[7];
-    s12 = B[12] = blockId;
-    s13 = B[13] = N[0];
-    s14 = B[14] = N[1];
-    s15 = B[15] = N[2];
 
+    // init state
+    if (K.lengthInBytes == 16) {
+      s0 = B[0] = 0x61707865; // 'expa'
+      s1 = B[1] = 0x3120646e; // 'nd 1'
+      s2 = B[2] = 0x79622d36; // '6-by'
+      s3 = B[3] = 0x6b206574; // 'te k
+      s4 = B[4] = K[0];
+      s5 = B[5] = K[1];
+      s6 = B[6] = K[2];
+      s7 = B[7] = K[3];
+      s8 = B[8] = K[4];
+      s9 = B[9] = K[5];
+      s10 = B[10] = K[6];
+      s11 = B[11] = K[7];
+    } else {
+      s0 = B[0] = 0x61707865; // 'expa'
+      s1 = B[1] = 0x3320646e; // 'nd 3'
+      s2 = B[2] = 0x79622d32; // '2-by'
+      s3 = B[3] = 0x6b206574; // 'te k
+      s4 = B[4] = K[0];
+      s5 = B[5] = K[1];
+      s6 = B[6] = K[2];
+      s7 = B[7] = K[3];
+      s8 = B[8] = K[4];
+      s9 = B[9] = K[5];
+      s10 = B[10] = K[6];
+      s11 = B[11] = K[7];
+    }
+    s12 = B[12] = blockId;
+    if (N.lengthInBytes == 8) {
+      s13 = B[13] = blockId >>> 32;
+      s14 = B[14] = N[0];
+      s15 = B[15] = N[1];
+    } else {
+      s13 = B[13] = N[0];
+      s14 = B[14] = N[1];
+      s15 = B[15] = N[2];
+    }
+
+    // 10 diagonal(column) rounds
     for (i = 0; i < 10; ++i) {
       // column rounds
       // qround(B, 0, 4, 8, 12);

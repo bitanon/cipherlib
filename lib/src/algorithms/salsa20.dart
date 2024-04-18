@@ -18,7 +18,7 @@ class Salsa20 extends SymmetricCipher {
   @override
   final String name = "Salsa20";
 
-  @override
+  /// Key for the cipher
   final List<int> key;
 
   const Salsa20(this.key);
@@ -32,6 +32,7 @@ class Salsa20 extends SymmetricCipher {
       return Uint8List(0);
     }
     int pos = 0;
+    int blockId = 0;
     var state = Uint32List(16);
     var state8 = state.buffer.asUint8List();
     var key8 = _validateKey(key);
@@ -41,7 +42,7 @@ class Salsa20 extends SymmetricCipher {
     var result = Uint8List.fromList(message);
     for (int i = 0; i < message.length; ++i) {
       if (pos == 0 || pos == 64) {
-        _block(state, key32, nonce32);
+        _block(state, key32, nonce32, blockId++);
         pos = 0;
       }
       result[i] ^= state8[pos++];
@@ -55,6 +56,7 @@ class Salsa20 extends SymmetricCipher {
     List<int>? nonce,
   }) async* {
     int pos = 0;
+    int blockId = 0;
     var state = Uint32List(16);
     var state8 = state.buffer.asUint8List();
     var key8 = _validateKey(key);
@@ -63,15 +65,16 @@ class Salsa20 extends SymmetricCipher {
     var nonce32 = nonce8.buffer.asUint32List();
     await for (var x in stream) {
       if (pos == 0 || pos == 64) {
-        _block(state, key32, nonce32);
+        _block(state, key32, nonce32, blockId++);
         pos = 0;
       }
-      yield x ^ state8[pos++];
+      yield (x ^ state8[pos++]) & 0xFF;
     }
   }
 
   /// Salsa20 block generator
-  Iterable<int> generate([List<int>? nonce]) sync* {
+  Iterable<int> rounds([List<int>? nonce]) sync* {
+    int blockId = 0;
     var state = Uint32List(16);
     var state8 = state.buffer.asUint8List();
     var key8 = _validateKey(key);
@@ -79,7 +82,7 @@ class Salsa20 extends SymmetricCipher {
     var nonce8 = _validateNonce(nonce);
     var nonce32 = nonce8.buffer.asUint32List();
     while (true) {
-      _block(state, key32, nonce32);
+      _block(state, key32, nonce32, blockId++);
       yield* state8;
     }
   }
@@ -96,53 +99,63 @@ class Salsa20 extends SymmetricCipher {
   static Uint8List _validateNonce(List<int>? nonce) {
     if (nonce == null) {
       return Uint8List(16);
-    } else if (nonce.length == 16) {
+    } else if (nonce.length == 8 || nonce.length == 16) {
       return nonce is Uint8List ? nonce : Uint8List.fromList(nonce);
     }
-    throw ArgumentError('The nonce should be 16 bytes');
+    throw ArgumentError('The nonce should be either 8 or 16 bytes');
   }
 
   @pragma('vm:prefer-inline')
   static int _rotl32(int x, int n) =>
       (((x << n) & _mask32) ^ ((x & _mask32) >>> (32 - n)));
 
-  static void _block(Uint32List B, Uint32List K, Uint32List N) {
+  static void _block(Uint32List B, Uint32List K, Uint32List N, int blockId) {
     int i, s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15;
+
+    // init state
     if (K.lengthInBytes == 16) {
-      s0 = B[0] = 0x61707865;
+      s0 = B[0] = 0x61707865; // 'expa'
       s1 = B[1] = K[0];
       s2 = B[2] = K[1];
       s3 = B[3] = K[2];
       s4 = B[4] = K[3];
-      s5 = B[5] = 0x3120646e;
-      s6 = B[6] = N[0];
-      s7 = B[7] = N[1];
-      s8 = B[8] = N[2];
-      s9 = B[9] = N[3];
-      s10 = B[10] = 0x79622d36;
+      s5 = B[5] = 0x3120646e; // 'nd 1'
+      // 6..9 : nonce
+      s10 = B[10] = 0x79622d36; // '6-by'
       s11 = B[11] = K[0];
       s12 = B[12] = K[1];
       s13 = B[13] = K[2];
       s14 = B[14] = K[3];
-      s15 = B[15] = 0x6b206574;
+      s15 = B[15] = 0x6b206574; // 'te k'
     } else {
-      s0 = B[0] = 0x61707865;
+      s0 = B[0] = 0x61707865; // 'expa'
       s1 = B[1] = K[0];
       s2 = B[2] = K[1];
       s3 = B[3] = K[2];
       s4 = B[4] = K[3];
-      s5 = B[5] = 0x3320646e;
-      s6 = B[6] = N[0];
-      s7 = B[7] = N[1];
-      s8 = B[8] = N[2];
-      s9 = B[9] = N[3];
-      s10 = B[10] = 0x79622d32;
+      s5 = B[5] = 0x3320646e; // 'nd 3'
+      // 6..9 : nonce
+      s10 = B[10] = 0x79622d32; // '2-by'
       s11 = B[11] = K[4];
       s12 = B[12] = K[5];
       s13 = B[13] = K[6];
       s14 = B[14] = K[7];
-      s15 = B[15] = 0x6b206574;
+      s15 = B[15] = 0x6b206574; // 'te k'
     }
+    // 6..9 : nonce
+    if (N.lengthInBytes == 8) {
+      s6 = B[6] = N[0];
+      s7 = B[7] = N[1];
+      s8 = B[8] = blockId;
+      s9 = B[9] = blockId >>> 32;
+    } else {
+      s6 = B[6] = N[0];
+      s7 = B[7] = N[1];
+      s8 = B[8] = N[2];
+      s9 = B[9] = N[3];
+    }
+
+    // 10 row(column) rounds
     for (i = 0; i < 10; i++) {
       // column rounds
       // qround(B, 0, 4, 8, 12);

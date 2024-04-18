@@ -38,15 +38,18 @@ void measureSymmetricCiphers() {
       ],
       "ChaCha20": [
         chacha20.CipherlibBenchmark(size, iter),
+        chacha20.PointyCastleBenchmark(size, iter),
       ],
       "ChaCha20/Poly1305": [
         chacha20poly1305.CipherlibBenchmark(size, iter),
+        chacha20poly1305.CryptographyBenchmark(size, iter),
       ],
       "ChaCha20/Poly1305(digest)": [
         chacha20poly1305.CipherlibDigestBenchmark(size, iter),
       ],
       "Salsa20": [
         salsa20.CipherlibBenchmark(size, iter),
+        salsa20.PointyCastleBenchmark(size, iter),
       ],
       "Salsa20/Poly1305": [
         salsa20poly1305.CipherlibBenchmark(size, iter),
@@ -136,6 +139,8 @@ void main(List<String> args) async {
   dump("Libraries:");
   dump('');
   dump("- **Cipherlib** : https://pub.dev/packages/cipherlib");
+  dump("- **PointyCastle** : https://pub.dev/packages/pointycastle");
+  dump("- **Cryptography** : https://pub.dev/packages/cryptography");
   dump('');
 
   measureSymmetricCiphers();

@@ -4,6 +4,7 @@
 import 'dart:typed_data';
 
 import 'package:cipherlib/cipherlib.dart';
+import 'package:pointycastle/pointycastle.dart' as pc;
 import 'package:test/test.dart';
 
 import 'utils.dart';
@@ -67,32 +68,55 @@ void main() {
       expect(output, equals(cipher));
     });
     test('encryption <-> decryption (convert)', () {
-      for (int i = 1; i < 100; ++i) {
-        var key = randomNumbers(32);
+      var key = randomNumbers(32);
+      for (int j = 0; j < 100; ++j) {
         var nonce = randomBytes(16);
-        for (int j = 0; j < 100; ++j) {
-          var text = randomNumbers(j);
-          var bytes = Uint8List.fromList(text);
-          var cipher = salsa20(text, key, nonce);
-          var plain = salsa20(cipher, key, nonce);
-          expect(bytes, equals(plain), reason: '[key: $i, text: $j]');
-        }
+        var text = randomNumbers(j);
+        var bytes = Uint8List.fromList(text);
+        var cipher = salsa20(text, key, nonce);
+        var plain = salsa20(cipher, key, nonce);
+        expect(bytes, equals(plain), reason: '[text: $j]');
       }
     });
     test('encryption <-> decryption (stream)', () async {
-      for (int i = 1; i < 10; ++i) {
-        var key = randomNumbers(32);
+      var key = randomNumbers(32);
+      for (int j = 0; j < 100; ++j) {
         var nonce = randomBytes(16);
-        for (int j = 0; j < 100; ++j) {
-          var text = randomNumbers(j);
-          var bytes = Uint8List.fromList(text);
-          var stream = Stream.fromIterable(text);
-          var cipherStream = salsa20Stream(stream, key, nonce);
-          var plainStream = salsa20Stream(cipherStream, key, nonce);
-          var plain = await plainStream.toList();
-          expect(bytes, equals(plain), reason: '[key: $i, text: $j]');
-        }
+        var text = randomNumbers(j);
+        var bytes = Uint8List.fromList(text);
+        var stream = Stream.fromIterable(text);
+        var cipherStream = salsa20Stream(stream, key, nonce);
+        var plainStream = salsa20Stream(cipherStream, key, nonce);
+        var plain = await plainStream.toList();
+        expect(plain, equals(bytes), reason: '[text: $j]');
       }
     });
+    test('8-byte nonce: encryption <-> decryption (convert)', () {
+      var key = randomNumbers(32);
+      for (int j = 0; j < 100; ++j) {
+        var nonce = randomBytes(8);
+        var text = randomNumbers(j);
+        var plain = Uint8List.fromList(text);
+        var cipher = salsa20(text, key, nonce);
+        var backwards = salsa20(cipher, key, nonce);
+        expect(plain, equals(backwards), reason: '[text: $j]');
+      }
+    });
+    test('compare with PointyCastle', () {
+      var key = randomBytes(32);
+      for (int j = 0; j < 100; ++j) {
+        var nonce = randomBytes(8);
+        var text = randomBytes(j);
+        var my = salsa20(text, key, nonce);
+
+        var instance = pc.StreamCipher('Salsa20');
+        instance.init(
+          true,
+          pc.ParametersWithIV(pc.KeyParameter(key), nonce),
+        );
+        var out = instance.process(text);
+        expect(out, equals(my), reason: '[text: $j]');
+      }
+    }, tags: ['skip-js']);
   });
 }

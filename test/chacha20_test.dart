@@ -5,6 +5,7 @@ import 'dart:typed_data';
 
 import 'package:cipherlib/cipherlib.dart';
 import 'package:hashlib_codecs/hashlib_codecs.dart';
+import 'package:pointycastle/pointycastle.dart' as pc;
 import 'package:test/test.dart';
 
 import 'utils.dart';
@@ -89,32 +90,71 @@ void main() {
       expect(output, equals(cipher));
     });
     test('encryption <-> decryption (convert)', () {
-      for (int i = 1; i < 100; ++i) {
-        var key = randomNumbers(32);
-        var nonce = randomBytes(12);
-        for (int j = 0; j < 100; ++j) {
-          var text = randomNumbers(j);
-          var bytes = Uint8List.fromList(text);
-          var cipher = chacha20(text, key, nonce);
-          var plain = chacha20(cipher, key, nonce);
-          expect(bytes, equals(plain), reason: '[key: $i, text: $j]');
-        }
+      var key = randomNumbers(32);
+      var nonce = randomBytes(12);
+      for (int j = 0; j < 100; ++j) {
+        var text = randomNumbers(j);
+        var bytes = Uint8List.fromList(text);
+        var cipher = chacha20(text, key, nonce);
+        var plain = chacha20(cipher, key, nonce);
+        expect(bytes, equals(plain), reason: '[text: $j]');
       }
     });
     test('encryption <-> decryption (stream)', () async {
-      for (int i = 1; i < 10; ++i) {
-        var key = randomNumbers(32);
+      var key = randomNumbers(32);
+      for (int j = 0; j < 100; ++j) {
         var nonce = randomBytes(12);
-        for (int j = 0; j < 100; ++j) {
-          var text = randomNumbers(j);
-          var bytes = Uint8List.fromList(text);
-          var stream = Stream.fromIterable(text);
-          var cipherStream = chacha20Stream(stream, key, nonce);
-          var plainStream = chacha20Stream(cipherStream, key, nonce);
-          var plain = await plainStream.toList();
-          expect(bytes, equals(plain), reason: '[key: $i, text: $j]');
-        }
+        var text = randomNumbers(j);
+        var bytes = Uint8List.fromList(text);
+        var stream = Stream.fromIterable(text);
+        var cipherStream = chacha20Stream(stream, key, nonce);
+        var plainStream = chacha20Stream(cipherStream, key, nonce);
+        var plain = await plainStream.toList();
+        expect(bytes, equals(plain), reason: '[text: $j]');
       }
     });
+    test('8-byte nonce: encryption <-> decryption (convert)', () {
+      var key = randomNumbers(32);
+      for (int j = 0; j < 100; ++j) {
+        var nonce = randomBytes(8);
+        var text = randomNumbers(j);
+        var bytes = Uint8List.fromList(text);
+        var cipher = chacha20(text, key, nonce);
+        var plain = chacha20(cipher, key, nonce);
+        expect(bytes, equals(plain), reason: '[text: $j]');
+      }
+    });
+    test('compare with PointyCastle ChaCha20/20', () {
+      var key = randomBytes(32);
+      var nonce = randomBytes(8);
+      for (int j = 0; j < 100; ++j) {
+        var text = randomBytes(j);
+        var my = chacha20(text, key, nonce, 0);
+
+        var instance = pc.StreamCipher('ChaCha20/20');
+        instance.init(
+          true,
+          pc.ParametersWithIV(pc.KeyParameter(key), nonce),
+        );
+        var out = instance.process(text);
+        expect(out, equals(my), reason: '[text: $j]');
+      }
+    }, tags: ['skip-js']);
+    test('compare with PointyCastle ChaCha7539/20', () {
+      var key = randomBytes(32);
+      for (int j = 0; j < 100; ++j) {
+        var nonce = randomBytes(12);
+        var text = randomBytes(j);
+        var my = chacha20(text, key, nonce, 0);
+
+        var instance = pc.StreamCipher('ChaCha7539/20');
+        instance.init(
+          true,
+          pc.ParametersWithIV(pc.KeyParameter(key), nonce),
+        );
+        var out = instance.process(text);
+        expect(out, equals(my), reason: '[text: $j]');
+      }
+    }, tags: ['skip-js']);
   });
 }

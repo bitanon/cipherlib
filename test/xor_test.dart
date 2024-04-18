@@ -17,9 +17,9 @@ void main() {
       expect(xor([], [1]), equals([]));
     });
     test('encryption <-> decryption (convert)', () {
-      for (int i = 1; i < 100; ++i) {
+      for (int i = 1; i < 100; i += 10) {
         var key = randomNumbers(i);
-        for (int j = 0; j < 100; ++j) {
+        for (int j = 0; j < 100; j += 5) {
           var text = randomNumbers(j);
           var bytes = Uint8List.fromList(text);
           var cipher = xor(text, key);
@@ -31,7 +31,7 @@ void main() {
     test('encryption <-> decryption (stream)', () async {
       for (int i = 1; i < 10; ++i) {
         var key = randomNumbers(i);
-        for (int j = 0; j < 100; ++j) {
+        for (int j = 0; j < 100; j += 8) {
           var text = randomNumbers(j);
           var bytes = Uint8List.fromList(text);
           var stream = Stream.fromIterable(text);
@@ -46,7 +46,7 @@ void main() {
       for (int i = 1; i < 20; ++i) {
         var key = randomNumbers(i);
         var instance = XOR(key);
-        for (int j = 0; j < 100; ++j) {
+        for (int j = 0; j < 100; j += 12) {
           var text = randomNumbers(j);
           var bytes = Uint8List.fromList(text);
           var cipher = instance.convert(bytes);

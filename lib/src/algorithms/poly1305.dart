@@ -37,9 +37,11 @@ class Poly1305AuthenticatorSink extends Poly1305Sink {
   void init(List<int> keypair, [List<int>? aad]) {
     super.init(keypair);
     _aadLength = aad?.length ?? 0;
-    if (aad != null && _aadLength > 0) {
+    if (aad != null) {
       super.add(aad);
-      super.add(Uint8List(16 - (_aadLength & 15)));
+      if (_aadLength & 15 != 0) {
+        super.add(Uint8List(16 - (_aadLength & 15)));
+      }
     }
     _messageLength = 0;
   }
@@ -53,7 +55,7 @@ class Poly1305AuthenticatorSink extends Poly1305Sink {
 
   @override
   HashDigest digest() {
-    if (_messageLength > 0) {
+    if (_messageLength & 15 != 0) {
       super.add(Uint8List(16 - (_messageLength & 15)));
     }
 

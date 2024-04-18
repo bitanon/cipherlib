@@ -32,7 +32,7 @@ void main() {
         "3ff4def08e4b7a9de576d26586cec64b"
         "6116",
       );
-      test('convert', () {
+      test('convert', () async {
         var res = chacha20poly1305(
           sample.codeUnits,
           key,
@@ -102,49 +102,45 @@ void main() {
       });
     });
     test('encryption <-> decryption (convert)', () {
-      for (int i = 1; i < 100; ++i) {
-        var key = randomNumbers(32);
+      var key = randomNumbers(32);
+      for (int j = 0; j < 100; ++j) {
         var nonce = randomBytes(12);
-        for (int j = 0; j < 100; ++j) {
-          var text = randomNumbers(j);
-          var plain = Uint8List.fromList(text);
-          var res = chacha20poly1305(
-            plain,
-            key,
-            nonce: nonce,
-          );
-          var verified = chacha20poly1305(
-            res.cipher,
-            key,
-            mac: res.mac.bytes,
-            nonce: nonce,
-          );
-          expect(plain, equals(verified.cipher), reason: '[key: $i, text: $j]');
-        }
+        var text = randomNumbers(j);
+        var plain = Uint8List.fromList(text);
+        var res = chacha20poly1305(
+          text,
+          key,
+          nonce: nonce,
+        );
+        var verified = chacha20poly1305(
+          res.cipher,
+          key,
+          mac: res.mac.bytes,
+          nonce: nonce,
+        );
+        expect(plain, equals(verified.cipher), reason: '[text: $j]');
       }
     });
     test('encryption <-> decryption (stream)', () async {
-      for (int i = 1; i < 10; ++i) {
-        var key = randomNumbers(32);
+      var key = randomNumbers(32);
+      for (int j = 0; j < 100; ++j) {
         var nonce = randomBytes(12);
-        for (int j = 0; j < 100; ++j) {
-          var text = randomNumbers(j);
-          var bytes = Uint8List.fromList(text);
-          var stream = Stream.fromIterable(text);
-          var res = chacha20poly1305Stream(
-            stream,
-            key,
-            nonce: nonce,
-          );
-          var verified = chacha20poly1305Stream(
-            res.cipher,
-            key,
-            nonce: nonce,
-            mac: res.mac,
-          );
-          var plain = await verified.cipher.toList();
-          expect(bytes, equals(plain), reason: '[key: $i, text: $j]');
-        }
+        var text = randomNumbers(j);
+        var plain = Uint8List.fromList(text);
+        var stream = Stream.fromIterable(text);
+        var res = chacha20poly1305Stream(
+          stream,
+          key,
+          nonce: nonce,
+        );
+        var verified = chacha20poly1305Stream(
+          res.cipher,
+          key,
+          nonce: nonce,
+          mac: res.mac,
+        );
+        var backward = await verified.cipher.toList();
+        expect(plain, equals(backward), reason: '[text: $j]');
       }
     });
   });

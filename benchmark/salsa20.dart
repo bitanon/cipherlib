@@ -6,6 +6,7 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:cipherlib/cipherlib.dart' as cipher;
+import 'package:pointycastle/pointycastle.dart' as pc;
 
 import 'base.dart';
 
@@ -22,7 +23,29 @@ class CipherlibBenchmark extends Benchmark {
 
   @override
   void run() {
-    cipher.salsa20(input, key);
+    cipher.Salsa20(key).convert(input, nonce: nonce);
+  }
+}
+
+class PointyCastleBenchmark extends Benchmark {
+  final Uint8List key;
+  final Uint8List nonce;
+
+  PointyCastleBenchmark(int size, int iter)
+      : key = Uint8List.fromList(List.filled(32, 0x9f)),
+        nonce = Uint8List.fromList(List.filled(8, 0x2f)),
+        super('PointyCastle', size, iter);
+
+  @override
+  void run() {
+    var instance = pc.StreamCipher('Salsa20');
+    instance.init(
+      true,
+      pc.ParametersWithIV(pc.KeyParameter(key), nonce),
+    );
+    var inp = Uint8List.fromList(input);
+    var out = Uint8List(input.length);
+    instance.processBytes(inp, 0, size, out, 0);
   }
 }
 
@@ -37,7 +60,7 @@ class CipherlibStreamBenchmark extends AsyncBenchmark {
 
   @override
   Future<void> run() async {
-    await cipher.salsa20Stream(inputStream, key).drain();
+    await cipher.Salsa20(key).bind(inputStream, nonce: nonce).drain();
   }
 }
 
@@ -52,7 +75,9 @@ void main() async {
     int size = condition[0];
     int iter = condition[1];
     print('---- message: ${formatSize(size)} | iterations: $iter ----');
-    CipherlibBenchmark(size, iter).measureRate();
+    CipherlibBenchmark(size, iter).measureDiff([
+      PointyCastleBenchmark(size, iter),
+    ]);
     print('---- stream: ${formatSize(size)} | iterations: $iter ----');
     await CipherlibStreamBenchmark(size, iter).measureRate();
     print('');

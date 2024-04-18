@@ -20,7 +20,7 @@ class CipherlibBenchmark extends Benchmark {
 
   @override
   void run() {
-    cipher.xor(input, key);
+    cipher.XOR(key).convert(input);
   }
 }
 
@@ -33,7 +33,7 @@ class CipherlibStreamBenchmark extends AsyncBenchmark {
 
   @override
   Future<void> run() async {
-    await cipher.xorStream(inputStream, key).drain();
+    await cipher.XOR(key).bind(inputStream).drain();
   }
 }
 

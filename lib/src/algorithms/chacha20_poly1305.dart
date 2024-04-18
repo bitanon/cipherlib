@@ -93,7 +93,7 @@ class ChaCha20Poly1305 extends ChaCha20 with Authenticator {
     var controller = StreamController<int>(sync: true);
     return AsyncCipherMAC(
       controller.stream,
-      $buildDigest(
+      _streamDigest(
         controller,
         stream,
         mac: mac,
@@ -104,7 +104,7 @@ class ChaCha20Poly1305 extends ChaCha20 with Authenticator {
     );
   }
 
-  Future<HashDigest> $buildDigest(
+  Future<HashDigest> _streamDigest(
     StreamController<int> controller,
     Stream<int> stream, {
     Future<HashDigest>? mac,
@@ -117,13 +117,12 @@ class ChaCha20Poly1305 extends ChaCha20 with Authenticator {
     // create digest sink for cipher
     var cipherSink = Poly1305Mac(otk, aad: aad).createSink();
     // cipher stream
-    var it = generate(nonce, blockId).iterator;
+    var it = rounds(nonce, blockId).iterator;
     await for (var buffer in asChunkedStream(4096, stream)) {
       sink?.add(buffer);
       for (int p = 0; p < buffer.length; ++p) {
-        it.moveNext();
-        buffer[p] ^= it.current;
-        controller.add(buffer[p]);
+        if (!it.moveNext()) throw StateError('Key stream closed');
+        controller.add(buffer[p] = (buffer[p] ^ it.current) & 0xFF);
       }
       cipherSink.add(buffer);
     }

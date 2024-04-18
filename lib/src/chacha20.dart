@@ -11,8 +11,8 @@ export 'algorithms/chacha20.dart' show ChaCha20;
 ///
 /// Parameters:
 /// - [message] : arbitrary length plain-text.
-/// - [key] : A 32-bytes long key.
-/// - [nonce] : A 12-bytes long nonce. Deafult: 0
+/// - [key] : Either 16 or 32 bytes key.
+/// - [nonce] : Either 8 or 12 bytes nonce.
 /// - [blockId] :  The initial block number. Default: 1.
 ///
 /// Both the encryption and decryption can be done using this same method.
@@ -33,8 +33,8 @@ Uint8List chacha20(
 ///
 /// Parameters:
 /// - [stream] : arbitrary length plain-text.
-/// - [key] : A 32-bytes long key.
-/// - [nonce] : A 12-bytes long nonce. Deafult: 0
+/// - [key] : Either 16 or 32 bytes key.
+/// - [nonce] : Either 8 or 12 bytes nonce.
 /// - [blockId] :  The initial block number. Default: 1.
 ///
 /// Both the encryption and decryption can be done using this same method.

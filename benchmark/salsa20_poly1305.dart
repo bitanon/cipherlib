@@ -21,7 +21,7 @@ class CipherlibBenchmark extends Benchmark {
 
   @override
   void run() {
-    cipher.salsa20poly1305(input, key);
+    cipher.Salsa20Poly1305(key).convert(input, nonce: nonce);
   }
 }
 
@@ -36,7 +36,7 @@ class CipherlibDigestBenchmark extends Benchmark {
 
   @override
   void run() {
-    cipher.salsa20poly1305Digest(input, key, nonce: nonce);
+    cipher.Salsa20Poly1305(key).digest(input, nonce: nonce);
   }
 }
 

@@ -105,7 +105,7 @@ class Salsa20Poly1305 extends Salsa20 with Authenticator {
     // create digest sink for cipher
     var cipherSink = Poly1305Mac(otk, aad: aad).createSink();
     // cipher stream
-    var it = generate(nonce).iterator;
+    var it = rounds(nonce).iterator;
     await for (var buffer in asChunkedStream(4096, stream)) {
       sink?.add(buffer);
       for (int p = 0; p < buffer.length; ++p) {

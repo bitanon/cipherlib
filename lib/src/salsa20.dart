@@ -11,8 +11,8 @@ export 'algorithms/salsa20.dart' show Salsa20;
 ///
 /// Parameters:
 /// - [message] : arbitrary length plain-text.
-/// - [key] : A 16 or 32-bytes long key.
-/// - [nonce] : A 16-bytes long nonce. Deafult: 0
+/// - [key] : Either 16 or 32 bytes key.
+/// - [nonce] : Either 8 or 16 bytes nonce.
 ///
 /// Both the encryption and decryption can be done using this same method.
 @pragma('vm:prefer-inline')
@@ -30,8 +30,8 @@ Uint8List salsa20(
 ///
 /// Parameters:
 /// - [stream] : arbitrary length plain-text.
-/// - [key] : A 16 or 32-bytes long key.
-/// - [nonce] : A 16-bytes long nonce. Deafult: 0
+/// - [key] : Either 16 or 32 bytes key.
+/// - [nonce] : Either 8 or 16 bytes nonce.
 ///
 /// Both the encryption and decryption can be done using this same method.
 @pragma('vm:prefer-inline')

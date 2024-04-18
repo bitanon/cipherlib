@@ -18,9 +18,6 @@ abstract class SymmetricCipher extends Cipher
     implements StreamTransformer<int, int> {
   const SymmetricCipher();
 
-  /// The symmetric key for both encryption and decryption
-  List<int> get key;
-
   /// Transforms the [message].
   Uint8List convert(List<int> message);
 
