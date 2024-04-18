@@ -14,7 +14,7 @@ export 'algorithms/chacha20_poly1305.dart' show ChaCha20Poly1305;
 /// - [key] : A 32-bytes long key.
 /// - [nonce] : A 12-bytes long nonce. Deafult: 0
 /// - [aad] : Additional authenticated data.
-HashDigest chacha20poly1305digest(
+HashDigest chacha20poly1305Digest(
   List<int> message,
   List<int> key, {
   List<int>? nonce,
@@ -33,7 +33,7 @@ HashDigest chacha20poly1305digest(
 /// - [key] : A 32-bytes long key.
 /// - [nonce] : A 12-bytes long nonce. Deafult: 0
 /// - [aad] : Additional authenticated data.
-bool chacha20poly1305verify(
+bool chacha20poly1305Verify(
   List<int> message,
   List<int> key,
   List<int> mac, {
