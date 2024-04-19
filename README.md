@@ -17,13 +17,13 @@ There are only 2 dependencies used by this package:
 
 ## Features
 
-| Ciphers           | Public class and methods                                                                                             |    Source    |
-| ----------------- | -------------------------------------------------------------------------------------------------------------------- | :----------: |
-| XOR               | `XOR`, `xor`, `xorStream`                                                                                            |  Wikipedia   |
-| ChaCha20          | `ChaCha20`, `chacha20`, `chacha20Stream`                                                                             |   RFC-8439   |
-| ChaCha20/Poly1305 | `ChaCha20Poly1305`, `chacha20poly1305Digest`, `chacha20poly1305Verify`, `chacha20poly1305`, `chacha20poly1305Stream` |   RFC-8439   |
-| Salsa20           | `Salsa20`, `salsa20`, `salsa20Stream`                                                                                | Snuffle-2005 |
-| Salsa20/Poly1305  | `Salsa20Poly1305`, `salsa20poly1305Digest`, `salsa20poly1305Verify`, `salsa20poly1305`, `salsa20poly1305Stream`      | Snuffle-2005 |
+| Ciphers           | Public class and methods                                         |    Source    |
+| ----------------- | ---------------------------------------------------------------- | :----------: |
+| XOR               | `XOR`, `xor`, `xorStream`                                        |  Wikipedia   |
+| ChaCha20          | `ChaCha20`, `chacha20`, `chacha20Stream`                         |   RFC-8439   |
+| ChaCha20/Poly1305 | `ChaCha20Poly1305`, `chacha20poly1305`, `chacha20poly1305Stream` |   RFC-8439   |
+| Salsa20           | `Salsa20`, `salsa20`, `salsa20Stream`                            | Snuffle-2005 |
+| Salsa20/Poly1305  | `Salsa20Poly1305`, `salsa20poly1305`, `salsa20poly1305Stream`    | Snuffle-2005 |
 
 ## Getting started
 
