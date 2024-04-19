@@ -3,7 +3,7 @@
 
 import 'dart:typed_data';
 
-import 'package:cipherlib/src/core/cipher.dart';
+import 'package:cipherlib/src/core/stream_cipher.dart';
 
 const int _mask32 = 0xFFFFFFFF;
 
@@ -14,7 +14,7 @@ const int _mask32 = 0xFFFFFFFF;
 /// This implementation is based on the [RFC-8439][rfc]
 ///
 /// [rfc]: https://www.rfc-editor.org/rfc/rfc8439.html
-class ChaCha20 extends SymmetricCipher {
+class ChaCha20 implements StreamCipher {
   @override
   final String name = "ChaCha20";
 
@@ -23,22 +23,38 @@ class ChaCha20 extends SymmetricCipher {
 
   const ChaCha20(this.key);
 
+  /// ChaCha20 block generator
+  Uint8List rounds(int size, [List<int>? nonce, int blockId = 0]) {
+    if (size == 0) {
+      return Uint8List(0);
+    }
+    var key8 = _validateKey(key);
+    var key32 = key8.buffer.asUint32List();
+    var nonce8 = _validateNonce(nonce);
+    var nonce32 = nonce8.buffer.asUint32List();
+
+    var state = Uint8List(size + (64 - (size & 63)));
+    for (int pos = 64; pos <= state.length; pos += 64) {
+      var state32 = state.buffer.asUint32List(pos - 64, 16);
+      _block(state32, key32, nonce32, blockId++);
+    }
+    return state.buffer.asUint8List(0, size);
+  }
+
   @override
   Uint8List convert(
     List<int> message, {
     List<int>? nonce,
     int blockId = 1,
   }) {
-    if (message.isEmpty) {
-      return Uint8List(0);
-    }
-    int pos = 0;
-    var state = Uint32List(16);
-    var state8 = state.buffer.asUint8List();
     var key8 = _validateKey(key);
     var key32 = key8.buffer.asUint32List();
     var nonce8 = _validateNonce(nonce);
     var nonce32 = nonce8.buffer.asUint32List();
+
+    int pos = 0;
+    var state = Uint32List(16);
+    var state8 = state.buffer.asUint8List();
     var result = Uint8List.fromList(message);
     for (int i = 0; i < message.length; ++i) {
       if (pos == 0 || pos == 64) {
@@ -51,44 +67,25 @@ class ChaCha20 extends SymmetricCipher {
   }
 
   @override
-  Stream<int> bind(
+  Stream<int> stream(
     Stream<int> stream, {
     List<int>? nonce,
     int blockId = 1,
   }) async* {
-    int pos = 0;
-    var state = Uint32List(16);
-    var state8 = state.buffer.asUint8List();
     var key8 = _validateKey(key);
     var key32 = key8.buffer.asUint32List();
     var nonce8 = _validateNonce(nonce);
     var nonce32 = nonce8.buffer.asUint32List();
+
+    int pos = 0;
+    var state = Uint32List(16);
+    var state8 = state.buffer.asUint8List();
     await for (var x in stream) {
       if (pos == 0 || pos == 64) {
         _block(state, key32, nonce32, blockId++);
         pos = 0;
       }
       yield (x ^ state8[pos++]) & 0xFF;
-    }
-  }
-
-  /// ChaCha20 block generator
-  Iterable<int> rounds([
-    List<int>? nonce,
-    int blockId = 1,
-  ]) sync* {
-    if (nonce != null && nonce.length != 12) {
-      throw ArgumentError('The nonce should be 12 bytes');
-    }
-    var state = Uint32List(16);
-    var state8 = state.buffer.asUint8List();
-    var key8 = _validateKey(key);
-    var key32 = key8.buffer.asUint32List();
-    var nonce8 = _validateNonce(nonce);
-    var nonce32 = nonce8.buffer.asUint32List();
-    while (true) {
-      _block(state, key32, nonce32, blockId++);
-      yield* state8;
     }
   }
 

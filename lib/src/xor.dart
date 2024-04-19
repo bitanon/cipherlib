@@ -22,4 +22,4 @@ Uint8List xor(List<int> message, List<int> key) => XOR(key).convert(message);
 /// **WARNING**: This is not intended to be used for security purposes.
 @pragma('vm:prefer-inline')
 Stream<int> xorStream(Stream<int> stream, List<int> key) =>
-    XOR(key).bind(stream);
+    XOR(key).stream(stream);

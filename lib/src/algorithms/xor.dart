@@ -3,7 +3,7 @@
 
 import 'dart:typed_data';
 
-import 'package:cipherlib/src/core/cipher.dart';
+import 'package:cipherlib/src/core/stream_cipher.dart';
 
 /// XOR (exclusive or) cipher is a simple and lightweight method of encrypting
 /// data. It is often used for basic data obfuscation.
@@ -13,7 +13,7 @@ import 'package:cipherlib/src/core/cipher.dart';
 /// This implementation is based on [XOR cipher][xor_wiki] from Wikipedia.
 ///
 /// [xor_wiki]: https://en.wikipedia.org/wiki/XOR_cipher
-class XOR extends SymmetricCipher {
+class XOR implements StreamCipher {
   @override
   final String name = "XOR";
 
@@ -39,7 +39,7 @@ class XOR extends SymmetricCipher {
   }
 
   @override
-  Stream<int> bind(Stream<int> stream) async* {
+  Stream<int> stream(Stream<int> stream) async* {
     if (key.isEmpty) {
       throw ArgumentError('The key must not be empty');
     }

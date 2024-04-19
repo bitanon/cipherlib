@@ -60,7 +60,7 @@ class CipherlibStreamBenchmark extends AsyncBenchmark {
 
   @override
   Future<void> run() async {
-    await cipher.ChaCha20(key).bind(inputStream, nonce: nonce).drain();
+    await cipher.ChaCha20(key).stream(inputStream, nonce: nonce).drain();
   }
 }
 

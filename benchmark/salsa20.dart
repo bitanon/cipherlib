@@ -60,7 +60,7 @@ class CipherlibStreamBenchmark extends AsyncBenchmark {
 
   @override
   Future<void> run() async {
-    await cipher.Salsa20(key).bind(inputStream, nonce: nonce).drain();
+    await cipher.Salsa20(key).stream(inputStream, nonce: nonce).drain();
   }
 }
 

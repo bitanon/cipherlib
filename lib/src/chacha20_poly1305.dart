@@ -1,53 +1,12 @@
 // Copyright (c) 2024, Sudipto Chandra
 // All rights reserved. Check LICENSE file for details.
 
+import 'package:cipherlib/src/algorithms/chacha20.dart';
 import 'package:cipherlib/src/algorithms/chacha20_poly1305.dart';
 import 'package:cipherlib/src/core/authenticator.dart';
 import 'package:hashlib/hashlib.dart' show HashDigest;
 
-export 'algorithms/chacha20_poly1305.dart' show ChaCha20Poly1305;
-
-/// Generate only the [message] digest using [ChaCha20Poly1305].
-///
-/// Parameters:
-/// - [message] : arbitrary length plain-text.
-/// - [key] : Either 16 or 32 bytes key.
-/// - [nonce] : Either 8 or 12 bytes nonce.
-/// - [aad] : Additional authenticated data.
-@pragma('vm:prefer-inline')
-HashDigest chacha20poly1305Digest(
-  List<int> message,
-  List<int> key, {
-  List<int>? nonce,
-  List<int>? aad,
-}) =>
-    ChaCha20Poly1305(key).digest(
-      message,
-      nonce: nonce,
-      aad: aad,
-    );
-
-/// Verify the [message] digest using [ChaCha20Poly1305].
-///
-/// Parameters:
-/// - [message] : arbitrary length plain-text.
-/// - [key] : Either 16 or 32 bytes key.
-/// - [nonce] : Either 8 or 12 bytes nonce.
-/// - [aad] : Additional authenticated data.
-@pragma('vm:prefer-inline')
-bool chacha20poly1305Verify(
-  List<int> message,
-  List<int> key,
-  List<int> mac, {
-  List<int>? nonce,
-  List<int>? aad,
-}) =>
-    ChaCha20Poly1305(key).verify(
-      message,
-      mac,
-      nonce: nonce,
-      aad: aad,
-    );
+export 'algorithms/chacha20_poly1305.dart';
 
 /// Transforms [message] with ChaCha20 algorithm and generates the message
 /// digest with Poly1305 authentication code generator.
@@ -70,7 +29,7 @@ CipherMAC chacha20poly1305(
   List<int>? aad,
   int blockId = 1,
 }) =>
-    ChaCha20Poly1305(key).convertWithDigest(
+    ChaCha20Poly1305(ChaCha20(key)).convert(
       message,
       mac: mac,
       nonce: nonce,
@@ -99,7 +58,7 @@ AsyncCipherMAC chacha20poly1305Stream(
   List<int>? aad,
   int blockId = 1,
 }) =>
-    ChaCha20Poly1305(key).streamWithDigest(
+    ChaCha20Poly1305(ChaCha20(key)).stream(
       stream,
       nonce: nonce,
       mac: mac,

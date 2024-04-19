@@ -45,7 +45,7 @@ Stream<int> chacha20Stream(
   List<int>? nonce,
   int blockId = 1,
 ]) =>
-    ChaCha20(key).bind(
+    ChaCha20(key).stream(
       stream,
       nonce: nonce,
       blockId: blockId,

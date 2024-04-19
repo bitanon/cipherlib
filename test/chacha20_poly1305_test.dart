@@ -126,7 +126,7 @@ void main() {
       for (int j = 0; j < 100; ++j) {
         var nonce = randomBytes(12);
         var text = randomNumbers(j);
-        var plain = Uint8List.fromList(text);
+        var bytes = Uint8List.fromList(text);
         var stream = Stream.fromIterable(text);
         var res = chacha20poly1305Stream(
           stream,
@@ -139,8 +139,8 @@ void main() {
           nonce: nonce,
           mac: res.mac,
         );
-        var backward = await verified.cipher.toList();
-        expect(plain, equals(backward), reason: '[text: $j]');
+        var plain = await verified.cipher.toList();
+        expect(plain, equals(bytes), reason: '[text: $j]');
       }
     });
   });

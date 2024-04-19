@@ -13,7 +13,7 @@ void main() {
   group('Test Salsa20 cipher', () {
     test('empty message', () {
       var key = randomNumbers(32);
-      var nonce = randomBytes(12);
+      var nonce = randomBytes(16);
       expect(salsa20([], key, nonce), equals([]));
     });
     test('key length is not 32 bytes', () {

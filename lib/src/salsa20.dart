@@ -40,7 +40,7 @@ Stream<int> salsa20Stream(
   List<int> key, [
   List<int>? nonce,
 ]) =>
-    Salsa20(key).bind(
+    Salsa20(key).stream(
       stream,
       nonce: nonce,
     );

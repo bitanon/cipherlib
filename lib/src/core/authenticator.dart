@@ -4,36 +4,8 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:cipherlib/src/core/cipher_base.dart';
 import 'package:hashlib/hashlib.dart' show HashDigest;
-
-/// Mixin for ciphers relying on authentication tag.
-abstract class Authenticator {
-  /// Generates the authentication tag for the [message].
-  HashDigest digest(List<int> message);
-
-  /// Verify the [message] against the authentication [mac].
-  bool verify(
-    List<int> message,
-    List<int> mac,
-  ) {
-    var current = digest(message);
-    return current.isEqual(mac);
-  }
-
-  /// Transforms the [message] with an authentication tag.
-  /// If [mac] is provided, it verifies the message integrity first.
-  CipherMAC convertWithDigest(
-    List<int> message, {
-    List<int>? mac,
-  });
-
-  /// Transforms the [stream] with an autentication tag.
-  /// If [mac] is provided, it verifies the message integrity first.
-  AsyncCipherMAC streamWithDigest(
-    Stream<int> stream, {
-    Future<HashDigest>? mac,
-  });
-}
 
 /// Combined result of encrypted [cipher] text with an authentication [mac].
 class CipherMAC {
@@ -55,4 +27,38 @@ class AsyncCipherMAC {
   final Future<HashDigest> mac;
 
   const AsyncCipherMAC(this.cipher, this.mac);
+}
+
+/// Mixin for ciphers relying on authentication tag.
+abstract class Authenticator
+    implements SymmetricCipher<CipherMAC, AsyncCipherMAC> {
+  /// Generates the authentication tag for the [message].
+  HashDigest digest(
+    List<int> message, {
+    required List<int> nonce,
+  });
+
+  /// Verify the [message] against the authentication [mac].
+  bool verify(
+    List<int> message, {
+    required List<int> nonce,
+    required List<int> mac,
+  }) =>
+      digest(message, nonce: nonce).isEqual(mac);
+
+  /// Transforms the [message] with an authentication tag.
+  /// If [mac] is provided, it verifies the message integrity first.
+  @override
+  CipherMAC convert(
+    List<int> message, {
+    List<int>? mac,
+  });
+
+  /// Transforms the [stream] with an autentication tag.
+  /// If [mac] is provided, it verifies the message integrity first.
+  @override
+  AsyncCipherMAC stream(
+    Stream<int> stream, {
+    Future<HashDigest>? mac,
+  });
 }
