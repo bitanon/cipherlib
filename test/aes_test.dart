@@ -3,7 +3,8 @@
 
 import 'dart:typed_data';
 
-import 'package:cipherlib/src/algorithms/aes.dart';
+import 'package:cipherlib/src/algorithms/aes/aes_decrypt.dart';
+import 'package:cipherlib/src/algorithms/aes/aes_encrypt.dart';
 import 'package:hashlib_codecs/hashlib_codecs.dart';
 import 'package:test/test.dart';
 
@@ -29,8 +30,7 @@ void main() {
           0x7f8d292f, 0xac7766f3, 0x19fadc21, 0x28d12941, 0x575c006e,
           0xd014f9a8, 0xc9ee2589, 0xe13f0cc8, 0xb6630ca6,
         ]);
-        var res = AES.$expandKey(key);
-        print(toHex(key.buffer.asUint8List()));
+        var res = AESEncrypt.$expandKey(key);
         expect(res, equals(expanded));
       });
       test("192-bit", () {
@@ -55,7 +55,7 @@ void main() {
           0x8fcc5006, 0x282d166a, 0xbc3ce7b5, 0xe98ba06f, 0x448c773c,
           0x8ecc7204, 0x01002202,
         ]);
-        var res = AES.$expandKey(key);
+        var res = AESEncrypt.$expandKey(key);
         expect(res, equals(expanded));
       });
       test("256-bit", () {
@@ -83,7 +83,7 @@ void main() {
           0xe2757e4f, 0x7401905a, 0xcafaaae3, 0xe4d59b34, 0x9adf6ace,
           0xbd10190d, 0xfe4890d1, 0xe6188d0b, 0x046df344, 0x706c631e,
         ]);
-        var res = AES.$expandKey(key);
+        var res = AESEncrypt.$expandKey(key);
         expect(res, equals(expanded));
       });
     });
@@ -107,7 +107,7 @@ void main() {
           0xdc118597,
           0x196a0b32,
         ]).buffer.asUint8List();
-        var rr = AES(key).convert(inp);
+        var rr = AESEncrypt(key).convert(inp);
         expect(rr, equals(out));
       });
       test("128-bit CSRC NIST example", () {
@@ -126,7 +126,7 @@ void main() {
           0x43B1CD7F, 0x598ECE23, 0x881B00E3, 0xED030688,
           0x7B0C785E, 0x27E8AD3F, 0x82232071, 0x04725DD4,
         ]).buffer.asUint8List();
-        var rr = AES(key).convert(inp);
+        var rr = AESEncrypt(key).convert(inp);
         expect(rr, equals(out));
       });
       test("192-bit CSRC NIST example", () {
@@ -146,7 +146,7 @@ void main() {
           0xEF7AFD22, 0x70E2E60A, 0xDCE0BA2F, 0xACE6444E,
           0x9A4B41BA, 0x738D6C72, 0xFB166916, 0x03C18E0E,
         ]).buffer.asUint8List();
-        var rr = AES(key).convert(inp);
+        var rr = AESEncrypt(key).convert(inp);
         expect(rr, equals(out));
       });
       test("256-bit CSRC NIST example", () {
@@ -166,9 +166,124 @@ void main() {
           0xB6ED21B9, 0x9CA6F4F9, 0xF153E7B1, 0xBEAFED1D,
           0x23304B7A, 0x39F9F3FF, 0x067D8D8F, 0x9E24ECC7,
         ]).buffer.asUint8List();
-        var rr = AES(key).convert(inp);
+        var rr = AESEncrypt(key).convert(inp);
         expect(rr, equals(out));
       });
     });
+    group("decryption", () {
+      test("128-bit NIST.FIPS.197-upd1", () {
+        var key = Uint32List.fromList([
+          0x2b7e1516,
+          0x28aed2a6,
+          0xabf71588,
+          0x09cf4f3c,
+        ]).buffer.asUint8List();
+        var inp = Uint32List.fromList([
+          0x3925841d,
+          0x02dc09fb,
+          0xdc118597,
+          0x196a0b32,
+        ]).buffer.asUint8List();
+        var out = Uint32List.fromList([
+          0x3243f6a8,
+          0x885a308d,
+          0x313198a2,
+          0xe0370734,
+        ]).buffer.asUint8List();
+        var rr = AESDecrypt(key).convert(inp);
+        expect(rr, equals(out));
+      });
+      test("128-bit CSRC NIST example", () {
+        var key = Uint32List.fromList([
+          0x2B7E1516, 0x28AED2A6, 0xABF71588, 0x09CF4F3C, //
+        ]).buffer.asUint8List();
+        var inp = Uint32List.fromList([
+          0x3AD77BB4, 0x0D7A3660, 0xA89ECAF3, 0x2466EF97, //
+          0xF5D3D585, 0x03B9699D, 0xE785895A, 0x96FDBAAF,
+          0x43B1CD7F, 0x598ECE23, 0x881B00E3, 0xED030688,
+          0x7B0C785E, 0x27E8AD3F, 0x82232071, 0x04725DD4,
+        ]).buffer.asUint8List();
+        var out = Uint32List.fromList([
+          0x6BC1BEE2, 0x2E409F96, 0xE93D7E11, 0x7393172A, //
+          0xAE2D8A57, 0x1E03AC9C, 0x9EB76FAC, 0x45AF8E51,
+          0x30C81C46, 0xA35CE411, 0xE5FBC119, 0x1A0A52EF,
+          0xF69F2445, 0xDF4F9B17, 0xAD2B417B, 0xE66C3710
+        ]).buffer.asUint8List();
+        var rr = AESDecrypt(key).convert(inp);
+        expect(rr, equals(out));
+      });
+      test("192-bit CSRC NIST example", () {
+        var key = Uint32List.fromList([
+          0x8E73B0F7, 0xDA0E6452, 0xC810F32B, 0x809079E5, //
+          0x62F8EAD2, 0x522C6B7B,
+        ]).buffer.asUint8List();
+        var inp = Uint32List.fromList([
+          0xBD334F1D, 0x6E45F25F, 0xF712A214, 0x571FA5CC, //
+          0x97410484, 0x6D0AD3AD, 0x7734ECB3, 0xECEE4EEF,
+          0xEF7AFD22, 0x70E2E60A, 0xDCE0BA2F, 0xACE6444E,
+          0x9A4B41BA, 0x738D6C72, 0xFB166916, 0x03C18E0E,
+        ]).buffer.asUint8List();
+        var out = Uint32List.fromList([
+          0x6BC1BEE2, 0x2E409F96, 0xE93D7E11, 0x7393172A, //
+          0xAE2D8A57, 0x1E03AC9C, 0x9EB76FAC, 0x45AF8E51,
+          0x30C81C46, 0xA35CE411, 0xE5FBC119, 0x1A0A52EF,
+          0xF69F2445, 0xDF4F9B17, 0xAD2B417B, 0xE66C3710
+        ]).buffer.asUint8List();
+        var rr = AESDecrypt(key).convert(inp);
+        expect(rr, equals(out));
+      });
+      test("256-bit CSRC NIST example", () {
+        var key = Uint32List.fromList([
+          0x603DEB10, 0x15CA71BE, 0x2B73AEF0, 0x857D7781, //
+          0x1F352C07, 0x3B6108D7, 0x2D9810A3, 0x0914DFF4,
+        ]).buffer.asUint8List();
+        var inp = Uint32List.fromList([
+          0xF3EED1BD, 0xB5D2A03C, 0x064B5A7E, 0x3DB181F8, //
+          0x591CCB10, 0xD410ED26, 0xDC5BA74A, 0x31362870,
+          0xB6ED21B9, 0x9CA6F4F9, 0xF153E7B1, 0xBEAFED1D,
+          0x23304B7A, 0x39F9F3FF, 0x067D8D8F, 0x9E24ECC7,
+        ]).buffer.asUint8List();
+        var out = Uint32List.fromList([
+          0x6BC1BEE2, 0x2E409F96, 0xE93D7E11, 0x7393172A, //
+          0xAE2D8A57, 0x1E03AC9C, 0x9EB76FAC, 0x45AF8E51,
+          0x30C81C46, 0xA35CE411, 0xE5FBC119, 0x1A0A52EF,
+          0xF69F2445, 0xDF4F9B17, 0xAD2B417B, 0xE66C3710
+        ]).buffer.asUint8List();
+        var rr = AESDecrypt(key).convert(inp);
+        expect(rr, equals(out));
+      });
+    });
+    // group('encryption <-> decryption', () {
+    //   test("128-bit", () {
+    //     var key = randomNumbers(16);
+    //     for (int j = 0; j < 100; ++j) {
+    //       var input = randomNumbers(j);
+    //       var bytes = Uint8List.fromList(input);
+    //       var cipher = AESEncrypt(key).convert(input);
+    //       var plain = AESDecrypt(key).convert(cipher);
+    //       expect(bytes, equals(plain), reason: '[text: $j]');
+    //     }
+    //   });
+    //   test("192-bit", () {
+    //     var key = randomNumbers(24);
+    //     for (int j = 0; j < 100; ++j) {
+    //       var input = randomNumbers(j);
+    //       var bytes = Uint8List.fromList(input);
+    //       var cipher = AESEncrypt(key).convert(input);
+    //       var plain = AESDecrypt(key).convert(cipher);
+    //       expect(bytes, equals(plain), reason: '[text: $j]');
+    //     }
+    //   });
+    //   test("256-bit", () {
+    //     var key = randomNumbers(32);
+    //     for (int j = 0; j < 100; ++j) {
+    //       var input = randomNumbers(j);
+    //       var bytes = Uint8List.fromList(input);
+    //       var cipher = AESEncrypt(key).convert(input);
+    //       var plain = AESDecrypt(key).convert(cipher);
+    //       expect(bytes, equals(plain), reason: '[text: $j]');
+    //     }
+    //   });
+    // });
   });
 }
