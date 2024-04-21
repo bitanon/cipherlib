@@ -10,6 +10,7 @@ import 'chacha20_poly1305.dart' as chacha20poly1305;
 import 'salsa20.dart' as salsa20;
 import 'salsa20_poly1305.dart' as salsa20poly1305;
 import 'xor.dart' as xor;
+import 'aes128.dart' as aes128;
 
 IOSink sink = stdout;
 RandomAccessFile? raf;
@@ -24,9 +25,9 @@ void dump(message) {
 // ---------------------------------------------------------------------
 void measureSymmetricCiphers() {
   final conditions = [
-    [5 << 20, 10],
-    [1 << 10, 5000],
-    [10, 100000],
+    [1 << 20, 10],
+    [5 << 10, 5000],
+    [16, 100000],
   ];
   for (var condition in conditions) {
     var size = condition[0];
@@ -35,6 +36,9 @@ void measureSymmetricCiphers() {
     var algorithms = {
       "XOR": [
         xor.CipherlibBenchmark(size, iter),
+      ],
+      "AES-128": [
+        aes128.CipherlibBenchmark(size, iter),
       ],
       "ChaCha20": [
         chacha20.CipherlibBenchmark(size, iter),

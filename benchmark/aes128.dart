@@ -1,10 +1,11 @@
 // Copyright (c) 2023, Sudipto Chandra
 // All rights reserved. Check LICENSE file for details.
 
+import 'dart:async';
 import 'dart:math';
 import 'dart:typed_data';
 
-import 'package:cipherlib/cipherlib.dart' as cipher;
+import 'package:cipherlib/src/algorithms/aes/aes_encrypt.dart';
 
 import 'base.dart';
 
@@ -12,36 +13,32 @@ Random random = Random();
 
 class CipherlibBenchmark extends Benchmark {
   final Uint8List key;
-  final Uint8List nonce;
 
   CipherlibBenchmark(int size, int iter)
-      : key = Uint8List.fromList(List.filled(32, 0x9f)),
-        nonce = Uint8List.fromList(List.filled(16, 0x2f)),
+      : key = Uint8List.fromList(List.filled(16, 0x9f)),
         super('cipherlib', size, iter);
 
   @override
   void run() {
-    cipher.Salsa20Poly1305(cipher.Salsa20(key)).convert(input, nonce: nonce);
+    AESEncrypt(key).convert(input);
   }
 }
 
-class CipherlibDigestBenchmark extends Benchmark {
+class CipherlibStreamBenchmark extends AsyncBenchmark {
   final Uint8List key;
-  final Uint8List nonce;
 
-  CipherlibDigestBenchmark(int size, int iter)
-      : key = Uint8List.fromList(List.filled(32, 0x9f)),
-        nonce = Uint8List.fromList(List.filled(16, 0x2f)),
+  CipherlibStreamBenchmark(int size, int iter)
+      : key = Uint8List.fromList(List.filled(16, 0x9f)),
         super('cipherlib', size, iter);
 
   @override
-  void run() {
-    cipher.Salsa20Poly1305(cipher.Salsa20(key)).digest(input, nonce: nonce);
+  Future<void> run() async {
+    await AESEncrypt(key).stream(inputStream).drain();
   }
 }
 
-void main() {
-  print('--------- Salsa20/Poly1305 ----------');
+void main() async {
+  print('--------- ChaCha20 ----------');
   final conditions = [
     [5 << 20, 10],
     [1 << 10, 5000],
@@ -53,7 +50,7 @@ void main() {
     print('---- message: ${formatSize(size)} | iterations: $iter ----');
     CipherlibBenchmark(size, iter).measureRate();
     print('---- stream: ${formatSize(size)} | iterations: $iter ----');
-    CipherlibDigestBenchmark(size, iter).measureRate();
+    await CipherlibStreamBenchmark(size, iter).measureRate();
     print('');
   }
 }

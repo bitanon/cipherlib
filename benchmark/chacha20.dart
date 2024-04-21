@@ -69,7 +69,7 @@ void main() async {
   final conditions = [
     [5 << 20, 10],
     [1 << 10, 5000],
-    [10, 100000],
+    [16, 100000],
   ];
   for (var condition in conditions) {
     int size = condition[0];
