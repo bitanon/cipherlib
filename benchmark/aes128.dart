@@ -5,7 +5,7 @@ import 'dart:async';
 import 'dart:math';
 import 'dart:typed_data';
 
-import 'package:cipherlib/src/algorithms/aes/aes_encrypt.dart';
+import 'package:cipherlib/src/algorithms/aes/aes_ecb.dart';
 
 import 'base.dart';
 
@@ -20,7 +20,7 @@ class CipherlibBenchmark extends Benchmark {
 
   @override
   void run() {
-    AESEncrypt(key).convert(input);
+    AESInECBMode(key).encrypt(input);
   }
 }
 
@@ -33,7 +33,7 @@ class CipherlibStreamBenchmark extends AsyncBenchmark {
 
   @override
   Future<void> run() async {
-    await AESEncrypt(key).stream(inputStream).drain();
+    await AESInECBMode(key).encryptStream(inputStream).drain();
   }
 }
 

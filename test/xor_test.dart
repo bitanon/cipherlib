@@ -9,51 +9,52 @@ import 'package:test/test.dart';
 import 'utils.dart';
 
 void main() {
-  group('Test XOR cipher', () {
-    test('empty key', () {
-      expect(() => xor([], []), throwsArgumentError);
-    });
-    test('empty message', () {
-      expect(xor([], [1]), equals([]));
-    });
-    test('encryption <-> decryption (convert)', () {
-      for (int i = 1; i < 100; i += 10) {
-        var key = randomNumbers(i);
-        for (int j = 0; j < 100; j += 5) {
-          var text = randomNumbers(j);
-          var bytes = Uint8List.fromList(text);
-          var cipher = xor(text, key);
-          var plain = xor(cipher, key);
-          expect(bytes, equals(plain), reason: '[key: $i, text: $j]');
-        }
+  test('empty key with empty message', () {
+    expect(xor([], []), equals([]));
+  });
+  test('empty key with some message', () {
+    expect(() => xor([1], []), throwsArgumentError);
+  });
+  test('empty message', () {
+    expect(xor([], [1]), equals([]));
+  });
+  test('encryption <-> decryption (convert)', () {
+    for (int i = 1; i < 100; i += 10) {
+      var key = randomNumbers(i);
+      for (int j = 0; j < 100; j += 5) {
+        var text = randomNumbers(j);
+        var bytes = Uint8List.fromList(text);
+        var cipher = xor(text, key);
+        var plain = xor(cipher, key);
+        expect(bytes, equals(plain), reason: '[key: $i, text: $j]');
       }
-    });
-    test('encryption <-> decryption (stream)', () async {
-      for (int i = 1; i < 10; ++i) {
-        var key = randomNumbers(i);
-        for (int j = 0; j < 100; j += 8) {
-          var text = randomNumbers(j);
-          var bytes = Uint8List.fromList(text);
-          var stream = Stream.fromIterable(text);
-          var cipherStream = xorStream(stream, key);
-          var plainStream = xorStream(cipherStream, key);
-          var plain = await plainStream.toList();
-          expect(bytes, equals(plain), reason: '[key: $i, text: $j]');
-        }
+    }
+  });
+  test('encryption <-> decryption (stream)', () async {
+    for (int i = 1; i < 10; ++i) {
+      var key = randomNumbers(i);
+      for (int j = 0; j < 100; j += 8) {
+        var text = randomNumbers(j);
+        var bytes = Uint8List.fromList(text);
+        var stream = Stream.fromIterable(text);
+        var cipherStream = xorStream(stream, key);
+        var plainStream = xorStream(cipherStream, key);
+        var plain = await plainStream.toList();
+        expect(bytes, equals(plain), reason: '[key: $i, text: $j]');
       }
-    });
-    test('single instance', () {
-      for (int i = 1; i < 20; ++i) {
-        var key = randomNumbers(i);
-        var instance = XOR(key);
-        for (int j = 0; j < 100; j += 12) {
-          var text = randomNumbers(j);
-          var bytes = Uint8List.fromList(text);
-          var cipher = instance.convert(bytes);
-          var plain = instance.convert(cipher);
-          expect(bytes, equals(plain), reason: '[key: $i, text: $j]');
-        }
+    }
+  });
+  test('single instance', () {
+    for (int i = 1; i < 20; ++i) {
+      var key = randomNumbers(i);
+      var instance = XOR.fromList(key);
+      for (int j = 0; j < 100; j += 12) {
+        var text = randomNumbers(j);
+        var bytes = Uint8List.fromList(text);
+        var cipher = instance.convert(bytes);
+        var plain = instance.convert(cipher);
+        expect(bytes, equals(plain), reason: '[key: $i, text: $j]');
       }
-    });
+    }
   });
 }

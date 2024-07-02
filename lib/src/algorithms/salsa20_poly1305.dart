@@ -1,146 +1,66 @@
 // Copyright (c) 2024, Sudipto Chandra
 // All rights reserved. Check LICENSE file for details.
 
-import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:cipherlib/src/core/authenticator.dart';
-import 'package:cipherlib/src/core/chunk_stream.dart';
+import 'package:cipherlib/src/core/cipher.dart';
 import 'package:hashlib/hashlib.dart' show HashDigest;
 
 import 'poly1305.dart';
 import 'salsa20.dart';
 
 /// Salsa20-Poly1305 is a cryptographic algorithm combining the [Salsa20]
-/// stream cipher for encryption and the [Poly1305Mac] for generating message
+/// stream cipher for encryption and the [Poly1305AEAD] for generating message
 /// authentication code.
-class Salsa20Poly1305 implements Authenticator {
-  final Salsa20 _algo;
+class Salsa20Poly1305 extends Salsa20 with AEADCipher {
+  final Poly1305AEAD _aead;
 
-  const Salsa20Poly1305(this._algo);
+  const Salsa20Poly1305._(Uint8List key, Uint8List iv, this._aead)
+      : super(key, iv);
 
-  @override
-  String get name => "${_algo.name}/Poly1305";
-
-  /// Generate One-Time-Key for Poly1305
-  @pragma('vm:prefer-inline')
-  Uint8List _generateOTK(List<int> nonce) => _algo.convert(
-        Uint8List(32),
-        nonce: nonce,
-      );
-
-  @override
-  HashDigest digest(
-    List<int> message, {
-    required List<int> nonce,
+  factory Salsa20Poly1305({
+    required List<int> key,
+    required List<int> iv,
     List<int>? aad,
   }) =>
-      Poly1305Mac(
-        _generateOTK(nonce),
-        aad: aad,
-      ).convert(message);
+      Salsa20.fromList(key, iv).poly1305(aad);
 
   @override
-  bool verify(
-    List<int> message, {
-    required List<int> mac,
-    required List<int> nonce,
-    List<int>? aad,
-  }) =>
-      digest(
-        message,
-        nonce: nonce,
-        aad: aad,
-      ).isEqual(mac);
+  String get name => "${super.name}/${_aead.name}";
 
   @override
-  CipherMAC convert(
-    List<int> message, {
-    List<int>? mac,
-    List<int>? nonce,
-    List<int>? aad,
-  }) {
-    var nonce8 = nonce == null
-        ? Uint8List(16)
-        : nonce is Uint8List
-            ? nonce
-            : Uint8List.fromList(nonce);
-    var otk = _generateOTK(nonce8);
-    if (mac != null) {
-      var digest = Poly1305Mac(otk, aad: aad).convert(message);
-      if (!digest.isEqual(mac)) {
-        throw StateError('Invalid MAC');
-      }
+  HashDigest verify(List<int> message, [List<int>? mac]) {
+    if (mac == null) {
+      return _aead.convert(convert(message));
     }
-    var cipher = _algo.convert(
-      message,
-      nonce: nonce8,
-    );
-    var digest = Poly1305Mac(otk, aad: aad).convert(cipher);
-    return CipherMAC(cipher, digest);
+    var my = _aead.convert(message);
+    if (!my.isEqual(mac)) {
+      throw AssertionError('Message authenticity check failed');
+    }
+    return my;
   }
 
   @override
-  AsyncCipherMAC stream(
-    Stream<int> stream, {
-    Future<HashDigest>? mac,
-    List<int>? nonce,
-    List<int>? aad,
-  }) {
-    var controller = StreamController<int>(sync: true);
-    return AsyncCipherMAC(
-      controller.stream,
-      _streamDigest(
-        controller,
-        stream,
-        mac: mac,
-        nonce: nonce,
-        aad: aad,
-      ),
-    );
-  }
-
-  Future<HashDigest> _streamDigest(
-    StreamController<int> controller,
-    Stream<int> stream, {
-    Future<HashDigest>? mac,
-    List<int>? nonce,
-    List<int>? aad,
-  }) async {
-    var nonce8 = nonce == null
-        ? Uint8List(16)
-        : nonce is Uint8List
-            ? nonce
-            : Uint8List.fromList(nonce);
-    var otk = _generateOTK(nonce8);
-    var sink = mac != null ? Poly1305Mac(otk, aad: aad).createSink() : null;
-    // create digest sink for cipher
-    var cipherSink = Poly1305Mac(otk, aad: aad).createSink();
-    // cipher stream
-    int blockId = 1;
-    await for (var buffer in asChunkedStream(8192, stream)) {
-      sink?.add(buffer);
-      var block = _algo.rounds(buffer.length, nonce8, blockId);
-      blockId += 128;
-      for (int p = 0; p < buffer.length; ++p) {
-        block[p] ^= buffer[p];
-        controller.add(block[p]);
-      }
-      cipherSink.add(block);
+  Future<HashDigest> verifyBufferedStream(
+    Stream<List<int>> stream, [
+    Future<List<int>>? mac,
+  ]) async {
+    if (mac == null) {
+      return await _aead.bind(bind(stream)).first;
     }
-    controller.close();
-    // message digest
-    if (sink != null && mac != null) {
-      if (!sink.digest().isEqual(await mac)) {
-        throw StateError('Invalid MAC');
-      }
+    var my = await _aead.bind(stream).first;
+    if (!my.isEqual(await mac)) {
+      throw AssertionError('Message authenticity check failed');
     }
-    // cipher digest
-    return cipherSink.digest();
+    return my;
   }
 }
 
-extension Salsa20ExtensionForPoly1305 on Salsa20 {
+extension Salsa20Poly1305Extention on Salsa20 {
   @pragma('vm:prefer-inline')
-  Salsa20Poly1305 poly1305() => Salsa20Poly1305(this);
+  Salsa20Poly1305 poly1305([List<int>? aad]) {
+    var otk = Salsa20Sink(key, iv, 0).add(Uint8List(32));
+    var aead = Poly1305AEAD(otk, aad);
+    return Salsa20Poly1305._(key, iv, aead);
+  }
 }

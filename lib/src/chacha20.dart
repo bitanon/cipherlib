@@ -5,7 +5,7 @@ import 'dart:typed_data';
 
 import 'package:cipherlib/src/algorithms/chacha20.dart';
 
-export 'algorithms/chacha20.dart' show ChaCha20;
+export 'algorithms/chacha20.dart' show ChaCha20, ChaCha20Sink;
 
 /// Apply [ChaCha20] cipher with the follwing parameters:
 ///
@@ -13,7 +13,6 @@ export 'algorithms/chacha20.dart' show ChaCha20;
 /// - [message] : arbitrary length plain-text.
 /// - [key] : Either 16 or 32 bytes key.
 /// - [nonce] : Either 8 or 12 bytes nonce.
-/// - [blockId] :  The initial block number. Default: 1.
 ///
 /// Both the encryption and decryption can be done using this same method.
 @pragma('vm:prefer-inline')
@@ -21,13 +20,8 @@ Uint8List chacha20(
   List<int> message,
   List<int> key, [
   List<int>? nonce,
-  int blockId = 1,
 ]) =>
-    ChaCha20(key).convert(
-      message,
-      nonce: nonce,
-      blockId: blockId,
-    );
+    ChaCha20.fromList(key, nonce ?? Uint8List(12)).convert(message);
 
 /// Apply [ChaCha20] cipher with the follwing parameters:
 ///
@@ -35,7 +29,6 @@ Uint8List chacha20(
 /// - [stream] : arbitrary length plain-text.
 /// - [key] : Either 16 or 32 bytes key.
 /// - [nonce] : Either 8 or 12 bytes nonce.
-/// - [blockId] :  The initial block number. Default: 1.
 ///
 /// Both the encryption and decryption can be done using this same method.
 @pragma('vm:prefer-inline')
@@ -43,10 +36,5 @@ Stream<int> chacha20Stream(
   Stream<int> stream,
   List<int> key, [
   List<int>? nonce,
-  int blockId = 1,
 ]) =>
-    ChaCha20(key).stream(
-      stream,
-      nonce: nonce,
-      blockId: blockId,
-    );
+    ChaCha20.fromList(key, nonce ?? Uint8List(12)).stream(stream);

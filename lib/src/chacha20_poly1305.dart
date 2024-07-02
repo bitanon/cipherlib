@@ -1,9 +1,10 @@
 // Copyright (c) 2024, Sudipto Chandra
 // All rights reserved. Check LICENSE file for details.
 
-import 'package:cipherlib/src/algorithms/chacha20.dart';
+import 'dart:typed_data';
+
+import 'package:cipherlib/cipherlib.dart';
 import 'package:cipherlib/src/algorithms/chacha20_poly1305.dart';
-import 'package:cipherlib/src/core/authenticator.dart';
 import 'package:hashlib/hashlib.dart' show HashDigest;
 
 export 'algorithms/chacha20_poly1305.dart';
@@ -17,25 +18,23 @@ export 'algorithms/chacha20_poly1305.dart';
 /// - [nonce] : Either 8 or 12 bytes nonce.
 /// - [aad] : Additional authenticated data.
 /// - [mac] : A 128-bit or 16-bytes long authentication tag for verification.
-/// - [blockId] :  The initial block number. Default: 1.
+///
+/// Throws: [AssertionError] on [mac] verification failure.
 ///
 /// Both the encryption and decryption can be done using this same method.
 @pragma('vm:prefer-inline')
-CipherMAC chacha20poly1305(
+HashDigest chacha20poly1305(
   List<int> message,
   List<int> key, {
   List<int>? mac,
   List<int>? nonce,
   List<int>? aad,
-  int blockId = 1,
 }) =>
-    ChaCha20Poly1305(ChaCha20(key)).convert(
-      message,
-      mac: mac,
-      nonce: nonce,
+    ChaCha20Poly1305(
+      key: key,
+      iv: nonce ?? Uint32List(12),
       aad: aad,
-      blockId: blockId,
-    );
+    ).verify(message, mac);
 
 /// Transforms [stream] with ChaCha20 algorithm and generates the message
 /// digest with Poly1305 authentication code generator.
@@ -46,22 +45,20 @@ CipherMAC chacha20poly1305(
 /// - [nonce] : Either 8 or 12 bytes nonce.
 /// - [aad] : Additional authenticated data.
 /// - [mac] : A 128-bit or 16-bytes long authentication tag for verification.
-/// - [blockId] :  The initial block number. Default: 1.
+///
+/// Throws: [AssertionError] on [mac] verification failure.
 ///
 /// Both the encryption and decryption can be done using this same method.
 @pragma('vm:prefer-inline')
-AsyncCipherMAC chacha20poly1305Stream(
+Future<HashDigest> chacha20poly1305Stream(
   Stream<int> stream,
   List<int> key, {
-  Future<HashDigest>? mac,
+  Future<List<int>>? mac,
   List<int>? nonce,
   List<int>? aad,
-  int blockId = 1,
 }) =>
-    ChaCha20Poly1305(ChaCha20(key)).stream(
-      stream,
-      nonce: nonce,
-      mac: mac,
+    ChaCha20Poly1305(
+      key: key,
+      iv: nonce ?? Uint32List(12),
       aad: aad,
-      blockId: blockId,
-    );
+    ).verifyStream(stream, mac);

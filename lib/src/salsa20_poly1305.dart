@@ -1,9 +1,9 @@
 // Copyright (c) 2024, Sudipto Chandra
 // All rights reserved. Check LICENSE file for details.
 
-import 'package:cipherlib/src/algorithms/salsa20.dart';
+import 'dart:typed_data';
+
 import 'package:cipherlib/src/algorithms/salsa20_poly1305.dart';
-import 'package:cipherlib/src/core/authenticator.dart';
 import 'package:hashlib/hashlib.dart' show HashDigest;
 
 export 'algorithms/salsa20_poly1305.dart';
@@ -18,21 +18,22 @@ export 'algorithms/salsa20_poly1305.dart';
 /// - [aad] : Additional authenticated data.
 /// - [mac] : A 128-bit or 16-bytes long authentication tag for verification.
 ///
+/// Throws: [AssertionError] on [mac] verification failure.
+///
 /// Both the encryption and decryption can be done using this same method.
 @pragma('vm:prefer-inline')
-CipherMAC salsa20poly1305(
+HashDigest salsa20poly1305(
   List<int> message,
   List<int> key, {
   List<int>? mac,
   List<int>? nonce,
   List<int>? aad,
 }) =>
-    Salsa20Poly1305(Salsa20(key)).convert(
-      message,
-      mac: mac,
-      nonce: nonce,
+    Salsa20Poly1305(
+      key: key,
+      iv: nonce ?? Uint32List(16),
       aad: aad,
-    );
+    ).verify(message, mac);
 
 /// Transforms [stream] with Salsa20 algorithm and generates the message
 /// digest with Poly1305 authentication code generator.
@@ -44,18 +45,19 @@ CipherMAC salsa20poly1305(
 /// - [aad] : Additional authenticated data.
 /// - [mac] : A 128-bit or 16-bytes long authentication tag for verification.
 ///
+/// Throws: [AssertionError] on [mac] verification failure.
+///
 /// Both the encryption and decryption can be done using this same method.
 @pragma('vm:prefer-inline')
-AsyncCipherMAC salsa20poly1305Stream(
+Future<HashDigest> salsa20poly1305Stream(
   Stream<int> stream,
   List<int> key, {
-  Future<HashDigest>? mac,
+  Future<List<int>>? mac,
   List<int>? nonce,
   List<int>? aad,
 }) =>
-    Salsa20Poly1305(Salsa20(key)).stream(
-      stream,
-      nonce: nonce,
-      mac: mac,
+    Salsa20Poly1305(
+      key: key,
+      iv: nonce ?? Uint32List(16),
       aad: aad,
-    );
+    ).verifyStream(stream, mac);

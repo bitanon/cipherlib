@@ -17,13 +17,14 @@ There are only 2 dependencies used by this package:
 
 ## Features
 
-| Ciphers           | Public class and methods                                         |    Source    |
-| ----------------- | ---------------------------------------------------------------- | :----------: |
-| XOR               | `XOR`, `xor`, `xorStream`                                        |  Wikipedia   |
-| ChaCha20          | `ChaCha20`, `chacha20`, `chacha20Stream`                         |   RFC-8439   |
-| ChaCha20/Poly1305 | `ChaCha20Poly1305`, `chacha20poly1305`, `chacha20poly1305Stream` |   RFC-8439   |
-| Salsa20           | `Salsa20`, `salsa20`, `salsa20Stream`                            | Snuffle-2005 |
-| Salsa20/Poly1305  | `Salsa20Poly1305`, `salsa20poly1305`, `salsa20poly1305Stream`    | Snuffle-2005 |
+| Ciphers           | Public class and methods                                         |    Source     |
+| ----------------- | ---------------------------------------------------------------- | :-----------: |
+| AES               | `AES`, `AESMode`, `aesEncrypt`, `aesDecrypt`                     | NIST.FIPS.197 |
+| XOR               | `XOR`, `xor`, `xorStream`                                        |   Wikipedia   |
+| ChaCha20          | `ChaCha20`, `chacha20`, `chacha20Stream`                         |   RFC-8439    |
+| ChaCha20/Poly1305 | `ChaCha20Poly1305`, `chacha20poly1305`, `chacha20poly1305Stream` |   RFC-8439    |
+| Salsa20           | `Salsa20`, `salsa20`, `salsa20Stream`                            | Snuffle-2005  |
+| Salsa20/Poly1305  | `Salsa20Poly1305`, `salsa20poly1305`, `salsa20poly1305Stream`    | Snuffle-2005  |
 
 ## Getting started
 
@@ -64,19 +65,32 @@ void main() {
     var key = fromHex(
         "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f");
     var nonce = fromHex("000000000000004a00000000");
-    var result = chacha20poly1305(utf8.encode(text), key, nonce: nonce);
-    var plain = chacha20poly1305(
-      result.cipher,
-      key,
-      nonce: nonce,
-      tag: result.tag.bytes,
-    );
+    var cipher = chacha20(utf8.encode(text), key, nonce);
+    var mac = chacha20poly1305(utf8.encode(text), key, nonce: nonce);
+    var plain = chacha20(cipher, key, nonce);
     print('  Text: $text');
     print('   Key: ${toHex(key)}');
     print(' Nonce: ${toHex(nonce)}');
-    print('Cipher: ${toHex(result.cipher)}');
-    print('   Tag: ${result.tag.hex()}');
-    print(' Plain: ${utf8.decode(plain.cipher)}');
+    print('Cipher: ${toHex(cipher)}');
+    print('   Tag: ${mac.hex()}');
+    print(' Plain: ${utf8.decode(plain)}');
+  }
+
+  print('----- Salsa20 -----');
+  {
+    var text = "Hide me!";
+    var key = fromHex(
+        "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f");
+    var nonce = fromHex("00000000000000004a00000000000000");
+    var cipher = salsa20(utf8.encode(text), key, nonce);
+    var mac = salsa20poly1305(utf8.encode(text), key, nonce: nonce);
+    var plain = salsa20(cipher, key, nonce);
+    print('  Text: $text');
+    print('   Key: ${toHex(key)}');
+    print(' Nonce: ${toHex(nonce)}');
+    print('Cipher: ${toHex(cipher)}');
+    print('   Tag: ${mac.hex()}');
+    print(' Plain: ${utf8.decode(plain)}');
   }
 }
 ```

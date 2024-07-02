@@ -7,7 +7,7 @@ environment:
   sdk: '>=2.14.0 <4.0.0'
 
 dependencies:
-  hashlib: ^1.13.1
+  hashlib: ^1.18.1
   hashlib_codecs: ^2.2.0
 
 dev_dependencies:

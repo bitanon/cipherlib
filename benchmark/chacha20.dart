@@ -23,7 +23,7 @@ class CipherlibBenchmark extends Benchmark {
 
   @override
   void run() {
-    cipher.ChaCha20(key).convert(input, nonce: nonce);
+    cipher.ChaCha20(key, nonce).convert(input);
   }
 }
 
@@ -60,7 +60,7 @@ class CipherlibStreamBenchmark extends AsyncBenchmark {
 
   @override
   Future<void> run() async {
-    await cipher.ChaCha20(key).stream(inputStream, nonce: nonce).drain();
+    await cipher.ChaCha20(key, nonce).stream(inputStream).drain();
   }
 }
 

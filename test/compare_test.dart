@@ -10,14 +10,19 @@ import 'package:test/test.dart';
 import 'utils.dart';
 
 void main() {
-  group('Test ChaCha20/Poly1305 cipher', () {
+  group('ChaCha20/Poly1305 cipher', () {
     test('compare with cryptography', () async {
       var key = randomBytes(32);
       for (int j = 0; j < 300; ++j) {
         var nonce = randomBytes(12);
         var text = randomBytes(j);
         var aad = randomBytes(key[0]);
-        var my = cipher.chacha20poly1305(
+        var myCipher = cipher.chacha20(
+          text,
+          key,
+          nonce,
+        );
+        var myMac = cipher.chacha20poly1305(
           text,
           key,
           nonce: nonce,
@@ -29,9 +34,9 @@ void main() {
           nonce: nonce,
           aad: aad,
         );
-        expect(other.cipherText, equals(my.cipher),
+        expect(other.cipherText, equals(myCipher),
             reason: '[text: $j, aad: ${key[0]}]');
-        expect(other.mac.bytes, equals(my.mac.bytes),
+        expect(other.mac.bytes, equals(myMac.bytes),
             reason: '[text: $j, aad: ${key[0]}]]');
       }
     });

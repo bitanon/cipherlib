@@ -3,108 +3,47 @@
 
 import 'dart:typed_data';
 
-import 'package:cipherlib/src/core/stream_cipher.dart';
+import 'package:cipherlib/src/core/cipher.dart';
 
 const int _mask32 = 0xFFFFFFFF;
 
-/// ChaCha20 is a stream cipher designed to provide 256-bit security.
-/// It uses a 256-bit key and a 64-bit nonce to generate a unique
-/// keystream for each messages.
-///
-/// This implementation is based on the [RFC-8439][rfc]
-///
-/// [rfc]: https://www.rfc-editor.org/rfc/rfc8439.html
-class ChaCha20 implements StreamCipher {
-  @override
-  final String name = "ChaCha20";
+/// This sink is used by the [ChaCha20] algorithm.
+class ChaCha20Sink extends CipherSink {
+  int _blockId;
+  int _pos = 0;
+  bool _closed = false;
+  final Uint8List _key;
+  final Uint8List _iv;
+  final _state = Uint32List(16);
+  late final _state8 = _state.buffer.asUint8List();
+  late final _key32 = _key.buffer.asUint32List();
+  late final _iv32 = _iv.buffer.asUint32List();
 
-  /// Key for the cipher
-  final List<int> key;
-
-  const ChaCha20(this.key);
-
-  /// ChaCha20 block generator
-  Uint8List rounds(int size, [List<int>? nonce, int blockId = 0]) {
-    if (size == 0) {
-      return Uint8List(0);
+  ChaCha20Sink(this._key, this._iv, this._blockId) {
+    if (_key.length != 16 && _key.length != 32) {
+      throw ArgumentError('The key should be either 16 or 32 bytes');
     }
-    var key8 = _validateKey(key);
-    var key32 = key8.buffer.asUint32List();
-    var nonce8 = _validateNonce(nonce);
-    var nonce32 = nonce8.buffer.asUint32List();
-
-    var state = Uint8List(size + (64 - (size & 63)));
-    for (int pos = 64; pos <= state.length; pos += 64) {
-      var state32 = state.buffer.asUint32List(pos - 64, 16);
-      _block(state32, key32, nonce32, blockId++);
+    if (_iv.length != 8 && _iv.length != 12) {
+      throw ArgumentError('The nonce should be either 8 or 12 bytes');
     }
-    return state.buffer.asUint8List(0, size);
+    _block(_state, _key32, _iv32, _blockId++);
   }
 
   @override
-  Uint8List convert(
-    List<int> message, {
-    List<int>? nonce,
-    int blockId = 1,
-  }) {
-    var key8 = _validateKey(key);
-    var key32 = key8.buffer.asUint32List();
-    var nonce8 = _validateNonce(nonce);
-    var nonce32 = nonce8.buffer.asUint32List();
-
-    int pos = 0;
-    var state = Uint32List(16);
-    var state8 = state.buffer.asUint8List();
-    var result = Uint8List.fromList(message);
-    for (int i = 0; i < message.length; ++i) {
-      if (pos == 0 || pos == 64) {
-        _block(state, key32, nonce32, blockId++);
-        pos = 0;
+  Uint8List add(List<int> data, [bool last = false]) {
+    if (_closed) {
+      throw StateError('The sink is closed');
+    }
+    _closed = last;
+    var result = Uint8List.fromList(data);
+    for (int i = 0; i < result.length; i++) {
+      if (_pos == 64) {
+        _block(_state, _key32, _iv32, _blockId++);
+        _pos = 0;
       }
-      result[i] ^= state8[pos++];
+      result[i] ^= _state8[_pos++];
     }
     return result;
-  }
-
-  @override
-  Stream<int> stream(
-    Stream<int> stream, {
-    List<int>? nonce,
-    int blockId = 1,
-  }) async* {
-    var key8 = _validateKey(key);
-    var key32 = key8.buffer.asUint32List();
-    var nonce8 = _validateNonce(nonce);
-    var nonce32 = nonce8.buffer.asUint32List();
-
-    int pos = 0;
-    var state = Uint32List(16);
-    var state8 = state.buffer.asUint8List();
-    await for (var x in stream) {
-      if (pos == 0 || pos == 64) {
-        _block(state, key32, nonce32, blockId++);
-        pos = 0;
-      }
-      yield (x ^ state8[pos++]) & 0xFF;
-    }
-  }
-
-  @pragma('vm:prefer-inline')
-  static Uint8List _validateKey(List<int> key) {
-    if (key.length == 8 || key.length == 32) {
-      return key is Uint8List ? key : Uint8List.fromList(key);
-    }
-    throw ArgumentError('The key should be either 8 or 32 bytes');
-  }
-
-  @pragma('vm:prefer-inline')
-  static Uint8List _validateNonce(List<int>? nonce) {
-    if (nonce == null) {
-      return Uint8List(12);
-    } else if (nonce.length == 8 || nonce.length == 12) {
-      return nonce is Uint8List ? nonce : Uint8List.fromList(nonce);
-    }
-    throw ArgumentError('The nonce should be either 8 or 16 bytes');
   }
 
   @pragma('vm:prefer-inline')
@@ -249,4 +188,36 @@ class ChaCha20 implements StreamCipher {
     B[14] += s14;
     B[15] += s15;
   }
+}
+
+/// ChaCha20 is a stream cipher designed to provide 256-bit security.
+/// It uses a 256-bit key and a 64-bit nonce to generate a unique
+/// keystream for each messages.
+///
+/// This implementation is based on the [RFC-8439][rfc]
+///
+/// [rfc]: https://www.rfc-editor.org/rfc/rfc8439.html
+class ChaCha20 extends Cipher {
+  @override
+  final String name = "Chacha-20";
+
+  /// Key for the cipher
+  final Uint8List key;
+
+  /// Initialization vector
+  final Uint8List iv;
+
+  const ChaCha20(this.key, this.iv);
+
+  /// Creates a [ChaCha20] with List<int> [key], and [iv].
+  ///
+  /// Every elements of the both list is transformed to unsigned 8-bit numbers.
+  factory ChaCha20.fromList(List<int> key, List<int> iv) => ChaCha20(
+        key = key is Uint8List ? key : Uint8List.fromList(key),
+        iv = iv is Uint8List ? iv : Uint8List.fromList(iv),
+      );
+
+  @override
+  @pragma('vm:prefer-inline')
+  CipherSink createSink() => ChaCha20Sink(key, iv, 1);
 }

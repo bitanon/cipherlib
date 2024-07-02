@@ -13,7 +13,8 @@ export 'algorithms/xor.dart' show XOR;
 ///
 /// **WARNING**: This is not intended to be used for security purposes.
 @pragma('vm:prefer-inline')
-Uint8List xor(List<int> message, List<int> key) => XOR(key).convert(message);
+Uint8List xor(List<int> message, List<int> key) =>
+    XOR.fromList(key).convert(message);
 
 /// Apply [XOR] cipher to the message [stream] using the [key].
 ///
@@ -22,4 +23,4 @@ Uint8List xor(List<int> message, List<int> key) => XOR(key).convert(message);
 /// **WARNING**: This is not intended to be used for security purposes.
 @pragma('vm:prefer-inline')
 Stream<int> xorStream(Stream<int> stream, List<int> key) =>
-    XOR(key).stream(stream);
+    XOR.fromList(key).stream(stream);

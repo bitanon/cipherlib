@@ -22,7 +22,7 @@ class CipherlibBenchmark extends Benchmark {
 
   @override
   void run() {
-    cipher.ChaCha20Poly1305(cipher.ChaCha20(key)).convert(input, nonce: nonce);
+    cipher.ChaCha20Poly1305(key: key, iv: nonce).convert(input);
   }
 }
 
@@ -56,7 +56,7 @@ class CipherlibDigestBenchmark extends Benchmark {
 
   @override
   void run() {
-    cipher.ChaCha20Poly1305(cipher.ChaCha20(key)).digest(input, nonce: nonce);
+    cipher.ChaCha20Poly1305(key: key, iv: nonce).digest(input);
   }
 }
 
