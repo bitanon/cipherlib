@@ -169,17 +169,14 @@ class Salsa20Sink extends CipherSink {
 /// This implementation is based on the [Snuffle 2005 specification][spec]
 ///
 /// [spec]: https://cr.yp.to/snuffle/spec.pdf
-class Salsa20 extends Cipher {
+class Salsa20 extends SaltedCipher {
   @override
   final String name = "Salsa-20";
 
   /// Key for the cipher
   final Uint8List key;
 
-  /// Initialization vector
-  final Uint8List iv;
-
-  const Salsa20(this.key, this.iv);
+  const Salsa20(this.key, Uint8List iv) : super(iv);
 
   /// Creates a [Salsa20] with List<int> [key], and [iv].
   ///
@@ -191,5 +188,5 @@ class Salsa20 extends Cipher {
 
   @override
   @pragma('vm:prefer-inline')
-  Salsa20Sink createSink() => Salsa20Sink(key, iv, 0);
+  Salsa20Sink createSink() => Salsa20Sink(key, salt, 0);
 }

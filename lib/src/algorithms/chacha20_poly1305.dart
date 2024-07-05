@@ -3,7 +3,7 @@
 
 import 'dart:typed_data';
 
-import 'package:cipherlib/src/core/cipher.dart';
+import 'package:cipherlib/src/core/aead_cipher.dart';
 import 'package:hashlib/hashlib.dart' show HashDigest;
 
 import 'chacha20.dart';
@@ -21,8 +21,14 @@ import 'poly1305.dart';
 class ChaCha20Poly1305 extends ChaCha20 with AEADCipher {
   final Poly1305AEAD _aead;
 
-  const ChaCha20Poly1305._(Uint8List key, Uint8List iv, this._aead)
-      : super(key, iv);
+  @override
+  String get name => "${super.name}/${_aead.name}";
+
+  const ChaCha20Poly1305._(
+    Uint8List key,
+    Uint8List iv,
+    this._aead,
+  ) : super(key, iv);
 
   factory ChaCha20Poly1305({
     required List<int> key,
@@ -32,41 +38,38 @@ class ChaCha20Poly1305 extends ChaCha20 with AEADCipher {
       ChaCha20.fromList(key, iv).poly1305(aad);
 
   @override
-  String get name => "${super.name}/${_aead.name}";
-
-  @override
-  HashDigest verify(List<int> message, [List<int>? mac]) {
-    if (mac == null) {
-      return _aead.convert(convert(message));
-    }
-    var my = _aead.convert(message);
-    if (!my.isEqual(mac)) {
-      throw AssertionError('Message authenticity check failed');
-    }
-    return my;
+  void resetSalt() {
+    super.resetSalt();
+    var otk = ChaCha20Sink(key, salt, 0).add(Uint8List(32));
+    _aead.key.setAll(0, otk);
   }
 
   @override
-  Future<HashDigest> verifyBufferedStream(
-    Stream<List<int>> stream, [
-    Future<List<int>>? mac,
-  ]) async {
+  AEADResult verify(List<int> message, [List<int>? mac]) {
+    var cipher = convert(message);
+    HashDigest digest;
     if (mac == null) {
-      return await _aead.bind(bind(stream)).first;
+      digest = _aead.convert(cipher);
+    } else {
+      digest = _aead.convert(message);
+      if (!digest.isEqual(mac)) {
+        throw AssertionError('Message authenticity check failed');
+      }
     }
-    var my = await _aead.bind(stream).first;
-    if (!my.isEqual(await mac)) {
-      throw AssertionError('Message authenticity check failed');
-    }
-    return my;
+    return AEADResult(
+      salt: salt,
+      mac: digest,
+      message: cipher,
+    );
   }
 }
 
-extension ChaCha20Poly1305Extention on ChaCha20 {
+/// Adds [poly1305] to [ChaCha20] to create an instance of [ChaCha20Poly1305]
+extension ChaCha20ExtentionForPoly1305 on ChaCha20 {
   @pragma('vm:prefer-inline')
   ChaCha20Poly1305 poly1305([List<int>? aad]) {
-    var otk = ChaCha20Sink(key, iv, 0).add(Uint8List(32));
+    var otk = ChaCha20Sink(key, salt, 0).add(Uint8List(32));
     var aead = Poly1305AEAD(otk, aad);
-    return ChaCha20Poly1305._(key, iv, aead);
+    return ChaCha20Poly1305._(key, salt, aead);
   }
 }

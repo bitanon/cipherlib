@@ -17,12 +17,7 @@ void main() {
         var nonce = randomBytes(12);
         var text = randomBytes(j);
         var aad = randomBytes(key[0]);
-        var myCipher = cipher.chacha20(
-          text,
-          key,
-          nonce,
-        );
-        var myMac = cipher.chacha20poly1305(
+        var my = cipher.chacha20poly1305(
           text,
           key,
           nonce: nonce,
@@ -34,9 +29,9 @@ void main() {
           nonce: nonce,
           aad: aad,
         );
-        expect(other.cipherText, equals(myCipher),
+        expect(other.cipherText, equals(my.message),
             reason: '[text: $j, aad: ${key[0]}]');
-        expect(other.mac.bytes, equals(myMac.bytes),
+        expect(other.mac.bytes, equals(my.mac.bytes),
             reason: '[text: $j, aad: ${key[0]}]]');
       }
     });

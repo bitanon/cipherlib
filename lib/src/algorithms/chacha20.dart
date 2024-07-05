@@ -197,17 +197,14 @@ class ChaCha20Sink extends CipherSink {
 /// This implementation is based on the [RFC-8439][rfc]
 ///
 /// [rfc]: https://www.rfc-editor.org/rfc/rfc8439.html
-class ChaCha20 extends Cipher {
+class ChaCha20 extends SaltedCipher {
   @override
   final String name = "Chacha-20";
 
   /// Key for the cipher
   final Uint8List key;
 
-  /// Initialization vector
-  final Uint8List iv;
-
-  const ChaCha20(this.key, this.iv);
+  const ChaCha20(this.key, Uint8List iv) : super(iv);
 
   /// Creates a [ChaCha20] with List<int> [key], and [iv].
   ///
@@ -219,5 +216,5 @@ class ChaCha20 extends Cipher {
 
   @override
   @pragma('vm:prefer-inline')
-  CipherSink createSink() => ChaCha20Sink(key, iv, 1);
+  CipherSink createSink() => ChaCha20Sink(key, salt, 1);
 }

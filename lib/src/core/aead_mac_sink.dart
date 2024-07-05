@@ -28,7 +28,7 @@ class MACSinkForAEAD implements MACSinkBase {
   void reset() => _algo.reset();
 
   @override
-  void close() => _algo.close();
+  void close() => digest();
 
   @override
   void init(List<int> keypair) {
@@ -51,6 +51,9 @@ class MACSinkForAEAD implements MACSinkBase {
 
   @override
   HashDigest digest() {
+    if (_algo.closed) {
+      return _algo.digest();
+    }
     if (_messageLength & 15 != 0) {
       _algo.add(Uint8List(16 - (_messageLength & 15)));
     }

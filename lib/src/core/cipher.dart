@@ -4,10 +4,9 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:cipherlib/src/core/utils.dart';
-import 'package:hashlib/hashlib.dart' show HashDigest;
+import 'package:hashlib/hashlib.dart' show fillRandom;
 
-const int _defaultBufferSize = 1024;
+const int _defaultChunkSize = 1024;
 
 abstract class CipherBase {
   const CipherBase();
@@ -65,17 +64,17 @@ abstract class Cipher extends CipherBase
   Stream<int> stream(Stream<int> stream) async* {
     int p = 0;
     var sink = createSink();
-    var buffer = Uint8List(_defaultBufferSize);
+    var chunk = Uint8List(_defaultChunkSize);
     await for (var x in stream) {
-      buffer[p++] = x;
-      if (p == buffer.length) {
-        for (var e in sink.add(buffer)) {
+      chunk[p++] = x;
+      if (p == chunk.length) {
+        for (var e in sink.add(chunk)) {
           yield e;
         }
         p = 0;
       }
     }
-    List<int> rest = (p == 0) ? [] : Uint8List.view(buffer.buffer, 0, p);
+    List<int> rest = (p == 0) ? [] : Uint8List.view(chunk.buffer, 0, p);
     for (var e in sink.add(rest, true)) {
       yield e;
     }
@@ -114,48 +113,15 @@ abstract class CollateCipher implements CipherBase {
   Stream<int> decryptStream(Stream<int> stream) => decryptor.stream(stream);
 }
 
-/// Mixin for ciphers with AEAD support
-abstract class AEADCipher implements CipherBase {
-  /// Generates the authentication tag for the [message].
-  @pragma('vm:prefer-inline')
-  HashDigest digest(List<int> message) => verify(message);
+/// Template for Ciphers accepting a random salt
+abstract class SaltedCipher extends Cipher {
+  /// The salt or initialization vector
+  final Uint8List salt;
 
-  /// Generates the authentication tag for the [stream].
-  @pragma('vm:prefer-inline')
-  Future<HashDigest> digestStream(Stream<int> stream) => verifyStream(stream);
+  /// Creates the cipher with an initial salt value
+  const SaltedCipher(this.salt);
 
-  /// Generates the authentication tag for the buffered [stream].
+  /// Replace the current salt with a new one
   @pragma('vm:prefer-inline')
-  Future<HashDigest> digestBufferedStream(Stream<List<int>> stream) =>
-      verifyBufferedStream(stream);
-
-  /// Verify the [message] against the authentication code [mac],
-  /// and throws an [AssertionError] on match failure.
-  ///
-  /// If [mac] is absent it returns the digest only without any verification.
-  HashDigest verify(
-    List<int> message, [
-    List<int>? mac,
-  ]);
-
-  /// Verify the byte [stream] against the authentication code [mac],
-  /// and throws an [AssertionError] on match failure.
-  ///
-  /// If [mac] is absent it returns the digest only without any verification.
-  @pragma('vm:prefer-inline')
-  Future<HashDigest> verifyStream(
-    Stream<int> stream, [
-    Future<List<int>>? mac,
-  ]) =>
-      verifyBufferedStream(asBufferedStream(stream, _defaultBufferSize), mac);
-
-  /// Verify the buffered byte [stream] against the authentication code [mac],
-  /// and throws an [AssertionError] on match failure.
-  ///
-  /// If [mac] is absent it returns the digest only without any verification.
-  @pragma('vm:prefer-inline')
-  Future<HashDigest> verifyBufferedStream(
-    Stream<List<int>> stream, [
-    Future<List<int>>? mac,
-  ]);
+  void resetSalt() => fillRandom(salt.buffer);
 }
