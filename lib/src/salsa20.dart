@@ -18,10 +18,15 @@ export 'algorithms/salsa20.dart' show Salsa20, Salsa20Sink;
 @pragma('vm:prefer-inline')
 Uint8List salsa20(
   List<int> message,
-  List<int> key, [
+  List<int> key, {
   List<int>? nonce,
-]) =>
-    Salsa20.fromList(key, nonce ?? Uint8List(16)).convert(message);
+  int counter = 0,
+}) =>
+    Salsa20.fromList(
+      key,
+      nonce ?? Uint8List(16),
+      counter,
+    ).convert(message);
 
 /// Apply [Salsa20] cipher with the follwing parameters:
 ///
@@ -34,7 +39,12 @@ Uint8List salsa20(
 @pragma('vm:prefer-inline')
 Stream<int> salsa20Stream(
   Stream<int> stream,
-  List<int> key, [
+  List<int> key, {
   List<int>? nonce,
-]) =>
-    Salsa20.fromList(key, nonce ?? Uint8List(16)).stream(stream);
+  int counter = 0,
+}) =>
+    Salsa20.fromList(
+      key,
+      nonce ?? Uint8List(16),
+      counter,
+    ).stream(stream);

@@ -9,7 +9,7 @@ const int _mask32 = 0xFFFFFFFF;
 
 /// This sink is used by the [Salsa20] algorithm.
 class Salsa20Sink extends CipherSink {
-  int _blockId;
+  int _counter;
   int _pos = 0;
   bool _closed = false;
   final Uint8List _key;
@@ -19,14 +19,14 @@ class Salsa20Sink extends CipherSink {
   late final _key32 = _key.buffer.asUint32List();
   late final _iv32 = _iv.buffer.asUint32List();
 
-  Salsa20Sink(this._key, this._iv, this._blockId) {
+  Salsa20Sink(this._key, this._iv, this._counter) {
     if (_key.length != 16 && _key.length != 32) {
       throw ArgumentError('The key should be either 16 or 32 bytes');
     }
     if (_iv.length != 8 && _iv.length != 16) {
       throw ArgumentError('The nonce should be either 8 or 16 bytes');
     }
-    _block(_state, _key32, _iv32, _blockId++);
+    _block(_state, _key32, _iv32, _counter++);
   }
 
   @override
@@ -38,7 +38,7 @@ class Salsa20Sink extends CipherSink {
     var result = Uint8List.fromList(data);
     for (int i = 0; i < result.length; i++) {
       if (_pos == 64) {
-        _block(_state, _key32, _iv32, _blockId++);
+        _block(_state, _key32, _iv32, _counter++);
         _pos = 0;
       }
       result[i] ^= _state8[_pos++];
@@ -50,7 +50,7 @@ class Salsa20Sink extends CipherSink {
   static int _rotl32(int x, int n) =>
       (((x << n) & _mask32) ^ ((x & _mask32) >>> (32 - n)));
 
-  static void _block(Uint32List B, Uint32List K, Uint32List N, int blockId) {
+  static void _block(Uint32List B, Uint32List K, Uint32List N, int counter) {
     int i, s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15;
 
     // init state
@@ -87,8 +87,8 @@ class Salsa20Sink extends CipherSink {
     if (N.lengthInBytes == 8) {
       s6 = B[6] = N[0];
       s7 = B[7] = N[1];
-      s8 = B[8] = blockId;
-      s9 = B[9] = blockId >>> 32;
+      s8 = B[8] = counter;
+      s9 = B[9] = counter >>> 32;
     } else {
       s6 = B[6] = N[0];
       s7 = B[7] = N[1];
@@ -176,17 +176,30 @@ class Salsa20 extends SaltedCipher {
   /// Key for the cipher
   final Uint8List key;
 
-  const Salsa20(this.key, Uint8List iv) : super(iv);
+  /// The initial block id
+  final int counter;
+
+  const Salsa20(
+    this.key,
+    Uint8List iv, [
+    this.counter = 0,
+  ]) : super(iv);
 
   /// Creates a [Salsa20] with List<int> [key], and [iv].
   ///
   /// Every elements of the both list is transformed to unsigned 8-bit numbers.
-  factory Salsa20.fromList(List<int> key, List<int> iv) => Salsa20(
+  factory Salsa20.fromList(
+    List<int> key,
+    List<int> iv, [
+    int counter = 0,
+  ]) =>
+      Salsa20(
         key = key is Uint8List ? key : Uint8List.fromList(key),
         iv = iv is Uint8List ? iv : Uint8List.fromList(iv),
+        counter,
       );
 
   @override
   @pragma('vm:prefer-inline')
-  Salsa20Sink createSink() => Salsa20Sink(key, salt, 0);
+  Salsa20Sink createSink() => Salsa20Sink(key, salt, counter);
 }

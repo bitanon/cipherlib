@@ -30,7 +30,7 @@ class AEADResult {
   final Uint8List? salt;
 
   /// The output message
-  final List<int> message;
+  final Uint8List message;
 
   /// The message authentication code
   final HashDigest mac;

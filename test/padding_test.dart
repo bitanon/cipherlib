@@ -66,27 +66,27 @@ void main() {
     });
   });
 
-  group('PaddingScheme.ansiX923', () {
+  group('PaddingScheme.ansi', () {
     test('throws StateError on empty block', () {
-      expect(() => Padding.ansiX923.pad(Uint8List(10), 10), throwsStateError);
-      expect(() => Padding.ansiX923.pad(Uint8List(0), 10), throwsStateError);
-      expect(() => Padding.ansiX923.pad(Uint8List(5), 0, 0), throwsStateError);
-      expect(() => Padding.ansiX923.pad(Uint8List(5), 3, 3), throwsStateError);
-      expect(() => Padding.ansiX923.pad(Uint8List(5), 10, 3), throwsStateError);
+      expect(() => Padding.ansi.pad(Uint8List(10), 10), throwsStateError);
+      expect(() => Padding.ansi.pad(Uint8List(0), 10), throwsStateError);
+      expect(() => Padding.ansi.pad(Uint8List(5), 0, 0), throwsStateError);
+      expect(() => Padding.ansi.pad(Uint8List(5), 3, 3), throwsStateError);
+      expect(() => Padding.ansi.pad(Uint8List(5), 10, 3), throwsStateError);
     });
 
     test('pad <-> unpad', () {
       for (int s = 1; s < 100; ++s) {
         for (int i = 0; i < s; ++i) {
           var block = List.filled(100, -1);
-          expect(Padding.ansiX923.pad(block, i, s), true,
+          expect(Padding.ansi.pad(block, i, s), true,
               reason: 'pad | pos: $i, size: $s');
           expect(
               block.skip(i).take(s - i - 1), equals(List.filled(s - i - 1, 0)),
               reason: 'pad-check-inner | pos: $i, size: $s');
           expect(block[s - 1], equals(s - i),
               reason: 'pad-check-last | pos: $i, size: $s');
-          var out = Padding.ansiX923.unpad(block, s);
+          var out = Padding.ansi.unpad(block, s);
           expect(out, equals(block.take(i)),
               reason: 'unpad | pos: $i, size: $s');
         }

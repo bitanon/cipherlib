@@ -13,7 +13,7 @@ void main() {
   test('empty message', () {
     var key = randomNumbers(32);
     var nonce = randomBytes(16);
-    expect(salsa20([], key, nonce), equals([]));
+    expect(salsa20([], key, nonce: nonce), equals([]));
   });
   test('key length is not 32 bytes', () {
     var text = randomNumbers(32);
@@ -31,9 +31,7 @@ void main() {
   test('nonce length is not 12 bytes', () {
     var key = Uint8List(32);
     var text = Uint8List(100);
-    expect(() => salsa20(text, key, []), throwsArgumentError);
-    expect(() => salsa20(text, key, Uint8List(11)), throwsArgumentError);
-    expect(() => salsa20(text, key, Uint8List(13)), throwsArgumentError);
+    expect(() => salsa20(text, key, nonce: [1]), throwsArgumentError);
   });
   test('Specification example (32-bytes key)', () {
     var key = [
@@ -49,7 +47,7 @@ void main() {
       184, 177, 160, 133, 130, 6, 72, 149, 119, 192, 195, 132, 236, 234, 103,
       246, 74
     ];
-    var cipher = salsa20(sample, key, nonce);
+    var cipher = salsa20(sample, key, nonce: nonce);
     expect(output, equals(cipher));
   });
   test('Specification example (16-bytes key)', () {
@@ -63,7 +61,7 @@ void main() {
       112, 29, 14, 232, 5, 16, 151, 140, 183, 141, 171, 9, 122, 181, 104, 182,
       177, 193
     ];
-    var cipher = salsa20(sample, key, nonce);
+    var cipher = salsa20(sample, key, nonce: nonce);
     expect(output, equals(cipher));
   });
   test('encryption <-> decryption (convert)', () {
@@ -72,8 +70,8 @@ void main() {
     for (int j = 0; j < 100; ++j) {
       var text = randomNumbers(j);
       var bytes = Uint8List.fromList(text);
-      var cipher = salsa20(text, key, nonce);
-      var plain = salsa20(cipher, key, nonce);
+      var cipher = salsa20(text, key, nonce: nonce);
+      var plain = salsa20(cipher, key, nonce: nonce);
       expect(bytes, equals(plain), reason: '[text: $j]');
     }
   });
@@ -84,8 +82,8 @@ void main() {
       var text = randomNumbers(j);
       var bytes = Uint8List.fromList(text);
       var stream = Stream.fromIterable(text);
-      var cipherStream = salsa20Stream(stream, key, nonce);
-      var plainStream = salsa20Stream(cipherStream, key, nonce);
+      var cipherStream = salsa20Stream(stream, key, nonce: nonce);
+      var plainStream = salsa20Stream(cipherStream, key, nonce: nonce);
       var plain = await plainStream.toList();
       expect(plain, equals(bytes), reason: '[text: $j]');
     }
@@ -96,8 +94,8 @@ void main() {
     for (int j = 0; j < 100; ++j) {
       var text = randomNumbers(j);
       var plain = Uint8List.fromList(text);
-      var cipher = salsa20(text, key, nonce);
-      var backwards = salsa20(cipher, key, nonce);
+      var cipher = salsa20(text, key, nonce: nonce);
+      var backwards = salsa20(cipher, key, nonce: nonce);
       expect(plain, equals(backwards), reason: '[text: $j]');
     }
   });
@@ -106,7 +104,7 @@ void main() {
     var nonce = randomBytes(8);
     for (int j = 0; j < 100; ++j) {
       var text = randomBytes(j);
-      var my = salsa20(text, key, nonce);
+      var my = salsa20(text, key, nonce: nonce);
 
       var instance = pc.StreamCipher('Salsa20');
       instance.init(

@@ -18,10 +18,15 @@ export 'algorithms/chacha20.dart' show ChaCha20, ChaCha20Sink;
 @pragma('vm:prefer-inline')
 Uint8List chacha20(
   List<int> message,
-  List<int> key, [
+  List<int> key, {
   List<int>? nonce,
-]) =>
-    ChaCha20.fromList(key, nonce ?? Uint8List(12)).convert(message);
+  int counter = 1,
+}) =>
+    ChaCha20.fromList(
+      key,
+      nonce ?? Uint8List(12),
+      counter,
+    ).convert(message);
 
 /// Apply [ChaCha20] cipher with the follwing parameters:
 ///
@@ -34,7 +39,12 @@ Uint8List chacha20(
 @pragma('vm:prefer-inline')
 Stream<int> chacha20Stream(
   Stream<int> stream,
-  List<int> key, [
+  List<int> key, {
   List<int>? nonce,
-]) =>
-    ChaCha20.fromList(key, nonce ?? Uint8List(12)).stream(stream);
+  int counter = 1,
+}) =>
+    ChaCha20.fromList(
+      key,
+      nonce ?? Uint8List(12),
+      counter,
+    ).stream(stream);

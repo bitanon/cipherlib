@@ -21,9 +21,9 @@ void main() {
     var text = "Hide me!";
     var key = fromHex(
         "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f");
-    var nonce = fromHex("00000000000000004a00000000000000");
+    var nonce = fromHex("00000000000000004a000000");
     var res = chacha20poly1305(utf8.encode(text), key, nonce: nonce);
-    var plain = chacha20(res.message, key, nonce);
+    var plain = chacha20(res.message, key, nonce: nonce);
     print('  Text: $text');
     print('   Key: ${toHex(key)}');
     print(' Nonce: ${toHex(nonce)}');

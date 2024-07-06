@@ -1,9 +1,7 @@
-// Copyright (c) 2023, Sudipto Chandra
+// Copyright (c) 2024, Sudipto Chandra
 // All rights reserved. Check LICENSE file for details.
 
 import 'dart:typed_data';
-
-import 'package:hashlib/hashlib.dart' show fillNumbers;
 
 /// Padding is a process to extend the input message to match a specific
 /// block size to be used in the cryptographic algorithms.
@@ -11,6 +9,9 @@ import 'package:hashlib/hashlib.dart' show fillNumbers;
 /// Reference: https://en.wikipedia.org/wiki/Padding_(cryptography)
 abstract class Padding {
   const Padding();
+
+  /// The name of the algorithm
+  String get name;
 
   /// Does not apply any padding. The message size is always expected to be
   /// equal to the block size.
@@ -56,28 +57,7 @@ abstract class Padding {
   /// ... | FA 3D E6 61 00 00 00 04 |
   ///                   -- -- -- ** |
   /// ```
-  static const ansiX923 = _ANSIx923Padding();
-
-  /// This is similar to [ansiX923] scheme, except instead of filling with a
-  /// sequence of zeros, random bytes are inserted as padding.
-  ///
-  /// Defined in [ISO 10126-1:1991][iso] a.k.a. "Banking — Procedures for message
-  /// encipherment (wholesale)"
-  ///
-  /// https://www.iso.org/standard/18113.html
-  ///
-  /// _Limitation: Maximum block size must be less than 256 bytes_
-  ///
-  /// ### Example: ###
-  /// 4-bytes message to 8-bytes block:
-  /// ```
-  /// ... | FA 3D E6 61 |
-  /// ... | FA 3D E6 61 81 A6 23 04 |
-  ///                   -- -- -- ** |
-  /// ```
-  ///
-  /// [iso]: https://www.iso.org/standard/18113.html
-  static const iso10126 = _ISO10126Padding();
+  static const ansi = _ANSIPadding();
 
   /// Padding is in whole bytes. The value of each added byte is the number of
   /// bytes that are added. If the input size is already a multiple of the block
@@ -140,6 +120,9 @@ abstract class Padding {
 }
 
 class _NonePadding extends Padding {
+  @override
+  final String name = "NoPadding";
+
   const _NonePadding();
 
   @override
@@ -154,6 +137,9 @@ class _NonePadding extends Padding {
 }
 
 class _ZeroPadding extends Padding {
+  @override
+  final String name = "Zero";
+
   const _ZeroPadding();
 
   @override
@@ -179,6 +165,9 @@ class _ZeroPadding extends Padding {
 }
 
 class _BytePadding extends Padding {
+  @override
+  final String name = "Byte";
+
   const _BytePadding();
 
   @override
@@ -212,8 +201,11 @@ class _BytePadding extends Padding {
   }
 }
 
-class _ANSIx923Padding extends Padding {
-  const _ANSIx923Padding();
+class _ANSIPadding extends Padding {
+  @override
+  final String name = "ANSI-X9.23";
+
+  const _ANSIPadding();
 
   @override
   bool pad(List<int> block, int pos, [int? size]) {
@@ -248,36 +240,10 @@ class _ANSIx923Padding extends Padding {
   }
 }
 
-class _ISO10126Padding extends Padding {
-  const _ISO10126Padding();
-
-  @override
-  bool pad(List<int> block, int pos, [int? size]) {
-    size ??= block.length;
-    if (pos >= size) {
-      throw StateError('No space for padding');
-    }
-    int n = size - pos;
-    if (n > 255) {
-      throw StateError('Padding size must not exceed 255 bytes');
-    }
-    fillNumbers(block, start: pos);
-    block[pos - 1] = n;
-    return true;
-  }
-
-  @override
-  int getPadLength(List<int> block, [int? size]) {
-    size ??= block.length;
-    int n = block[size - 1];
-    if (size < n) {
-      throw StateError('Invalid padding');
-    }
-    return n;
-  }
-}
-
 class _PKCS7Padding extends Padding {
+  @override
+  final String name = "PKCS#7";
+
   const _PKCS7Padding();
 
   @override
@@ -312,7 +278,10 @@ class _PKCS7Padding extends Padding {
   }
 }
 
-class _PKCS5Padding extends _PKCS7Padding {
+class _PKCS5Padding extends Padding {
+  @override
+  final String name = "PKCS#5";
+
   const _PKCS5Padding();
 
   @override
@@ -329,5 +298,20 @@ class _PKCS5Padding extends _PKCS7Padding {
       block[pos] = n;
     }
     return true;
+  }
+
+  @override
+  int getPadLength(List<int> block, [int? size]) {
+    size ??= block.length;
+    int n = block[size - 1];
+    if (size < n) {
+      throw StateError('Invalid padding');
+    }
+    for (int p = size - n; p < size; p++) {
+      if (block[p] != n) {
+        throw StateError('Invalid padding');
+      }
+    }
+    return n;
   }
 }

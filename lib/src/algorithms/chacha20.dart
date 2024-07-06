@@ -9,7 +9,7 @@ const int _mask32 = 0xFFFFFFFF;
 
 /// This sink is used by the [ChaCha20] algorithm.
 class ChaCha20Sink extends CipherSink {
-  int _blockId;
+  int _counter;
   int _pos = 0;
   bool _closed = false;
   final Uint8List _key;
@@ -19,14 +19,14 @@ class ChaCha20Sink extends CipherSink {
   late final _key32 = _key.buffer.asUint32List();
   late final _iv32 = _iv.buffer.asUint32List();
 
-  ChaCha20Sink(this._key, this._iv, this._blockId) {
+  ChaCha20Sink(this._key, this._iv, this._counter) {
     if (_key.length != 16 && _key.length != 32) {
       throw ArgumentError('The key should be either 16 or 32 bytes');
     }
     if (_iv.length != 8 && _iv.length != 12) {
       throw ArgumentError('The nonce should be either 8 or 12 bytes');
     }
-    _block(_state, _key32, _iv32, _blockId++);
+    _block(_state, _key32, _iv32, _counter++);
   }
 
   @override
@@ -38,7 +38,7 @@ class ChaCha20Sink extends CipherSink {
     var result = Uint8List.fromList(data);
     for (int i = 0; i < result.length; i++) {
       if (_pos == 64) {
-        _block(_state, _key32, _iv32, _blockId++);
+        _block(_state, _key32, _iv32, _counter++);
         _pos = 0;
       }
       result[i] ^= _state8[_pos++];
@@ -50,7 +50,7 @@ class ChaCha20Sink extends CipherSink {
   static int _rotl32(int x, int n) =>
       (((x << n) & _mask32) ^ ((x & _mask32) >>> (32 - n)));
 
-  static void _block(Uint32List B, Uint32List K, Uint32List N, int blockId) {
+  static void _block(Uint32List B, Uint32List K, Uint32List N, int counter) {
     int i, s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15;
 
     // init state
@@ -81,9 +81,9 @@ class ChaCha20Sink extends CipherSink {
       s10 = B[10] = K[6];
       s11 = B[11] = K[7];
     }
-    s12 = B[12] = blockId;
+    s12 = B[12] = counter;
     if (N.lengthInBytes == 8) {
-      s13 = B[13] = blockId >>> 32;
+      s13 = B[13] = counter >>> 32;
       s14 = B[14] = N[0];
       s15 = B[15] = N[1];
     } else {
@@ -204,17 +204,30 @@ class ChaCha20 extends SaltedCipher {
   /// Key for the cipher
   final Uint8List key;
 
-  const ChaCha20(this.key, Uint8List iv) : super(iv);
+  /// The initial block id
+  final int counter;
+
+  const ChaCha20(
+    this.key,
+    Uint8List iv, [
+    this.counter = 1,
+  ]) : super(iv);
 
   /// Creates a [ChaCha20] with List<int> [key], and [iv].
   ///
   /// Every elements of the both list is transformed to unsigned 8-bit numbers.
-  factory ChaCha20.fromList(List<int> key, List<int> iv) => ChaCha20(
+  factory ChaCha20.fromList(
+    List<int> key,
+    List<int> iv, [
+    int counter = 1,
+  ]) =>
+      ChaCha20(
         key = key is Uint8List ? key : Uint8List.fromList(key),
         iv = iv is Uint8List ? iv : Uint8List.fromList(iv),
+        counter,
       );
 
   @override
   @pragma('vm:prefer-inline')
-  CipherSink createSink() => ChaCha20Sink(key, salt, 1);
+  CipherSink createSink() => ChaCha20Sink(key, salt, counter);
 }

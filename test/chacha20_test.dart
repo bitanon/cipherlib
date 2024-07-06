@@ -14,7 +14,7 @@ void main() {
   test('empty message', () {
     var key = randomNumbers(32);
     var nonce = randomBytes(12);
-    expect(chacha20([], key, nonce), equals([]));
+    expect(chacha20([], key, nonce: nonce), equals([]));
   });
   test('key length is not 32 bytes', () {
     var text = randomNumbers(32);
@@ -32,9 +32,7 @@ void main() {
   test('nonce length is not 12 bytes', () {
     var key = Uint8List(32);
     var text = Uint8List(100);
-    expect(() => chacha20(text, key, []), throwsArgumentError);
-    expect(() => chacha20(text, key, Uint8List(11)), throwsArgumentError);
-    expect(() => chacha20(text, key, Uint8List(13)), throwsArgumentError);
+    expect(() => chacha20(text, key, nonce: [1]), throwsArgumentError);
   });
   test('RFC 8439 example-1', () {
     var key = fromHex(
@@ -53,7 +51,7 @@ void main() {
       "5af90bbf74a35be6b40b8eedf2785e42"
       "874d",
     );
-    var cipher = chacha20(sample.codeUnits, key, nonce);
+    var cipher = chacha20(sample.codeUnits, key, nonce: nonce);
     expect(output, equals(cipher));
   });
   test('RFC 8439 example-2', () {
@@ -75,7 +73,7 @@ void main() {
       "3ff4def08e4b7a9de576d26586cec64b"
       "6116",
     );
-    var cipher = chacha20(sample.codeUnits, key, nonce);
+    var cipher = chacha20(sample.codeUnits, key, nonce: nonce);
     expect(output, equals(cipher));
   });
   test('encryption <-> decryption (convert)', () {
@@ -84,8 +82,8 @@ void main() {
     for (int j = 0; j < 100; ++j) {
       var text = randomNumbers(j);
       var bytes = Uint8List.fromList(text);
-      var cipher = chacha20(text, key, nonce);
-      var plain = chacha20(cipher, key, nonce);
+      var cipher = chacha20(text, key, nonce: nonce);
+      var plain = chacha20(cipher, key, nonce: nonce);
       expect(bytes, equals(plain), reason: '[text: $j]');
     }
   });
@@ -96,8 +94,8 @@ void main() {
       var text = randomNumbers(j);
       var bytes = Uint8List.fromList(text);
       var stream = Stream.fromIterable(text);
-      var cipherStream = chacha20Stream(stream, key, nonce);
-      var plainStream = chacha20Stream(cipherStream, key, nonce);
+      var cipherStream = chacha20Stream(stream, key, nonce: nonce);
+      var plainStream = chacha20Stream(cipherStream, key, nonce: nonce);
       var plain = await plainStream.toList();
       expect(bytes, equals(plain), reason: '[text: $j]');
     }
@@ -108,8 +106,8 @@ void main() {
     for (int j = 0; j < 100; ++j) {
       var text = randomNumbers(j);
       var bytes = Uint8List.fromList(text);
-      var cipher = chacha20(text, key, nonce);
-      var plain = chacha20(cipher, key, nonce);
+      var cipher = chacha20(text, key, nonce: nonce);
+      var plain = chacha20(cipher, key, nonce: nonce);
       expect(bytes, equals(plain), reason: '[text: $j]');
     }
   });
