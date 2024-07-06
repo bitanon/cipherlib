@@ -14,10 +14,10 @@ abstract class AESCore {
         {
           int s0, s1, s2, s3;
           var w = Uint32List(44);
-          s0 = w[00] = key[0];
-          s1 = w[01] = key[1];
-          s2 = w[02] = key[2];
-          s3 = w[03] = key[3];
+          s0 = w[00] = _swap32(key[0]);
+          s1 = w[01] = _swap32(key[1]);
+          s2 = w[02] = _swap32(key[2]);
+          s3 = w[03] = _swap32(key[3]);
           // 0: 4..7
           s0 = w[04] = s0 ^ _wordSubRot(s3) ^ _rcon[0];
           s1 = w[05] = s1 ^ s0;
@@ -75,12 +75,12 @@ abstract class AESCore {
         {
           int s0, s1, s2, s3, s4, s5;
           var w = Uint32List(52);
-          s0 = w[00] = key[0];
-          s1 = w[01] = key[1];
-          s2 = w[02] = key[2];
-          s3 = w[03] = key[3];
-          s4 = w[04] = key[4];
-          s5 = w[05] = key[5];
+          s0 = w[00] = _swap32(key[0]);
+          s1 = w[01] = _swap32(key[1]);
+          s2 = w[02] = _swap32(key[2]);
+          s3 = w[03] = _swap32(key[3]);
+          s4 = w[04] = _swap32(key[4]);
+          s5 = w[05] = _swap32(key[5]);
           // 0: 6..11
           s0 = w[06] = s0 ^ _wordSubRot(s5) ^ _rcon[0];
           s1 = w[07] = s1 ^ s0;
@@ -142,14 +142,14 @@ abstract class AESCore {
         {
           int s0, s1, s2, s3, s4, s5, s6, s7;
           var w = Uint32List(60);
-          s0 = w[00] = key[0];
-          s1 = w[01] = key[1];
-          s2 = w[02] = key[2];
-          s3 = w[03] = key[3];
-          s4 = w[04] = key[4];
-          s5 = w[05] = key[5];
-          s6 = w[06] = key[6];
-          s7 = w[07] = key[7];
+          s0 = w[00] = _swap32(key[0]);
+          s1 = w[01] = _swap32(key[1]);
+          s2 = w[02] = _swap32(key[2]);
+          s3 = w[03] = _swap32(key[3]);
+          s4 = w[04] = _swap32(key[4]);
+          s5 = w[05] = _swap32(key[5]);
+          s6 = w[06] = _swap32(key[6]);
+          s7 = w[07] = _swap32(key[7]);
           // 0: 8..15
           s0 = w[08] = s0 ^ _wordSubRot(s7) ^ _rcon[0];
           s1 = w[09] = s1 ^ s0;
@@ -235,10 +235,10 @@ abstract class AESCore {
     int s0, s1, s2, s3, t0, t1, t2, t3;
     int p = 0, n = rk.length - 4;
     // s = AddRoundKey(box)
-    s0 = box[0] ^ rk[p++];
-    s1 = box[1] ^ rk[p++];
-    s2 = box[2] ^ rk[p++];
-    s3 = box[3] ^ rk[p++];
+    s0 = _swap32(box[0]) ^ rk[p++];
+    s1 = _swap32(box[1]) ^ rk[p++];
+    s2 = _swap32(box[2]) ^ rk[p++];
+    s3 = _swap32(box[3]) ^ rk[p++];
     // Rounds: s = AddRoundKey(MixColumns(ShiftRows(SubTypes(s))))
     while (p < n) {
       t0 = _byteMix(s0, s1, s2, s3);
@@ -251,10 +251,10 @@ abstract class AESCore {
       s3 = t3 ^ rk[p++];
     }
     // box = AddRoundKey(ShiftRows(SubBytes(s)))
-    box[0] = _byteSub(s0, s1, s2, s3) ^ rk[p++];
-    box[1] = _byteSub(s1, s2, s3, s0) ^ rk[p++];
-    box[2] = _byteSub(s2, s3, s0, s1) ^ rk[p++];
-    box[3] = _byteSub(s3, s0, s1, s2) ^ rk[p++];
+    box[0] = _swap32(_byteSub(s0, s1, s2, s3) ^ rk[p++]);
+    box[1] = _swap32(_byteSub(s1, s2, s3, s0) ^ rk[p++]);
+    box[2] = _swap32(_byteSub(s2, s3, s0, s1) ^ rk[p++]);
+    box[3] = _swap32(_byteSub(s3, s0, s1, s2) ^ rk[p++]);
   }
 
   /// Decrypts a plaintext block.
@@ -266,10 +266,10 @@ abstract class AESCore {
     int s0, s1, s2, s3, t0, t1, t2, t3;
     int n = rk.length - 1;
     // s = AddRoundKey(box)
-    s3 = box[3] ^ rk[n--];
-    s2 = box[2] ^ rk[n--];
-    s1 = box[1] ^ rk[n--];
-    s0 = box[0] ^ rk[n--];
+    s3 = _swap32(box[3]) ^ rk[n--];
+    s2 = _swap32(box[2]) ^ rk[n--];
+    s1 = _swap32(box[1]) ^ rk[n--];
+    s0 = _swap32(box[0]) ^ rk[n--];
     // Rounds: s = InvMixColumns(AddRoundKey(InvSubBytes(InvShiftRows(s))))
     while (n > 4) {
       t3 = _byteMixInv(s3, s2, s1, s0);
@@ -282,11 +282,18 @@ abstract class AESCore {
       s0 = t0 ^ rk[n--];
     }
     // box = AddRoundKey(InvSubBytes(InvShiftRows(s)))
-    box[3] = _byteSubInv(s3, s2, s1, s0) ^ rk[n--];
-    box[2] = _byteSubInv(s2, s1, s0, s3) ^ rk[n--];
-    box[1] = _byteSubInv(s1, s0, s3, s2) ^ rk[n--];
-    box[0] = _byteSubInv(s0, s3, s2, s1) ^ rk[n--];
+    box[3] = _swap32(_byteSubInv(s3, s2, s1, s0) ^ rk[n--]);
+    box[2] = _swap32(_byteSubInv(s2, s1, s0, s3) ^ rk[n--]);
+    box[1] = _swap32(_byteSubInv(s1, s0, s3, s2) ^ rk[n--]);
+    box[0] = _swap32(_byteSubInv(s0, s3, s2, s1) ^ rk[n--]);
   }
+
+  @pragma('vm:prefer-inline')
+  static int _swap32(int x) =>
+      ((x << 24) & 0xff000000) |
+      ((x << 8) & 0x00ff0000) |
+      ((x >>> 8) & 0x0000ff00) |
+      ((x >>> 24) & 0x000000ff);
 
   @pragma('vm:prefer-inline')
   static int _wordSub(int x) =>

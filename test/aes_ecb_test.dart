@@ -11,14 +11,11 @@ import 'package:test/test.dart';
 
 void main() {
   group("key expansion", () {
-    // https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/AES_Core_All.pdf
+    // https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.197-upd1.pdf
     test("128-bit", () {
-      var key = Uint32List.fromList([
-        0x2b7e1516,
-        0x28aed2a6,
-        0xabf71588,
-        0x09cf4f3c,
-      ]);
+      var key = fromHex(
+        '2b7e151628aed2a6abf7158809cf4f3c',
+      ).buffer.asUint32List();
       var expanded = Uint32List.fromList([
         0x2b7e1516, 0x28aed2a6, 0xabf71588, 0x09cf4f3c, 0xa0fafe17, //
         0x88542cb1, 0x23a33939, 0x2a6c7605, 0xf2c295f2, 0x7a96b943,
@@ -34,14 +31,10 @@ void main() {
       expect(toHex(res), equals(toHex(expanded)));
     });
     test("192-bit", () {
-      var key = Uint32List.fromList([
-        0x8e73b0f7,
-        0xda0e6452,
-        0xc810f32b,
-        0x809079e5,
-        0x62f8ead2,
-        0x522c6b7b,
-      ]);
+      var key = fromHex(
+        '8e73b0f7da0e6452c810f32b'
+        '809079e562f8ead2522c6b7b',
+      ).buffer.asUint32List();
       var expanded = Uint32List.fromList([
         0x8e73b0f7, 0xda0e6452, 0xc810f32b, 0x809079e5, 0x62f8ead2, //
         0x522c6b7b, 0xfe0c91f7, 0x2402f5a5, 0xec12068e, 0x6c827f6b,
@@ -59,16 +52,10 @@ void main() {
       expect(toHex(res), equals(toHex(expanded)));
     });
     test("256-bit", () {
-      var key = Uint32List.fromList([
-        0x603deb10,
-        0x15ca71be,
-        0x2b73aef0,
-        0x857d7781,
-        0x1f352c07,
-        0x3b6108d7,
-        0x2d9810a3,
-        0x0914dff4,
-      ]);
+      var key = fromHex(
+        '603deb1015ca71be2b73aef0857d7781'
+        '1f352c073b6108d72d9810a30914dff4',
+      ).buffer.asUint32List();
       var expanded = Uint32List.fromList([
         0x603deb10, 0x15ca71be, 0x2b73aef0, 0x857d7781, 0x1f352c07, //
         0x3b6108d7, 0x2d9810a3, 0x0914dff4, 0x9ba35411, 0x8e6925af,
@@ -89,86 +76,62 @@ void main() {
   });
 
   group("encryption", () {
+    // https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.197-upd1.pdf
     test("128-bit NIST.FIPS.197-upd1", () {
-      var key = Uint32List.fromList([
-        0x2b7e1516,
-        0x28aed2a6,
-        0xabf71588,
-        0x09cf4f3c,
-      ]).buffer.asUint8List();
-      var inp = Uint32List.fromList([
-        0x3243f6a8,
-        0x885a308d,
-        0x313198a2,
-        0xe0370734,
-      ]).buffer.asUint8List();
-      var out = Uint32List.fromList([
-        0x3925841d,
-        0x02dc09fb,
-        0xdc118597,
-        0x196a0b32,
-      ]).buffer.asUint8List();
+      var key = fromHex('2b7e151628aed2a6abf7158809cf4f3c');
+      var inp = fromHex('3243f6a8885a308d313198a2e0370734');
+      var out = '3925841d02dc09fbdc118597196a0b32';
       var rr = AES.noPadding(key).ecb().encrypt(inp);
-      expect(toHex(rr), equals(toHex(out)));
+      expect(toHex(rr), equals(out));
     });
+    // https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/AES_Core_All.pdf
     test("128-bit CSRC NIST example", () {
-      var key = Uint32List.fromList([
-        0x2B7E1516, 0x28AED2A6, 0xABF71588, 0x09CF4F3C, //
-      ]).buffer.asUint8List();
-      var inp = Uint32List.fromList([
-        0x6BC1BEE2, 0x2E409F96, 0xE93D7E11, 0x7393172A, //
-        0xAE2D8A57, 0x1E03AC9C, 0x9EB76FAC, 0x45AF8E51,
-        0x30C81C46, 0xA35CE411, 0xE5FBC119, 0x1A0A52EF,
-        0xF69F2445, 0xDF4F9B17, 0xAD2B417B, 0xE66C3710
-      ]).buffer.asUint8List();
-      var out = Uint32List.fromList([
-        0x3AD77BB4, 0x0D7A3660, 0xA89ECAF3, 0x2466EF97, //
-        0xF5D3D585, 0x03B9699D, 0xE785895A, 0x96FDBAAF,
-        0x43B1CD7F, 0x598ECE23, 0x881B00E3, 0xED030688,
-        0x7B0C785E, 0x27E8AD3F, 0x82232071, 0x04725DD4,
-      ]).buffer.asUint8List();
+      var key = fromHex('2B7E151628AED2A6ABF7158809CF4F3C');
+      var inp = fromHex('6BC1BEE22E409F96E93D7E117393172A'
+          'AE2D8A571E03AC9C9EB76FAC45AF8E51'
+          '30C81C46A35CE411E5FBC1191A0A52EF'
+          'F69F2445DF4F9B17AD2B417BE66C3710');
+      var out = '3AD77BB40D7A3660A89ECAF32466EF97'
+          'F5D3D58503B9699DE785895A96FDBAAF'
+          '43B1CD7F598ECE23881B00E3ED030688'
+          '7B0C785E27E8AD3F8223207104725DD4';
       var rr = AES.noPadding(key).ecb().encrypt(inp);
-      expect(toHex(rr), equals(toHex(out)));
+      expect(toHex(rr, upper: true), equals(out));
     });
     test("192-bit CSRC NIST example", () {
-      var key = Uint32List.fromList([
-        0x8E73B0F7, 0xDA0E6452, 0xC810F32B, 0x809079E5, //
-        0x62F8EAD2, 0x522C6B7B,
-      ]).buffer.asUint8List();
-      var inp = Uint32List.fromList([
-        0x6BC1BEE2, 0x2E409F96, 0xE93D7E11, 0x7393172A, //
-        0xAE2D8A57, 0x1E03AC9C, 0x9EB76FAC, 0x45AF8E51,
-        0x30C81C46, 0xA35CE411, 0xE5FBC119, 0x1A0A52EF,
-        0xF69F2445, 0xDF4F9B17, 0xAD2B417B, 0xE66C3710
-      ]).buffer.asUint8List();
-      var out = Uint32List.fromList([
-        0xBD334F1D, 0x6E45F25F, 0xF712A214, 0x571FA5CC, //
-        0x97410484, 0x6D0AD3AD, 0x7734ECB3, 0xECEE4EEF,
-        0xEF7AFD22, 0x70E2E60A, 0xDCE0BA2F, 0xACE6444E,
-        0x9A4B41BA, 0x738D6C72, 0xFB166916, 0x03C18E0E,
-      ]).buffer.asUint8List();
+      var key = fromHex('8E73B0F7DA0E6452C810F32B809079E562F8EAD2522C6B7B');
+      var inp = fromHex('6BC1BEE22E409F96E93D7E117393172A'
+          'AE2D8A571E03AC9C9EB76FAC45AF8E51'
+          '30C81C46A35CE411E5FBC1191A0A52EF'
+          'F69F2445DF4F9B17AD2B417BE66C3710');
+      var out = 'BD334F1D6E45F25FF712A214571FA5CC'
+          '974104846D0AD3AD7734ECB3ECEE4EEF'
+          'EF7AFD2270E2E60ADCE0BA2FACE6444E'
+          '9A4B41BA738D6C72FB16691603C18E0E';
       var rr = AES.noPadding(key).ecb().encrypt(inp);
-      expect(toHex(rr), equals(toHex(out)));
+      expect(toHex(rr, upper: true), equals(out));
     });
     test("256-bit CSRC NIST example", () {
-      var key = Uint32List.fromList([
-        0x603DEB10, 0x15CA71BE, 0x2B73AEF0, 0x857D7781, //
-        0x1F352C07, 0x3B6108D7, 0x2D9810A3, 0x0914DFF4,
-      ]).buffer.asUint8List();
-      var inp = Uint32List.fromList([
-        0x6BC1BEE2, 0x2E409F96, 0xE93D7E11, 0x7393172A, //
-        0xAE2D8A57, 0x1E03AC9C, 0x9EB76FAC, 0x45AF8E51,
-        0x30C81C46, 0xA35CE411, 0xE5FBC119, 0x1A0A52EF,
-        0xF69F2445, 0xDF4F9B17, 0xAD2B417B, 0xE66C3710
-      ]).buffer.asUint8List();
-      var out = Uint32List.fromList([
-        0xF3EED1BD, 0xB5D2A03C, 0x064B5A7E, 0x3DB181F8, //
-        0x591CCB10, 0xD410ED26, 0xDC5BA74A, 0x31362870,
-        0xB6ED21B9, 0x9CA6F4F9, 0xF153E7B1, 0xBEAFED1D,
-        0x23304B7A, 0x39F9F3FF, 0x067D8D8F, 0x9E24ECC7,
-      ]).buffer.asUint8List();
+      var key = fromHex('603DEB1015CA71BE2B73AEF0857D7781'
+          '1F352C073B6108D72D9810A30914DFF4');
+      var inp = fromHex('6BC1BEE22E409F96E93D7E117393172A'
+          'AE2D8A571E03AC9C9EB76FAC45AF8E51'
+          '30C81C46A35CE411E5FBC1191A0A52EF'
+          'F69F2445DF4F9B17AD2B417BE66C3710');
+      var out = 'F3EED1BDB5D2A03C064B5A7E3DB181F8'
+          '591CCB10D410ED26DC5BA74A31362870'
+          'B6ED21B99CA6F4F9F153E7B1BEAFED1D'
+          '23304B7A39F9F3FF067D8D8F9E24ECC7';
       var rr = AES.noPadding(key).ecb().encrypt(inp);
-      expect(toHex(rr), equals(toHex(out)));
+      expect(toHex(rr, upper: true), equals(out));
+    });
+    test('PKCS#7 padding', () {
+      var inp = 'A not very secret message'.codeUnits;
+      var key = 'abcdefghijklmnop'.codeUnits;
+      var expected =
+          '9224D7A1B18964D1184F5E93B0EBEBD2A26031EF0E1C7F271298CBEC4351ABE8';
+      var actual = aesEncrypt(inp, key);
+      expect(toHex(actual, upper: true), equals(expected));
     });
     test('throws error on invalid input size', () {
       var key = Uint32List(16);
@@ -178,86 +141,55 @@ void main() {
   });
 
   group("decryption", () {
+    // https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.197-upd1.pdf
     test("128-bit NIST.FIPS.197-upd1", () {
-      var key = Uint32List.fromList([
-        0x2b7e1516,
-        0x28aed2a6,
-        0xabf71588,
-        0x09cf4f3c,
-      ]).buffer.asUint8List();
-      var inp = Uint32List.fromList([
-        0x3925841d,
-        0x02dc09fb,
-        0xdc118597,
-        0x196a0b32,
-      ]).buffer.asUint8List();
-      var out = Uint32List.fromList([
-        0x3243f6a8,
-        0x885a308d,
-        0x313198a2,
-        0xe0370734,
-      ]).buffer.asUint8List();
+      var key = fromHex('2B7E151628AED2A6ABF7158809CF4F3C');
+      var inp = fromHex('3925841d02dc09fbdc118597196a0b32');
+      var out = '3243f6a8885a308d313198a2e0370734';
       var rr = AES.noPadding(key).ecb().decrypt(inp);
-      expect(toHex(rr), equals(toHex(out)));
+      expect(toHex(rr), equals(out));
     });
+    // https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/AES_Core_All.pdf
     test("128-bit CSRC NIST example", () {
-      var key = Uint32List.fromList([
-        0x2B7E1516, 0x28AED2A6, 0xABF71588, 0x09CF4F3C, //
-      ]).buffer.asUint8List();
-      var inp = Uint32List.fromList([
-        0x3AD77BB4, 0x0D7A3660, 0xA89ECAF3, 0x2466EF97, //
-        0xF5D3D585, 0x03B9699D, 0xE785895A, 0x96FDBAAF,
-        0x43B1CD7F, 0x598ECE23, 0x881B00E3, 0xED030688,
-        0x7B0C785E, 0x27E8AD3F, 0x82232071, 0x04725DD4,
-      ]).buffer.asUint8List();
-      var out = Uint32List.fromList([
-        0x6BC1BEE2, 0x2E409F96, 0xE93D7E11, 0x7393172A, //
-        0xAE2D8A57, 0x1E03AC9C, 0x9EB76FAC, 0x45AF8E51,
-        0x30C81C46, 0xA35CE411, 0xE5FBC119, 0x1A0A52EF,
-        0xF69F2445, 0xDF4F9B17, 0xAD2B417B, 0xE66C3710,
-      ]).buffer.asUint8List();
+      var key = fromHex('2B7E151628AED2A6ABF7158809CF4F3C');
+      var inp = fromHex('3AD77BB40D7A3660A89ECAF32466EF97'
+          'F5D3D58503B9699DE785895A96FDBAAF'
+          '43B1CD7F598ECE23881B00E3ED030688'
+          '7B0C785E27E8AD3F8223207104725DD4');
+      var out = '6BC1BEE22E409F96E93D7E117393172A'
+          'AE2D8A571E03AC9C9EB76FAC45AF8E51'
+          '30C81C46A35CE411E5FBC1191A0A52EF'
+          'F69F2445DF4F9B17AD2B417BE66C3710';
       var rr = AES.noPadding(key).ecb().decrypt(inp);
-      expect(toHex(rr), equals(toHex(out)));
+      expect(toHex(rr, upper: true), equals(out));
     });
     test("192-bit CSRC NIST example", () {
-      var key = Uint32List.fromList([
-        0x8E73B0F7, 0xDA0E6452, 0xC810F32B, 0x809079E5, //
-        0x62F8EAD2, 0x522C6B7B,
-      ]).buffer.asUint8List();
-      var inp = Uint32List.fromList([
-        0xBD334F1D, 0x6E45F25F, 0xF712A214, 0x571FA5CC, //
-        0x97410484, 0x6D0AD3AD, 0x7734ECB3, 0xECEE4EEF,
-        0xEF7AFD22, 0x70E2E60A, 0xDCE0BA2F, 0xACE6444E,
-        0x9A4B41BA, 0x738D6C72, 0xFB166916, 0x03C18E0E,
-      ]).buffer.asUint8List();
-      var out = Uint32List.fromList([
-        0x6BC1BEE2, 0x2E409F96, 0xE93D7E11, 0x7393172A, //
-        0xAE2D8A57, 0x1E03AC9C, 0x9EB76FAC, 0x45AF8E51,
-        0x30C81C46, 0xA35CE411, 0xE5FBC119, 0x1A0A52EF,
-        0xF69F2445, 0xDF4F9B17, 0xAD2B417B, 0xE66C3710,
-      ]).buffer.asUint8List();
+      var key = fromHex('8E73B0F7DA0E6452C810F32B809079E5'
+          '62F8EAD2522C6B7B');
+      var inp = fromHex('BD334F1D6E45F25FF712A214571FA5CC'
+          '974104846D0AD3AD7734ECB3ECEE4EEF'
+          'EF7AFD2270E2E60ADCE0BA2FACE6444E'
+          '9A4B41BA738D6C72FB16691603C18E0E');
+      var out = '6BC1BEE22E409F96E93D7E117393172A'
+          'AE2D8A571E03AC9C9EB76FAC45AF8E51'
+          '30C81C46A35CE411E5FBC1191A0A52EF'
+          'F69F2445DF4F9B17AD2B417BE66C3710';
       var rr = AES.noPadding(key).ecb().decrypt(inp);
-      expect(toHex(rr), equals(toHex(out)));
+      expect(toHex(rr, upper: true), equals(out));
     });
     test("256-bit CSRC NIST example", () {
-      var key = Uint32List.fromList([
-        0x603DEB10, 0x15CA71BE, 0x2B73AEF0, 0x857D7781, //
-        0x1F352C07, 0x3B6108D7, 0x2D9810A3, 0x0914DFF4,
-      ]).buffer.asUint8List();
-      var inp = Uint32List.fromList([
-        0xF3EED1BD, 0xB5D2A03C, 0x064B5A7E, 0x3DB181F8, //
-        0x591CCB10, 0xD410ED26, 0xDC5BA74A, 0x31362870,
-        0xB6ED21B9, 0x9CA6F4F9, 0xF153E7B1, 0xBEAFED1D,
-        0x23304B7A, 0x39F9F3FF, 0x067D8D8F, 0x9E24ECC7,
-      ]).buffer.asUint8List();
-      var out = Uint32List.fromList([
-        0x6BC1BEE2, 0x2E409F96, 0xE93D7E11, 0x7393172A, //
-        0xAE2D8A57, 0x1E03AC9C, 0x9EB76FAC, 0x45AF8E51,
-        0x30C81C46, 0xA35CE411, 0xE5FBC119, 0x1A0A52EF,
-        0xF69F2445, 0xDF4F9B17, 0xAD2B417B, 0xE66C3710,
-      ]).buffer.asUint8List();
+      var key = fromHex('603DEB1015CA71BE2B73AEF0857D7781'
+          '1F352C073B6108D72D9810A30914DFF4');
+      var inp = fromHex('F3EED1BDB5D2A03C064B5A7E3DB181F8'
+          '591CCB10D410ED26DC5BA74A31362870'
+          'B6ED21B99CA6F4F9F153E7B1BEAFED1D'
+          '23304B7A39F9F3FF067D8D8F9E24ECC7');
+      var out = '6BC1BEE22E409F96E93D7E117393172A'
+          'AE2D8A571E03AC9C9EB76FAC45AF8E51'
+          '30C81C46A35CE411E5FBC1191A0A52EF'
+          'F69F2445DF4F9B17AD2B417BE66C3710';
       var rr = AES.noPadding(key).ecb().decrypt(inp);
-      expect(toHex(rr), equals(toHex(out)));
+      expect(toHex(rr, upper: true), equals(out));
     });
     test('throws error on invalid input size', () {
       var key = Uint32List(16);
