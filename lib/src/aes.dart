@@ -24,21 +24,21 @@ class AES {
   final List<int> key;
 
   /// The padding scheme for the messages
-  final PaddingScheme padding;
+  final Padding padding;
 
   const AES(
     this.key, [
-    this.padding = PaddingScheme.pkcs7,
+    this.padding = Padding.pkcs7,
   ]);
 
-  /// Creates AES instances with [PaddingScheme.pkcs7]
-  factory AES.pkcs7(List<int> key) => AES(key, PaddingScheme.pkcs7);
+  /// Creates AES instances with [Padding.pkcs7]
+  factory AES.pkcs7(List<int> key) => AES(key, Padding.pkcs7);
 
-  /// Creates AES instances with [PaddingScheme.byte]
-  factory AES.byte(List<int> key) => AES(key, PaddingScheme.byte);
+  /// Creates AES instances with [Padding.byte]
+  factory AES.byte(List<int> key) => AES(key, Padding.byte);
 
-  /// Creates AES instances with [PaddingScheme.none]
-  factory AES.noPadding(List<int> key) => AES(key, PaddingScheme.none);
+  /// Creates AES instances with [Padding.none]
+  factory AES.noPadding(List<int> key) => AES(key, Padding.none);
 
   /// ECB (Electronic Codebook) mode for AES works by dividing the plaintext
   /// into fixed-size blocks (128 bits) and processing each block independently
@@ -71,7 +71,7 @@ Uint8List aesEncrypt(
   List<int> message,
   List<int> key, {
   AESMode mode = AESMode.ecb,
-  PaddingScheme padding = PaddingScheme.pkcs7,
+  Padding padding = Padding.pkcs7,
 }) =>
     AES(key, padding).fromMode(mode).encrypt(message);
 
@@ -80,6 +80,6 @@ Uint8List aesDecrypt(
   List<int> message,
   List<int> key, {
   AESMode mode = AESMode.ecb,
-  PaddingScheme padding = PaddingScheme.pkcs7,
+  Padding padding = Padding.pkcs7,
 }) =>
     AES(key, padding).fromMode(mode).decrypt(message);

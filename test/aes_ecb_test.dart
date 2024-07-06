@@ -10,7 +10,7 @@ import 'package:hashlib_codecs/hashlib_codecs.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group("encryption key expansion", () {
+  group("key expansion", () {
     // https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/AES_Core_All.pdf
     test("128-bit", () {
       var key = Uint32List.fromList([
@@ -170,6 +170,11 @@ void main() {
       var rr = AES.noPadding(key).ecb().encrypt(inp);
       expect(toHex(rr), equals(toHex(out)));
     });
+    test('throws error on invalid input size', () {
+      var key = Uint32List(16);
+      var inp = Uint32List(10);
+      expect(() => AES.noPadding(key).ecb().encrypt(inp), throwsStateError);
+    });
   });
 
   group("decryption", () {
@@ -253,6 +258,11 @@ void main() {
       ]).buffer.asUint8List();
       var rr = AES.noPadding(key).ecb().decrypt(inp);
       expect(toHex(rr), equals(toHex(out)));
+    });
+    test('throws error on invalid input size', () {
+      var key = Uint32List(16);
+      var inp = Uint32List(10);
+      expect(() => AES.noPadding(key).ecb().decrypt(inp), throwsStateError);
     });
   });
 

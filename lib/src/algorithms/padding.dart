@@ -9,11 +9,14 @@ import 'package:hashlib/hashlib.dart' show fillNumbers;
 /// block size to be used in the cryptographic algorithms.
 ///
 /// Reference: https://en.wikipedia.org/wiki/Padding_(cryptography)
-enum PaddingScheme {
-  /// Do not apply any padding scheme
-  none,
+abstract class Padding {
+  const Padding();
 
-  /// All the bytes are filled with zeros to match the block size.
+  /// Does not apply any padding. The message size is always expected to be
+  /// equal to the block size.
+  static const none = _NonePadding();
+
+  /// Padding with zeros to match the block size.
   ///
   /// ### Example: ###
   /// 5-bytes message to 8-bytes block:
@@ -22,7 +25,7 @@ enum PaddingScheme {
   /// ... | FA 3D E6 61 1C 00 00 00 |
   ///                      ** -- -- |
   /// ```
-  zero,
+  static const zero = _ZeroPadding();
 
   /// This padding has `0x80` as the first byte followed by a sequence of zeros.
   /// It was originally defined as a communication standard for smart cards
@@ -37,7 +40,7 @@ enum PaddingScheme {
   /// ```
   ///
   /// [iso]: https://www.iso.org/standard/36134.html
-  byte,
+  static const byte = _BytePadding();
 
   /// This ANSI X9.23 standard padding consists of a sequence of zeros with the
   /// last byte set to the number of padding bytes added, including itself. If
@@ -53,7 +56,7 @@ enum PaddingScheme {
   /// ... | FA 3D E6 61 00 00 00 04 |
   ///                   -- -- -- ** |
   /// ```
-  ansiX923,
+  static const ansiX923 = _ANSIx923Padding();
 
   /// This is similar to [ansiX923] scheme, except instead of filling with a
   /// sequence of zeros, random bytes are inserted as padding.
@@ -74,7 +77,7 @@ enum PaddingScheme {
   /// ```
   ///
   /// [iso]: https://www.iso.org/standard/18113.html
-  iso10126,
+  static const iso10126 = _ISO10126Padding();
 
   /// Padding is in whole bytes. The value of each added byte is the number of
   /// bytes that are added. If the input size is already a multiple of the block
@@ -93,7 +96,7 @@ enum PaddingScheme {
   /// ```
   ///
   /// [rfc]: https://datatracker.ietf.org/doc/html/rfc5652#section-6.3
-  pkcs7,
+  static const pkcs7 = _PKCS7Padding();
 
   /// Same as [pkcs7] padding scheme, except it is only defined for exactly
   /// 64-bit block. Primarily used with DES and other algorithms with an
@@ -108,11 +111,8 @@ enum PaddingScheme {
   /// ... | FA 3D E6 61 04 04 04 04 |
   ///                   ** -- -- -- |
   /// ```
-  pkcs5,
-}
+  static const pkcs5 = _PKCS5Padding();
 
-/// Extension of the [PaddingScheme] to pad or unpad a message block.
-extension PaddingSchemeApply on PaddingScheme {
   /// Apply the scheme to the input [block]. The padding is applied starting
   /// from the [pos] to the end of the [block].
   ///
@@ -120,127 +120,214 @@ extension PaddingSchemeApply on PaddingScheme {
   /// matching some constraints of specific schemes.
   ///
   /// Returns true if the padding was applied, false otherwise.
-  bool pad(List<int> block, int pos, [int? size]) {
-    int n;
-    size ??= block.length;
-    switch (this) {
-      case PaddingScheme.none:
-        return false;
-      case PaddingScheme.zero:
-        for (; pos < size; pos++) {
-          block[pos] = 0;
-        }
-        return true;
-      case PaddingScheme.byte:
-        if (pos >= size) {
-          throw StateError('No space for padding');
-        }
-        block[pos++] = 0x80;
-        for (; pos < size; pos++) {
-          block[pos] = 0;
-        }
-        return true;
-      case PaddingScheme.ansiX923:
-        if (pos >= size) {
-          throw StateError('No space for padding');
-        }
-        n = size - pos;
-        if (n > 255) {
-          throw StateError('Padding size must not exceed 255 bytes');
-        }
-        for (; pos < size; pos++) {
-          block[pos] = 0;
-        }
-        block[pos - 1] = n;
-        return true;
-      case PaddingScheme.iso10126:
-        if (pos >= size) {
-          throw StateError('No space for padding');
-        }
-        n = size - pos;
-        if (n > 255) {
-          throw StateError('Padding size must not exceed 255 bytes');
-        }
-        fillNumbers(block, start: pos);
-        block[pos - 1] = n;
-        return true;
-      case PaddingScheme.pkcs7:
-        if (pos >= size) {
-          throw StateError('No space for padding');
-        }
-        n = size - pos;
-        if (n > 255) {
-          throw StateError('Padding size must not exceed 255 bytes');
-        }
-        for (; pos < size; pos++) {
-          block[pos] = n;
-        }
-        return true;
-      case PaddingScheme.pkcs5:
-        if (pos >= size) {
-          throw StateError('No space for padding');
-        }
-        if (size != 8) {
-          throw StateError('Block must be exactly 64-bit');
-        }
-        n = size - pos;
-        for (; pos < size; pos++) {
-          block[pos] = n;
-        }
-        return true;
-    }
-  }
+  bool pad(List<int> block, int pos, [int? size]);
 
   /// Returns the padding length from the [block] according to the scheme.
   ///
   /// Throws [StateError] on malformatted block.
-  int getPadLength(List<int> block, [int? size]) {
-    size ??= block.length;
-    if (size == 0) return 0;
-    int p, n;
-    switch (this) {
-      case PaddingScheme.none:
-        return 0;
-      case PaddingScheme.zero:
-        for (p = size; p > 0; p--) {
-          if (block[p - 1] != 0) {
-            break;
-          }
-        }
-        return size - p;
-      case PaddingScheme.byte:
-        for (p = size - 1; p >= 0; p--) {
-          if (block[p] == 0x80) {
-            break;
-          } else if (block[p] != 0) {
-            throw StateError('Invalid padding');
-          }
-        }
-        if (p < 0) {
-          throw StateError('Invalid padding');
-        }
-        return size - p;
-      case PaddingScheme.ansiX923:
-      case PaddingScheme.iso10126:
-      case PaddingScheme.pkcs7:
-      case PaddingScheme.pkcs5:
-        n = block[size - 1];
-        if (size < n) {
-          throw StateError('Invalid padding');
-        }
-        return n;
-    }
-  }
+  int getPadLength(List<int> block, [int? size]);
 
   /// Returns the original message after removing padding from the [block]
   /// using the scheme.
-  @pragma('vm:prefer-inline')
   List<int> unpad(List<int> block, [int? size]) {
     size ??= block.length;
-    size -= getPadLength(block, size);
-    if (size == 0) {
+    int p = getPadLength(block, size);
+    if (p == size) {
       return Uint8List(0);
     }
-    return block.sublist(0, size);
+    return block.sublist(0, size - p);
+  }
+}
+
+class _NonePadding extends Padding {
+  const _NonePadding();
+
+  @override
+  bool pad(List<int> block, int pos, [int? size]) {
+    return false;
+  }
+
+  @override
+  int getPadLength(List<int> block, [int? size]) {
+    return 0;
+  }
+}
+
+class _ZeroPadding extends Padding {
+  const _ZeroPadding();
+
+  @override
+  bool pad(List<int> block, int pos, [int? size]) {
+    size ??= block.length;
+    for (; pos < size; pos++) {
+      block[pos] = 0;
+    }
+    return true;
+  }
+
+  @override
+  int getPadLength(List<int> block, [int? size]) {
+    size ??= block.length;
+    int p;
+    for (p = size; p > 0; p--) {
+      if (block[p - 1] != 0) {
+        break;
+      }
+    }
+    return size - p;
+  }
+}
+
+class _BytePadding extends Padding {
+  const _BytePadding();
+
+  @override
+  bool pad(List<int> block, int pos, [int? size]) {
+    size ??= block.length;
+    if (pos >= size) {
+      throw StateError('No space for padding');
+    }
+    block[pos++] = 0x80;
+    for (; pos < size; pos++) {
+      block[pos] = 0;
+    }
+    return true;
+  }
+
+  @override
+  int getPadLength(List<int> block, [int? size]) {
+    size ??= block.length;
+    int p;
+    for (p = size - 1; p >= 0; p--) {
+      if (block[p] == 0x80) {
+        break;
+      } else if (block[p] != 0) {
+        throw StateError('Invalid padding');
+      }
+    }
+    if (p < 0) {
+      throw StateError('Invalid padding');
+    }
+    return size - p;
+  }
+}
+
+class _ANSIx923Padding extends Padding {
+  const _ANSIx923Padding();
+
+  @override
+  bool pad(List<int> block, int pos, [int? size]) {
+    size ??= block.length;
+    if (pos >= size) {
+      throw StateError('No space for padding');
+    }
+    int n = size - pos;
+    if (n > 255) {
+      throw StateError('Padding size must not exceed 255 bytes');
+    }
+    for (; pos < size; pos++) {
+      block[pos] = 0;
+    }
+    block[pos - 1] = n;
+    return true;
+  }
+
+  @override
+  int getPadLength(List<int> block, [int? size]) {
+    size ??= block.length;
+    int n = block[size - 1];
+    if (size < n) {
+      throw StateError('Invalid padding');
+    }
+    for (int p = size - n; p < size - 1; p++) {
+      if (block[p] != 0) {
+        throw StateError('Invalid padding');
+      }
+    }
+    return n;
+  }
+}
+
+class _ISO10126Padding extends Padding {
+  const _ISO10126Padding();
+
+  @override
+  bool pad(List<int> block, int pos, [int? size]) {
+    size ??= block.length;
+    if (pos >= size) {
+      throw StateError('No space for padding');
+    }
+    int n = size - pos;
+    if (n > 255) {
+      throw StateError('Padding size must not exceed 255 bytes');
+    }
+    fillNumbers(block, start: pos);
+    block[pos - 1] = n;
+    return true;
+  }
+
+  @override
+  int getPadLength(List<int> block, [int? size]) {
+    size ??= block.length;
+    int n = block[size - 1];
+    if (size < n) {
+      throw StateError('Invalid padding');
+    }
+    return n;
+  }
+}
+
+class _PKCS7Padding extends Padding {
+  const _PKCS7Padding();
+
+  @override
+  bool pad(List<int> block, int pos, [int? size]) {
+    size ??= block.length;
+    if (pos >= size) {
+      throw StateError('No space for padding');
+    }
+    int n = size - pos;
+    if (n > 255) {
+      throw StateError('Padding size must not exceed 255 bytes');
+    }
+    for (; pos < size; pos++) {
+      block[pos] = n;
+    }
+    return true;
+  }
+
+  @override
+  int getPadLength(List<int> block, [int? size]) {
+    size ??= block.length;
+    int n = block[size - 1];
+    if (size < n) {
+      throw StateError('Invalid padding');
+    }
+    for (int p = size - n; p < size; p++) {
+      if (block[p] != n) {
+        throw StateError('Invalid padding');
+      }
+    }
+    return n;
+  }
+}
+
+class _PKCS5Padding extends _PKCS7Padding {
+  const _PKCS5Padding();
+
+  @override
+  bool pad(List<int> block, int pos, [int? size]) {
+    size ??= block.length;
+    if (pos >= size) {
+      throw StateError('No space for padding');
+    }
+    if (size != 8) {
+      throw StateError('Block must be exactly 64-bit');
+    }
+    int n = size - pos;
+    for (; pos < size; pos++) {
+      block[pos] = n;
+    }
+    return true;
   }
 }

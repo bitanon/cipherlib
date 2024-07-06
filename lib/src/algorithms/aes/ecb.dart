@@ -17,7 +17,7 @@ class AESEncryptSinkInECBMode extends CipherSink {
   int _pos = 0;
   bool _closed = false;
   final Uint8List _key;
-  final PaddingScheme _padding;
+  final Padding _padding;
   late final Uint32List _key32 = Uint32List.view(_key.buffer);
   final _block = Uint8List(16); // 128-bit
   late final _block32 = Uint32List.view(_block.buffer);
@@ -83,7 +83,7 @@ class AESDecryptSinkInECBMode extends CipherSink {
   int _rpos = 0;
   bool _closed = false;
   final Uint8List _key;
-  final PaddingScheme _padding;
+  final Padding _padding;
   late final Uint32List _key32 = Uint32List.view(_key.buffer);
   final _block = Uint8List(16); // 128-bit
   final _residue = Uint8List(16); // 128-bit
@@ -151,16 +151,16 @@ class AESEncryptInECBMode extends Cipher {
   final Uint8List key;
 
   /// Padding scheme for the input message
-  final PaddingScheme padding;
+  final Padding padding;
 
-  const AESEncryptInECBMode(this.key, [this.padding = PaddingScheme.pkcs7]);
+  const AESEncryptInECBMode(this.key, [this.padding = Padding.pkcs7]);
 
   /// Creates a [AESEncryptInECBMode] with List<int> [key].
   ///
   /// Every elements of the both list is transformed to unsigned 8-bit numbers.
   factory AESEncryptInECBMode.fromList(
     List<int> key, [
-    PaddingScheme padding = PaddingScheme.pkcs7,
+    Padding padding = Padding.pkcs7,
   ]) =>
       AESEncryptInECBMode(
         key = key is Uint8List ? key : Uint8List.fromList(key),
@@ -181,16 +181,16 @@ class AESDecryptInECBMode extends Cipher {
   final Uint8List key;
 
   /// Padding scheme for the output message
-  final PaddingScheme padding;
+  final Padding padding;
 
-  const AESDecryptInECBMode(this.key, [this.padding = PaddingScheme.pkcs7]);
+  const AESDecryptInECBMode(this.key, [this.padding = Padding.pkcs7]);
 
   /// Creates a [AESDecryptInECBMode] with List<int> [key].
   ///
   /// Every elements of the both list is transformed to unsigned 8-bit numbers.
   factory AESDecryptInECBMode.fromList(
     List<int> key, [
-    PaddingScheme padding = PaddingScheme.pkcs7,
+    Padding padding = Padding.pkcs7,
   ]) =>
       AESDecryptInECBMode(
         key = key is Uint8List ? key : Uint8List.fromList(key),
@@ -220,7 +220,7 @@ class AESInECBMode extends CollateCipher {
 
   factory AESInECBMode(
     List<int> key, [
-    PaddingScheme padding = PaddingScheme.pkcs7,
+    Padding padding = Padding.pkcs7,
   ]) {
     return AESInECBMode._(
       encryptor: AESEncryptInECBMode.fromList(key, padding),
@@ -229,5 +229,5 @@ class AESInECBMode extends CollateCipher {
   }
 
   /// Padding scheme for the messages
-  PaddingScheme get padding => encryptor.padding;
+  Padding get padding => encryptor.padding;
 }
