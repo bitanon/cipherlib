@@ -4,8 +4,9 @@
 import 'dart:typed_data';
 
 import 'package:cipherlib/cipherlib.dart';
-import 'package:cipherlib/src/algorithms/aes/aes_core.dart';
+import 'package:cipherlib/src/algorithms/aes/_core.dart';
 import 'package:hashlib/hashlib.dart';
+import 'package:hashlib_codecs/hashlib_codecs.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -30,7 +31,7 @@ void main() {
         0xd014f9a8, 0xc9ee2589, 0xe13f0cc8, 0xb6630ca6,
       ]);
       var res = AESCore.$expandEncryptionKey(key);
-      expect(res, equals(expanded));
+      expect(toHex(res), equals(toHex(expanded)));
     });
     test("192-bit", () {
       var key = Uint32List.fromList([
@@ -55,7 +56,7 @@ void main() {
         0x8ecc7204, 0x01002202,
       ]);
       var res = AESCore.$expandEncryptionKey(key);
-      expect(res, equals(expanded));
+      expect(toHex(res), equals(toHex(expanded)));
     });
     test("256-bit", () {
       var key = Uint32List.fromList([
@@ -83,7 +84,7 @@ void main() {
         0xbd10190d, 0xfe4890d1, 0xe6188d0b, 0x046df344, 0x706c631e,
       ]);
       var res = AESCore.$expandEncryptionKey(key);
-      expect(res, equals(expanded));
+      expect(toHex(res), equals(toHex(expanded)));
     });
   });
 
@@ -107,8 +108,8 @@ void main() {
         0xdc118597,
         0x196a0b32,
       ]).buffer.asUint8List();
-      var rr = AES(key).ecb().encrypt(inp);
-      expect(rr, equals(out));
+      var rr = AES.noPadding(key).ecb().encrypt(inp);
+      expect(toHex(rr), equals(toHex(out)));
     });
     test("128-bit CSRC NIST example", () {
       var key = Uint32List.fromList([
@@ -126,8 +127,8 @@ void main() {
         0x43B1CD7F, 0x598ECE23, 0x881B00E3, 0xED030688,
         0x7B0C785E, 0x27E8AD3F, 0x82232071, 0x04725DD4,
       ]).buffer.asUint8List();
-      var rr = AES(key).ecb().encrypt(inp);
-      expect(rr, equals(out));
+      var rr = AES.noPadding(key).ecb().encrypt(inp);
+      expect(toHex(rr), equals(toHex(out)));
     });
     test("192-bit CSRC NIST example", () {
       var key = Uint32List.fromList([
@@ -146,8 +147,8 @@ void main() {
         0xEF7AFD22, 0x70E2E60A, 0xDCE0BA2F, 0xACE6444E,
         0x9A4B41BA, 0x738D6C72, 0xFB166916, 0x03C18E0E,
       ]).buffer.asUint8List();
-      var rr = AES(key).ecb().encrypt(inp);
-      expect(rr, equals(out));
+      var rr = AES.noPadding(key).ecb().encrypt(inp);
+      expect(toHex(rr), equals(toHex(out)));
     });
     test("256-bit CSRC NIST example", () {
       var key = Uint32List.fromList([
@@ -166,8 +167,8 @@ void main() {
         0xB6ED21B9, 0x9CA6F4F9, 0xF153E7B1, 0xBEAFED1D,
         0x23304B7A, 0x39F9F3FF, 0x067D8D8F, 0x9E24ECC7,
       ]).buffer.asUint8List();
-      var rr = AES(key).ecb().encrypt(inp);
-      expect(rr, equals(out));
+      var rr = AES.noPadding(key).ecb().encrypt(inp);
+      expect(toHex(rr), equals(toHex(out)));
     });
   });
 
@@ -191,8 +192,8 @@ void main() {
         0x313198a2,
         0xe0370734,
       ]).buffer.asUint8List();
-      var rr = AES(key).ecb().decrypt(inp);
-      expect(rr, equals(out));
+      var rr = AES.noPadding(key).ecb().decrypt(inp);
+      expect(toHex(rr), equals(toHex(out)));
     });
     test("128-bit CSRC NIST example", () {
       var key = Uint32List.fromList([
@@ -208,10 +209,10 @@ void main() {
         0x6BC1BEE2, 0x2E409F96, 0xE93D7E11, 0x7393172A, //
         0xAE2D8A57, 0x1E03AC9C, 0x9EB76FAC, 0x45AF8E51,
         0x30C81C46, 0xA35CE411, 0xE5FBC119, 0x1A0A52EF,
-        0xF69F2445, 0xDF4F9B17, 0xAD2B417B, 0xE66C3710
+        0xF69F2445, 0xDF4F9B17, 0xAD2B417B, 0xE66C3710,
       ]).buffer.asUint8List();
-      var rr = AES(key).ecb().decrypt(inp);
-      expect(rr, equals(out));
+      var rr = AES.noPadding(key).ecb().decrypt(inp);
+      expect(toHex(rr), equals(toHex(out)));
     });
     test("192-bit CSRC NIST example", () {
       var key = Uint32List.fromList([
@@ -228,10 +229,10 @@ void main() {
         0x6BC1BEE2, 0x2E409F96, 0xE93D7E11, 0x7393172A, //
         0xAE2D8A57, 0x1E03AC9C, 0x9EB76FAC, 0x45AF8E51,
         0x30C81C46, 0xA35CE411, 0xE5FBC119, 0x1A0A52EF,
-        0xF69F2445, 0xDF4F9B17, 0xAD2B417B, 0xE66C3710
+        0xF69F2445, 0xDF4F9B17, 0xAD2B417B, 0xE66C3710,
       ]).buffer.asUint8List();
-      var rr = AES(key).ecb().decrypt(inp);
-      expect(rr, equals(out));
+      var rr = AES.noPadding(key).ecb().decrypt(inp);
+      expect(toHex(rr), equals(toHex(out)));
     });
     test("256-bit CSRC NIST example", () {
       var key = Uint32List.fromList([
@@ -248,42 +249,42 @@ void main() {
         0x6BC1BEE2, 0x2E409F96, 0xE93D7E11, 0x7393172A, //
         0xAE2D8A57, 0x1E03AC9C, 0x9EB76FAC, 0x45AF8E51,
         0x30C81C46, 0xA35CE411, 0xE5FBC119, 0x1A0A52EF,
-        0xF69F2445, 0xDF4F9B17, 0xAD2B417B, 0xE66C3710
+        0xF69F2445, 0xDF4F9B17, 0xAD2B417B, 0xE66C3710,
       ]).buffer.asUint8List();
-      var rr = AES(key).ecb().decrypt(inp);
-      expect(rr, equals(out));
+      var rr = AES.noPadding(key).ecb().decrypt(inp);
+      expect(toHex(rr), equals(toHex(out)));
     });
   });
 
   group('encryption <-> decryption', () {
     test("128-bit", () {
       var key = randomBytes(16);
-      for (int j = 0; j < 160; j += 16) {
+      for (int j = 0; j < 100; j++) {
         var input = randomBytes(j);
         var bytes = Uint8List.fromList(input);
         var cipher = AES(key).ecb().encrypt(input);
         var plain = AES(key).ecb().decrypt(cipher);
-        expect(bytes, equals(plain), reason: '[text: $j]');
+        expect(toHex(bytes), equals(toHex(plain)), reason: '[size: $j]');
       }
     });
     test("192-bit", () {
       var key = randomBytes(24);
-      for (int j = 0; j < 160; j += 16) {
+      for (int j = 0; j < 100; j++) {
         var input = randomBytes(j);
         var bytes = Uint8List.fromList(input);
         var cipher = AES(key).ecb().encrypt(input);
         var plain = AES(key).ecb().decrypt(cipher);
-        expect(bytes, equals(plain), reason: '[text: $j]');
+        expect(toHex(bytes), equals(toHex(plain)), reason: '[size: $j]');
       }
     });
     test("256-bit", () {
       var key = randomBytes(32);
-      for (int j = 0; j < 160; j += 16) {
+      for (int j = 0; j < 100; j++) {
         var input = randomBytes(j);
         var bytes = Uint8List.fromList(input);
         var cipher = AES(key).ecb().encrypt(input);
         var plain = AES(key).ecb().decrypt(cipher);
-        expect(bytes, equals(plain), reason: '[text: $j]');
+        expect(toHex(bytes), equals(toHex(plain)), reason: '[size: $j]');
       }
     });
   });
@@ -291,30 +292,38 @@ void main() {
   group('sink test', () {
     test('encryption', () {
       var key = randomBytes(32);
-      for (int j = 0; j < 160; j += 16) {
+      for (int j = 0; j < 100; j++) {
+        final aes = AES(key).ecb();
+
         var input = randomBytes(j);
-        var cipher = AES(key).ecb().encrypt(input);
-        var sink = AES(key).ecb().encryptor.createSink();
-        var output = [];
+        var cipher = aes.encrypt(input);
+
+        var enc = aes.encryptor.createSink();
+        var output = <int>[];
         for (int i = 0; i < input.length; i += 23) {
-          var r = sink.add(input.skip(i).take(23).toList());
-          output.addAll(r);
+          output.addAll(enc.add(input.skip(i).take(23).toList()));
         }
-        expect(output, equals(cipher), reason: '[text: $j]');
+        output.addAll(enc.close());
+        expect(toHex(output), equals(toHex(cipher)), reason: '[size: $j]');
+
+        var plain = aes.decrypt(output);
+        expect(toHex(plain), equals(toHex(input)), reason: '[size: $j]');
       }
     });
+
     test('decryption', () {
       var key = randomBytes(32);
-      for (int j = 0; j < 160; j += 16) {
+      for (int j = 0; j < 100; j++) {
         var input = randomBytes(j);
-        var cipher = AES(key).ecb().decrypt(input);
-        var sink = AES(key).ecb().decryptor.createSink();
-        var output = [];
-        for (int i = 0; i < input.length; i += 23) {
-          var r = sink.add(input.skip(i).take(23).toList());
-          output.addAll(r);
+        var cipher = AES(key).ecb().encrypt(input);
+
+        var dec = AES(key).ecb().decryptor.createSink();
+        var output = <int>[];
+        for (int i = 0; i < cipher.length; i += 23) {
+          output.addAll(dec.add(cipher.skip(i).take(23).toList()));
         }
-        expect(output, equals(cipher), reason: '[text: $j]');
+        output.addAll(dec.close());
+        expect(toHex(output), equals(toHex(input)), reason: '[size: $j]');
       }
     });
   });

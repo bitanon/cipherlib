@@ -5,7 +5,7 @@ import 'dart:async';
 import 'dart:math';
 import 'dart:typed_data';
 
-import 'package:cipherlib/src/algorithms/aes/aes_ecb.dart';
+import 'package:cipherlib/src/algorithms/aes/ecb.dart';
 
 import 'base.dart';
 
