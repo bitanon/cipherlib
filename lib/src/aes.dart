@@ -2,12 +2,19 @@
 // All rights reserved. Check LICENSE file for details.
 
 import 'package:cipherlib/src/algorithms/aes/cbc.dart';
+import 'package:cipherlib/src/algorithms/aes/cfb.dart';
 import 'package:cipherlib/src/algorithms/aes/ctr.dart';
 import 'package:cipherlib/src/algorithms/aes/ecb.dart';
+import 'package:cipherlib/src/algorithms/aes/ofb.dart';
+import 'package:cipherlib/src/algorithms/aes/pcbc.dart';
 import 'package:cipherlib/src/algorithms/padding.dart';
-import 'package:cipherlib/src/utils/int64.dart';
 
-export 'package:cipherlib/src/algorithms/padding.dart';
+export 'package:cipherlib/src/algorithms/aes/cbc.dart';
+export 'package:cipherlib/src/algorithms/aes/cfb.dart';
+export 'package:cipherlib/src/algorithms/aes/ctr.dart';
+export 'package:cipherlib/src/algorithms/aes/ecb.dart';
+export 'package:cipherlib/src/algorithms/aes/ofb.dart';
+export 'package:cipherlib/src/algorithms/aes/pcbc.dart';
 
 /// AES (Advanced Encryption Standard) is a symmetric encryption algorithm used
 /// for securing data. It operates on fixed-size blocks of data (128 bits) using
@@ -43,7 +50,7 @@ class AES {
   /// Creates AES instances with [Padding.pkcs7]
   factory AES.pkcs7(List<int> key) => AES(key, Padding.pkcs7);
 
-  /// The ECB (Electronic Codeblock) mode encrypts each block of plaintext
+  /// The Electronic Codeblock (ECB) mode encrypts each block of plaintext
   /// independently using the same key.
   ///
   /// **Not Recommended: It is vulnerable to pattern analysis.**
@@ -66,14 +73,14 @@ class AES {
   /// ```
   AESInECBMode ecb() => AESInECBMode(key, padding);
 
-  /// The CBC (Cipher Block Chaining) mode chains together blocks of plaintext
+  /// The Cipher Block Chaining (CBC) mode chains together blocks of plaintext
   /// by XORing each block with the previous ciphertext block before encryption.
   /// An initialization vector (IV) is used for the first block to ensure unique
   /// encryption. CBC mode provides better security than ECB but requires
   /// sequential processing.
   ///
   /// Parameters:
-  /// - [iv] (initial value) is the random 16-byte salt.
+  /// - [iv] (initialization vector) is the random 16-byte salt.
   ///
   /// ```
   ///                 IV             Key
@@ -91,17 +98,22 @@ class AES {
   ///                  v              v
   /// Plaintext ---> (XOR) ---> [block cipher] ---> Ciphertext
   /// ```
-  AESInCBCMode cbc(List<int> iv) => AESInCBCMode(key, iv, padding);
+  AESInCBCMode cbc(List<int> iv) => AESInCBCMode(
+        key,
+        iv: iv,
+        padding: padding,
+      );
 
-  /// The Counter (CTR) converts a block cipher into a stream cipher by
+  /// The Counter (CTR) mode converts a block cipher into a stream cipher by
   /// encrypting a counter value with a nonce. The resulting keystream is then
   /// XORed with the plaintext to produce ciphertext. CTR mode allows parallel
   /// encryption and decryption, making it efficient for high-performance
   /// applications.
   ///
   /// Parameters:
-  /// - [nonce] is a random 64-bit number.
-  /// - [counter] is used track current block number. (Default: 0)
+  /// - [iv] (initialization vector) is the random 16-byte salt. For CTR mode
+  ///   this is a combination of 64-bit Nonce and 64-bit Counter values in
+  ///   Big-Endian order.
   ///
   /// ```
   ///                              Key          Plaintext
@@ -119,22 +131,16 @@ class AES {
   ///                               v               v
   /// <Nonce, Counter+1> ---> [block cipher] ---> (XOR) ---> Ciphertext
   /// ```
-  AESInCTRMode ctr(
-    Int64 nonce, [
-    Int64? counter,
-  ]) =>
-      AESInCTRMode(
-        key,
-        nonce: nonce,
-        counter: counter,
-        padding: padding,
-      );
+  AESInCTRMode ctr(List<int> iv) => AESInCTRMode(key, iv);
 
   /// The CFB (Cipher Feedback) mode turns a block cipher into a
   /// self-synchronizing stream cipher. It uses the previous ciphertext block as
   /// input to the block cipher to produce a keystream, which is then XORed with
   /// the plaintext to produce ciphertext. CFB does not require a padding to the
   /// plaintext and can be used for error recovery.
+  ///
+  /// Parameters:
+  /// - [iv] (initialization vector) is the random 16-byte salt.
   ///
   /// ```
   ///              Key          Plaintext
@@ -152,12 +158,15 @@ class AES {
   ///    |          v               v
   ///    ---> [block cipher] ---> (XOR) ---> Ciphertext
   /// ```
-  // cfb([List<int>? iv]) => UnimplementedError();
+  AESInCFBMode cfb(List<int> iv) => AESInCFBMode(key, iv);
 
   /// The Output Feedback (OFB) mode operates similarly to CFB but generates the
   /// keystream independently of both plaintext and ciphertext. This makes OFB
   /// immune to transmission errors but requires careful management of the IV to
   /// avoid security issues.
+  ///
+  /// Parameters:
+  /// - [iv] (initialization vector) is the random 16-byte salt.
   ///
   /// ```
   ///              Key             Plaintext
@@ -175,12 +184,15 @@ class AES {
   ///    |          v                  v
   ///    ---> [block cipher] ------> (XOR) ---> Ciphertext
   /// ```
-  // ofb([List<int>? iv]) => UnimplementedError();
+  AESInOFBMode ofb(List<int> iv) => AESInOFBMode(key, iv);
 
   /// The Propagating Cipher Block Chaining (PCBC) mode is a variant of CBC that
   /// propagates changes to both the plaintext and the ciphertext, making it
   /// more resilient to certain attacks. It is not as commonly used as other
   /// modes but can provide additional security in some scenarios.
+  ///
+  /// Parameters:
+  /// - [iv] (initialization vector) is the random 16-byte salt.
   ///
   /// ```
   ///                 IV             Key
@@ -200,5 +212,9 @@ class AES {
   ///                  v              v
   /// Plaintext ---> (XOR) ---> [block cipher] ---> Ciphertext
   /// ```
-  // pcbc([List<int>? iv]) => UnimplementedError();
+  AESInPCBCMode pcbc(List<int> iv) => AESInPCBCMode(
+        key,
+        iv: iv,
+        padding: padding,
+      );
 }

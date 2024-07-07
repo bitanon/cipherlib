@@ -9,166 +9,151 @@ import 'package:hashlib_codecs/hashlib_codecs.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group("encryption", () {
-    // https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.197-upd1.pdf
-    test("128-bit NIST.FIPS.197-upd1", () {
+  // https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.197-upd1.pdf
+  group("NIST.FIPS.197-upd1 AES128", () {
+    var key = fromHex('2b7e151628aed2a6abf7158809cf4f3c');
+    var plain = fromHex('3243f6a8885a308d313198a2e0370734');
+    var cipher = fromHex('3925841d02dc09fbdc118597196a0b32');
+    var aes = AES.noPadding(key).ecb();
+    test('encrypt', () {
+      var actual = aes.encrypt(plain);
+      expect(toHex(actual), equals(toHex(cipher)));
+    });
+    test('decrypt', () {
+      var reverse = aes.decrypt(cipher);
+      expect(toHex(reverse), equals(toHex(plain)));
+    });
+  });
+  group('NIST SP 800-38A', () {
+    // https://csrc.nist.gov/pubs/sp/800/38/a/final
+    group('F2.1 ECB-AES128', () {
       var key = fromHex('2b7e151628aed2a6abf7158809cf4f3c');
-      var inp = fromHex('3243f6a8885a308d313198a2e0370734');
-      var out = '3925841d02dc09fbdc118597196a0b32';
-      var rr = AES.noPadding(key).ecb().encrypt(inp);
-      expect(toHex(rr), equals(out));
+      var plain = fromHex(
+        '6bc1bee22e409f96e93d7e117393172a'
+        'ae2d8a571e03ac9c9eb76fac45af8e51'
+        '30c81c46a35ce411e5fbc1191a0a52ef'
+        'f69f2445df4f9b17ad2b417be66c3710',
+      );
+      var cipher = fromHex(
+        '3ad77bb40d7a3660a89ecaf32466ef97'
+        'f5d3d58503b9699de785895a96fdbaaf'
+        '43b1cd7f598ece23881b00e3ed030688'
+        '7b0c785e27e8ad3f8223207104725dd4',
+      );
+      var aes = AES.noPadding(key).ecb();
+      test('encrypt', () {
+        var actual = aes.encrypt(plain);
+        expect(toHex(actual), equals(toHex(cipher)));
+      });
+      test('decrypt', () {
+        var reverse = aes.decrypt(cipher);
+        expect(toHex(reverse), equals(toHex(plain)));
+      });
     });
-    // https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/AES_Core_All.pdf
-    test("128-bit CSRC NIST example", () {
-      var key = fromHex('2B7E151628AED2A6ABF7158809CF4F3C');
-      var inp = fromHex('6BC1BEE22E409F96E93D7E117393172A'
-          'AE2D8A571E03AC9C9EB76FAC45AF8E51'
-          '30C81C46A35CE411E5FBC1191A0A52EF'
-          'F69F2445DF4F9B17AD2B417BE66C3710');
-      var out = '3AD77BB40D7A3660A89ECAF32466EF97'
-          'F5D3D58503B9699DE785895A96FDBAAF'
-          '43B1CD7F598ECE23881B00E3ED030688'
-          '7B0C785E27E8AD3F8223207104725DD4';
-      var rr = AES.noPadding(key).ecb().encrypt(inp);
-      expect(toHex(rr, upper: true), equals(out));
+    group('F2.3 ECB-AES192', () {
+      var key = fromHex('8e73b0f7da0e6452c810f32b809079e562f8ead2522c6b7b');
+      var plain = fromHex(
+        '6bc1bee22e409f96e93d7e117393172a'
+        'ae2d8a571e03ac9c9eb76fac45af8e51'
+        '30c81c46a35ce411e5fbc1191a0a52ef'
+        'f69f2445df4f9b17ad2b417be66c3710',
+      );
+      var cipher = fromHex(
+        'bd334f1d6e45f25ff712a214571fa5cc'
+        '974104846d0ad3ad7734ecb3ecee4eef'
+        'ef7afd2270e2e60adce0ba2face6444e'
+        '9a4b41ba738d6c72fb16691603c18e0e',
+      );
+      var aes = AES.noPadding(key).ecb();
+      test('encrypt', () {
+        var actual = aes.encrypt(plain);
+        expect(toHex(actual), equals(toHex(cipher)));
+      });
+      test('decrypt', () {
+        var reverse = aes.decrypt(cipher);
+        expect(toHex(reverse), equals(toHex(plain)));
+      });
     });
-    test("192-bit CSRC NIST example", () {
-      var key = fromHex('8E73B0F7DA0E6452C810F32B809079E562F8EAD2522C6B7B');
-      var inp = fromHex('6BC1BEE22E409F96E93D7E117393172A'
-          'AE2D8A571E03AC9C9EB76FAC45AF8E51'
-          '30C81C46A35CE411E5FBC1191A0A52EF'
-          'F69F2445DF4F9B17AD2B417BE66C3710');
-      var out = 'BD334F1D6E45F25FF712A214571FA5CC'
-          '974104846D0AD3AD7734ECB3ECEE4EEF'
-          'EF7AFD2270E2E60ADCE0BA2FACE6444E'
-          '9A4B41BA738D6C72FB16691603C18E0E';
-      var rr = AES.noPadding(key).ecb().encrypt(inp);
-      expect(toHex(rr, upper: true), equals(out));
-    });
-    test("256-bit CSRC NIST example", () {
-      var key = fromHex('603DEB1015CA71BE2B73AEF0857D7781'
-          '1F352C073B6108D72D9810A30914DFF4');
-      var inp = fromHex('6BC1BEE22E409F96E93D7E117393172A'
-          'AE2D8A571E03AC9C9EB76FAC45AF8E51'
-          '30C81C46A35CE411E5FBC1191A0A52EF'
-          'F69F2445DF4F9B17AD2B417BE66C3710');
-      var out = 'F3EED1BDB5D2A03C064B5A7E3DB181F8'
-          '591CCB10D410ED26DC5BA74A31362870'
-          'B6ED21B99CA6F4F9F153E7B1BEAFED1D'
-          '23304B7A39F9F3FF067D8D8F9E24ECC7';
-      var rr = AES.noPadding(key).ecb().encrypt(inp);
-      expect(toHex(rr, upper: true), equals(out));
-    });
-    test('128-bit with PKCS#7 padding', () {
-      var inp = 'A not very secret message'.codeUnits;
-      var key = 'abcdefghijklmnop'.codeUnits;
-      var expected =
-          '9224d7a1b18964d1184f5e93b0ebebd2a26031ef0e1c7f271298cbec4351abe8';
-      var actual = AES(key).ecb().encrypt(inp);
-      expect(toHex(actual), equals(expected));
-    });
-    test('192-bit with PKCS#7 padding', () {
-      var inp = 'A not very secret message'.codeUnits;
-      var key = 'abcdefghijklmnopqrstuvwx'.codeUnits;
-      var expected =
-          '4520a2df64b588535d95d14625fe6f66e36c07bfb712b1f1dbf9e88f9c4ec2db';
-      var actual = AES(key).ecb().encrypt(inp);
-      expect(toHex(actual), equals(expected));
-    });
-    test('256-bit with PKCS#7 padding', () {
-      var inp = 'A not very secret message'.codeUnits;
-      var key = 'abcdefghijklmnopqrstuvwxyz012345'.codeUnits;
-      var expected =
-          '09f1ff0aeb92b79274ac55abdc074a0198e1a6fb59c3177fb56ed1d75bc424e3';
-      var actual = AES(key).ecb().encrypt(inp);
-      expect(toHex(actual), equals(expected));
-    });
-    test('throws error on invalid input size', () {
-      var key = Uint32List(16);
-      var inp = Uint32List(10);
-      expect(() => AES.noPadding(key).ecb().encrypt(inp), throwsStateError);
+    group('F2.5 ECB-AES256', () {
+      var key = fromHex(
+        '603deb1015ca71be2b73aef0857d7781'
+        '1f352c073b6108d72d9810a30914dff4',
+      );
+      var plain = fromHex(
+        '6bc1bee22e409f96e93d7e117393172a'
+        'ae2d8a571e03ac9c9eb76fac45af8e51'
+        '30c81c46a35ce411e5fbc1191a0a52ef'
+        'f69f2445df4f9b17ad2b417be66c3710',
+      );
+      var cipher = fromHex(
+        'f3eed1bdb5d2a03c064b5a7e3db181f8'
+        '591ccb10d410ed26dc5ba74a31362870'
+        'b6ed21b99ca6f4f9f153e7b1beafed1d'
+        '23304b7a39f9f3ff067d8d8f9e24ecc7',
+      );
+      var aes = AES.noPadding(key).ecb();
+      test('encrypt', () {
+        var actual = aes.encrypt(plain);
+        expect(toHex(actual), equals(toHex(cipher)));
+      });
+      test('decrypt', () {
+        var reverse = aes.decrypt(cipher);
+        expect(toHex(reverse), equals(toHex(plain)));
+      });
     });
   });
 
-  group("decryption", () {
-    // https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.197-upd1.pdf
-    test("128-bit NIST.FIPS.197-upd1", () {
-      var key = fromHex('2B7E151628AED2A6ABF7158809CF4F3C');
-      var inp = fromHex('3925841d02dc09fbdc118597196a0b32');
-      var out = '3243f6a8885a308d313198a2e0370734';
-      var rr = AES.noPadding(key).ecb().decrypt(inp);
-      expect(toHex(rr), equals(out));
-    });
-    // https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/AES_Core_All.pdf
-    test("128-bit CSRC NIST example", () {
-      var key = fromHex('2B7E151628AED2A6ABF7158809CF4F3C');
-      var inp = fromHex('3AD77BB40D7A3660A89ECAF32466EF97'
-          'F5D3D58503B9699DE785895A96FDBAAF'
-          '43B1CD7F598ECE23881B00E3ED030688'
-          '7B0C785E27E8AD3F8223207104725DD4');
-      var out = '6BC1BEE22E409F96E93D7E117393172A'
-          'AE2D8A571E03AC9C9EB76FAC45AF8E51'
-          '30C81C46A35CE411E5FBC1191A0A52EF'
-          'F69F2445DF4F9B17AD2B417BE66C3710';
-      var rr = AES.noPadding(key).ecb().decrypt(inp);
-      expect(toHex(rr, upper: true), equals(out));
-    });
-    test("192-bit CSRC NIST example", () {
-      var key = fromHex('8E73B0F7DA0E6452C810F32B809079E5'
-          '62F8EAD2522C6B7B');
-      var inp = fromHex('BD334F1D6E45F25FF712A214571FA5CC'
-          '974104846D0AD3AD7734ECB3ECEE4EEF'
-          'EF7AFD2270E2E60ADCE0BA2FACE6444E'
-          '9A4B41BA738D6C72FB16691603C18E0E');
-      var out = '6BC1BEE22E409F96E93D7E117393172A'
-          'AE2D8A571E03AC9C9EB76FAC45AF8E51'
-          '30C81C46A35CE411E5FBC1191A0A52EF'
-          'F69F2445DF4F9B17AD2B417BE66C3710';
-      var rr = AES.noPadding(key).ecb().decrypt(inp);
-      expect(toHex(rr, upper: true), equals(out));
-    });
-    test("256-bit CSRC NIST example", () {
-      var key = fromHex('603DEB1015CA71BE2B73AEF0857D7781'
-          '1F352C073B6108D72D9810A30914DFF4');
-      var inp = fromHex('F3EED1BDB5D2A03C064B5A7E3DB181F8'
-          '591CCB10D410ED26DC5BA74A31362870'
-          'B6ED21B99CA6F4F9F153E7B1BEAFED1D'
-          '23304B7A39F9F3FF067D8D8F9E24ECC7');
-      var out = '6BC1BEE22E409F96E93D7E117393172A'
-          'AE2D8A571E03AC9C9EB76FAC45AF8E51'
-          '30C81C46A35CE411E5FBC1191A0A52EF'
-          'F69F2445DF4F9B17AD2B417BE66C3710';
-      var rr = AES.noPadding(key).ecb().decrypt(inp);
-      expect(toHex(rr, upper: true), equals(out));
-    });
-    test('128-bit with PKCS#7 padding', () {
-      var inp = fromHex('9224d7a1b18964d1184f5e93b0ebebd2a'
-          '26031ef0e1c7f271298cbec4351abe8');
+  test('throws error on invalid input size', () {
+    var aes = AES.noPadding(Uint8List(16)).ecb();
+    expect(() => aes.encrypt(Uint8List(10)), throwsStateError);
+    expect(() => aes.decrypt(Uint8List(10)), throwsStateError);
+  });
+
+  group("PKCS#7 padding", () {
+    group('AES128', () {
       var key = 'abcdefghijklmnop'.codeUnits;
-      var expected = 'A not very secret message';
-      var actual = AES(key).ecb().decrypt(inp);
-      expect(String.fromCharCodes(actual), equals(expected));
+      var plain = 'A not very secret message'.codeUnits;
+      var cipher = fromHex(
+          '9224d7a1b18964d1184f5e93b0ebebd2a26031ef0e1c7f271298cbec4351abe8');
+      var aes = AES.pkcs7(key).ecb();
+      test('encrypt', () {
+        var actual = aes.encrypt(plain);
+        expect(toHex(actual), equals(toHex(cipher)));
+      });
+      test('decrypt', () {
+        var reverse = aes.decrypt(cipher);
+        expect(toHex(reverse), equals(toHex(plain)));
+      });
     });
-    test('192-bit with PKCS#7 padding', () {
-      var inp = fromHex(
-          '4520a2df64b588535d95d14625fe6f66e36c07bfb712b1f1dbf9e88f9c4ec2db');
+    group('AES192', () {
       var key = 'abcdefghijklmnopqrstuvwx'.codeUnits;
-      var expected = 'A not very secret message';
-      var actual = AES(key).ecb().decrypt(inp);
-      expect(String.fromCharCodes(actual), equals(expected));
+      var plain = 'A not very secret message'.codeUnits;
+      var cipher = fromHex(
+          '4520a2df64b588535d95d14625fe6f66e36c07bfb712b1f1dbf9e88f9c4ec2db');
+      var aes = AES.pkcs7(key).ecb();
+      test('encrypt', () {
+        var actual = aes.encrypt(plain);
+        expect(toHex(actual), equals(toHex(cipher)));
+      });
+      test('decrypt', () {
+        var reverse = aes.decrypt(cipher);
+        expect(toHex(reverse), equals(toHex(plain)));
+      });
     });
-    test('256-bit with PKCS#7 padding', () {
-      var inp = fromHex(
-          '09f1ff0aeb92b79274ac55abdc074a0198e1a6fb59c3177fb56ed1d75bc424e3');
+    group('AES256', () {
       var key = 'abcdefghijklmnopqrstuvwxyz012345'.codeUnits;
-      var expected = 'A not very secret message';
-      var actual = AES(key).ecb().decrypt(inp);
-      expect(String.fromCharCodes(actual), equals(expected));
-    });
-    test('throws error on invalid input size', () {
-      var key = Uint32List(16);
-      var inp = Uint32List(10);
-      expect(() => AES.noPadding(key).ecb().decrypt(inp), throwsStateError);
+      var plain = 'A not very secret message'.codeUnits;
+      var cipher = fromHex(
+          '09f1ff0aeb92b79274ac55abdc074a0198e1a6fb59c3177fb56ed1d75bc424e3');
+      var aes = AES.pkcs7(key).ecb();
+      test('encrypt', () {
+        var actual = aes.encrypt(plain);
+        expect(toHex(actual), equals(toHex(cipher)));
+      });
+      test('decrypt', () {
+        var reverse = aes.decrypt(cipher);
+        expect(toHex(reverse), equals(toHex(plain)));
+      });
     });
   });
 

@@ -8,6 +8,9 @@ import 'package:hashlib_codecs/hashlib_codecs.dart';
 import 'package:test/test.dart';
 
 void main() {
+  test('throws error on invalid key size', () {
+    expect(() => AESCore.$expandEncryptionKey(Uint32List(0)), throwsStateError);
+  });
   group("key expansion", () {
     // https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.197-upd1.pdf
     test("128-bit", () {

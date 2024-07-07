@@ -7,25 +7,15 @@ import 'package:cipherlib/cipherlib.dart';
 import 'package:cipherlib/src/algorithms/aes/_core.dart';
 import 'package:hashlib/hashlib.dart';
 
-/// The sink used for both encryption and decryption by the [AESInCTRModeEncrypt] algorithm.
+/// The sink used for both encryption and decryption by the
+/// [AESInCTRModeCipher] algorithm.
 class AESInCTRModeSink extends CipherSink {
-  AESInCTRModeSink(
-    this._key, {
-    required Uint8List nonce,
-    required Uint8List counter,
-  }) {
-    if (nonce.length != 8) {
-      throw ArgumentError('Nonce must be 8 bytes');
+  AESInCTRModeSink(this._key, Uint8List iv) {
+    if (iv.length != 16) {
+      throw StateError('IV must be 16 bytes');
     }
-    if (counter.length != 8) {
-      throw ArgumentError('Counter must be 8 bytes');
-    }
-    int i;
-    for (i = 0; i < 8; ++i) {
-      _iv[i] = nonce[i];
-    }
-    for (i = 8; i < 16; ++i) {
-      _iv[i] = counter[i - 8];
+    for (int i = 0; i < 16; ++i) {
+      _iv[i] = iv[i];
     }
   }
 
@@ -52,13 +42,14 @@ class AESInCTRModeSink extends CipherSink {
         for (j = 0; j < 16; ++j) {
           _block[j] = _iv[j];
         }
-        for (j = 15; j >= 8 && _iv[j]++ == 0; j--) {
-          // adds 1 to the counter
-        }
         AESCore.$encrypt(_block32, _xkey32);
+        for (j = 15; j >= 8; j--) {
+          _iv[j]++;
+          if (_iv[j] != 0) break;
+        }
       }
-      output[i] = _block[_pos++] ^ data[i];
-      if (_pos == 16) {
+      output[i] = _block[_pos] ^ data[i];
+      if (++_pos == 16) {
         _pos = 0;
       }
     }
@@ -67,142 +58,76 @@ class AESInCTRModeSink extends CipherSink {
   }
 }
 
-/// Provides encryption for AES cipher in CTR mode.
-class AESInCTRModeEncrypt extends SaltedCipher {
+/// Provides AES cipher in CTR mode.
+class AESInCTRModeCipher extends SaltedCipher {
   @override
-  String get name => "AES#encrypt/CTR";
+  final String name = "AES/CTR";
 
   /// Key for the cipher
   final Uint8List key;
 
-  /// The initial counter value
-  final Uint8List counter;
-
-  const AESInCTRModeEncrypt._(
-    this.key, {
-    required this.counter,
-    required Uint8List nonce,
-  }) : super(nonce);
-
-  factory AESInCTRModeEncrypt(
-    Uint8List key, {
-    Int64? nonce,
-    Int64? counter,
-  }) =>
-      AESInCTRModeEncrypt._(
-        key,
-        nonce: nonce?.bytes ?? randomBytes(8),
-        counter: counter?.bytes ?? Uint8List(8),
-      );
+  const AESInCTRModeCipher(this.key, Uint8List iv) : super(iv);
 
   @override
   @pragma('vm:prefer-inline')
-  AESInCTRModeSink createSink() => AESInCTRModeSink(
-        key,
-        nonce: salt,
-        counter: counter,
-      );
-}
-
-/// Provides decryption for AES cipher in CTR mode.
-class AESInCTRModeDecrypt extends SaltedCipher {
-  @override
-  String get name => "AES#decrypt/CTR";
-
-  /// Key for the cipher
-  final Uint8List key;
-
-  /// The initial counter value
-  final Uint8List counter;
-
-  const AESInCTRModeDecrypt._(
-    this.key, {
-    required this.counter,
-    required Uint8List nonce,
-  }) : super(nonce);
-
-  factory AESInCTRModeDecrypt(
-    Uint8List key, {
-    Int64? nonce,
-    Int64? counter,
-    Padding padding = Padding.pkcs7,
-  }) =>
-      AESInCTRModeDecrypt._(
-        key,
-        nonce: nonce?.bytes ?? randomBytes(8),
-        counter: counter?.bytes ?? Uint8List(8),
-      );
-
-  @override
-  @pragma('vm:prefer-inline')
-  AESInCTRModeSink createSink() => AESInCTRModeSink(
-        key,
-        nonce: salt,
-        counter: counter,
-      );
+  AESInCTRModeSink createSink() => AESInCTRModeSink(key, iv);
 }
 
 /// Provides encryption and decryption for AES cipher in CTR mode.
 class AESInCTRMode extends CollateCipher {
   @override
-  String get name => "AES/CTR";
+  String get name => "AES/CTR/NoPadding";
 
   @override
-  final AESInCTRModeEncrypt encryptor;
+  final AESInCTRModeCipher encryptor;
 
   @override
-  final AESInCTRModeDecrypt decryptor;
+  final AESInCTRModeCipher decryptor;
 
   const AESInCTRMode._({
     required this.encryptor,
     required this.decryptor,
   });
 
-  /// Creates a AES cipher in CTR mode using a nonce and counter.
+  /// Creates a AES cipher in CTR mode.
+  ///
+  /// The [iv] parameter combines the 64-bit nonce, and 64-bit counter
+  /// value together to make a 128-bit initialization vector for the algorithm.
   ///
   /// Parameters:
   /// - [key] The key for encryption and decryption
-  /// - [padding] The padding scheme for the messages
-  /// - [nonce] 64-bit random nonce value.
-  /// - [counter] 64-bit initial counter value.
-  factory AESInCTRMode(
-    List<int> key, {
-    Int64? nonce,
-    Int64? counter,
-    Padding padding = Padding.pkcs7,
-  }) {
-    var nonce8 = nonce?.bytes ?? randomBytes(8);
-    var counter8 = counter?.bytes ?? Uint8List(8);
+  /// - [iv] 128-bit random initialization vector or salt
+  factory AESInCTRMode(List<int> key, [List<int>? iv]) {
+    iv ??= randomBytes(16);
+    var iv8 = iv is Uint8List ? iv : Uint8List.fromList(iv);
     var key8 = key is Uint8List ? key : Uint8List.fromList(key);
     return AESInCTRMode._(
-      encryptor: AESInCTRModeEncrypt._(
-        key8,
-        nonce: nonce8,
-        counter: counter8,
-      ),
-      decryptor: AESInCTRModeDecrypt._(
-        key8,
-        nonce: nonce8,
-        counter: counter8,
-      ),
+      encryptor: AESInCTRModeCipher(key8, iv8),
+      decryptor: AESInCTRModeCipher(key8, iv8),
     );
   }
 
-  /// Nonce for the cipher
-  Int64 get nonce => Int64(encryptor.salt);
-
-  /// Counter for the cipher
-  Int64 get counter => Int64(encryptor.counter);
-
-  /// Sets a random nonce value
-  @pragma('vm:prefer-inline')
-  void resetNonce() {
-    fillRandom(nonce.bytes.buffer);
+  /// Creates a AES cipher in CTR mode.
+  ///
+  /// Parameters:
+  /// - [key] The key for encryption and decryption
+  /// - [nonce] 64-bit random integer nonce
+  /// - [counter] 64-bit random integer counter
+  factory AESInCTRMode.nonce(
+    List<int> key, {
+    Salt64? nonce,
+    Salt64? counter,
+  }) {
+    var nonce8 = (nonce ?? Salt64.random()).bytes;
+    var counter8 = (counter ?? Salt64.random()).bytes;
+    var iv = Uint8List.fromList([...nonce8, ...counter8]);
+    return AESInCTRMode(key, iv);
   }
 
-  /// Sets the counter to 0
+  /// IV for the cipher
+  Uint8List get iv => encryptor.iv;
+
+  /// Replaces current IV with a new random one
   @pragma('vm:prefer-inline')
-  void resetCounter() {
-    counter.bytes.fillRange(0, 8, 0);
-  }
+  void resetIV() => fillRandom(iv.buffer);
 }

@@ -213,7 +213,7 @@ abstract class AESCore {
           return w;
         }
       default:
-        throw UnsupportedError('Invalid key length');
+        throw StateError('Key must be 128, 192, or 256 bits long');
     }
   }
 

@@ -9,75 +9,147 @@ import 'package:hashlib_codecs/hashlib_codecs.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group("encryption", () {
-    test('throws error on invalid input size', () {
-      var key = Uint32List(16);
-      var inp = Uint32List(10);
-      var iv = randomBytes(16);
-      expect(() => AES.noPadding(key).cbc(iv).encrypt(inp), throwsStateError);
+  group('NIST SP 800-38A', () {
+    // https://csrc.nist.gov/pubs/sp/800/38/a/final
+    group('F2.1 CBC-AES128', () {
+      var key = fromHex('2b7e151628aed2a6abf7158809cf4f3c');
+      var iv = fromHex('000102030405060708090a0b0c0d0e0f');
+      var plain = fromHex(
+        '6bc1bee22e409f96e93d7e117393172a'
+        'ae2d8a571e03ac9c9eb76fac45af8e51'
+        '30c81c46a35ce411e5fbc1191a0a52ef'
+        'f69f2445df4f9b17ad2b417be66c3710',
+      );
+      var cipher = fromHex(
+        '7649abac8119b246cee98e9b12e9197d'
+        '5086cb9b507219ee95db113a917678b2'
+        '73bed6b8e3c1743b7116e69e22229516'
+        '3ff1caa1681fac09120eca307586e1a7',
+      );
+      var aes = AES.noPadding(key).cbc(iv);
+      test('encrypt', () {
+        var actual = aes.encrypt(plain);
+        expect(toHex(actual), equals(toHex(cipher)));
+      });
+      test('decrypt', () {
+        var reverse = aes.decrypt(cipher);
+        expect(toHex(reverse), equals(toHex(plain)));
+      });
     });
-    test('128-bit with PKCS#7 padding', () {
-      var inp = 'A not very secret message'.codeUnits;
-      var key = 'abcdefghijklmnop'.codeUnits;
-      var salt = 'lka9JLKasljkdPsd'.codeUnits;
-      var expected =
-          '07FD872F06478F991FFFCA2C649F4D5C1C7F769E4001541ACCF97639B9C8D750';
-      var actual = AES(key).cbc(salt).encrypt(inp);
-      expect(toHex(actual, upper: true), equals(expected));
+    group('F2.3 CBC-AES192', () {
+      var key = fromHex('8e73b0f7da0e6452c810f32b809079e562f8ead2522c6b7b');
+      var iv = fromHex('000102030405060708090a0b0c0d0e0f');
+      var plain = fromHex(
+        '6bc1bee22e409f96e93d7e117393172a'
+        'ae2d8a571e03ac9c9eb76fac45af8e51'
+        '30c81c46a35ce411e5fbc1191a0a52ef'
+        'f69f2445df4f9b17ad2b417be66c3710',
+      );
+      var cipher = fromHex(
+        '4f021db243bc633d7178183a9fa071e8'
+        'b4d9ada9ad7dedf4e5e738763f69145a'
+        '571b242012fb7ae07fa9baac3df102e0'
+        '08b0e27988598881d920a9e64f5615cd',
+      );
+      var aes = AES.noPadding(key).cbc(iv);
+      test('encrypt', () {
+        var actual = aes.encrypt(plain);
+        expect(toHex(actual), equals(toHex(cipher)));
+      });
+      test('decrypt', () {
+        var reverse = aes.decrypt(cipher);
+        expect(toHex(reverse), equals(toHex(plain)));
+      });
     });
-    test('192-bit with PKCS#7 padding', () {
-      var inp = 'A not very secret message'.codeUnits;
-      var key = 'abcdefghijklmnopqrstuvwx'.codeUnits;
-      var salt = 'lka9JLKasljkdPsd'.codeUnits;
-      var expected =
-          '1FAF5E6B855A8F48A38BA6F0C68260EF22CA50E3E00D9F567149F7D66E8981E5';
-      var actual = AES(key).cbc(salt).encrypt(inp);
-      expect(toHex(actual, upper: true), equals(expected));
-    });
-    test('256-bit with PKCS#7 padding', () {
-      var inp = 'A not very secret message'.codeUnits;
-      var key = 'abcdefghijklmnopqrstuvwxyz012345'.codeUnits;
-      var salt = 'lka9JLKasljkdPsd'.codeUnits;
-      var expected =
-          '55D9375493876E2DE608BFFDE6AFF486A4FF0671B84BB39A0A62D8312D5B631A';
-      var actual = AES(key).cbc(salt).encrypt(inp);
-      expect(toHex(actual, upper: true), equals(expected));
+    group('F2.5 CBC-AES256', () {
+      var key = fromHex(
+        '603deb1015ca71be2b73aef0857d7781'
+        '1f352c073b6108d72d9810a30914dff4',
+      );
+      var iv = fromHex('000102030405060708090a0b0c0d0e0f');
+      var plain = fromHex(
+        '6bc1bee22e409f96e93d7e117393172a'
+        'ae2d8a571e03ac9c9eb76fac45af8e51'
+        '30c81c46a35ce411e5fbc1191a0a52ef'
+        'f69f2445df4f9b17ad2b417be66c3710',
+      );
+      var cipher = fromHex(
+        'f58c4c04d6e5f1ba779eabfb5f7bfbd6'
+        '9cfc4e967edb808d679f777bc6702c7d'
+        '39f23369a9d9bacfa530e26304231461'
+        'b2eb05e2c39be9fcda6c19078c6a9d1b',
+      );
+      var aes = AES.noPadding(key).cbc(iv);
+      test('encrypt', () {
+        var actual = aes.encrypt(plain);
+        expect(toHex(actual), equals(toHex(cipher)));
+      });
+      test('decrypt', () {
+        var reverse = aes.decrypt(cipher);
+        expect(toHex(reverse), equals(toHex(plain)));
+      });
     });
   });
 
-  group("decryption", () {
-    test('throws error on invalid input size', () {
-      var key = Uint32List(16);
-      var inp = Uint32List(10);
-      var iv = randomBytes(16);
-      expect(() => AES.noPadding(key).cbc(iv).decrypt(inp), throwsStateError);
-    });
-    test('128-bit with PKCS#7 padding', () {
-      var inp = fromHex(
-          '07FD872F06478F991FFFCA2C649F4D5C1C7F769E4001541ACCF97639B9C8D750');
+  test('throws error on invalid input size', () {
+    var aes = AES.noPadding(Uint8List(16)).cbc(Uint8List(16));
+    expect(() => aes.encrypt(Uint8List(10)), throwsStateError);
+    expect(() => aes.decrypt(Uint8List(10)), throwsStateError);
+  });
+  test('throws error on invalid salt size', () {
+    var aes = AES(Uint8List(16));
+    expect(() => aes.cbc(Uint8List(15)).encrypt([0]), throwsStateError);
+    expect(() => aes.cbc(Uint8List(8)).decrypt([0]), throwsStateError);
+  });
+
+  group("PKCS#7 padding", () {
+    group('AES128', () {
       var key = 'abcdefghijklmnop'.codeUnits;
-      var salt = 'lka9JLKasljkdPsd'.codeUnits;
-      var expected = 'A not very secret message';
-      var actual = AES(key).cbc(salt).decrypt(inp);
-      expect(String.fromCharCodes(actual), equals(expected));
+      var iv = 'lka9JLKasljkdPsd'.codeUnits;
+      var plain = 'A not very secret message'.codeUnits;
+      var cipher = fromHex(
+          '07FD872F06478F991FFFCA2C649F4D5C1C7F769E4001541ACCF97639B9C8D750');
+      var aes = AES.pkcs7(key).cbc(iv);
+      test('encrypt', () {
+        var actual = aes.encrypt(plain);
+        expect(toHex(actual), equals(toHex(cipher)));
+      });
+      test('decrypt', () {
+        var reverse = aes.decrypt(cipher);
+        expect(toHex(reverse), equals(toHex(plain)));
+      });
     });
-    test('192-bit with PKCS#7 padding', () {
-      var inp = fromHex(
-          '1FAF5E6B855A8F48A38BA6F0C68260EF22CA50E3E00D9F567149F7D66E8981E5');
+    group('AES192', () {
       var key = 'abcdefghijklmnopqrstuvwx'.codeUnits;
-      var salt = 'lka9JLKasljkdPsd'.codeUnits;
-      var expected = 'A not very secret message';
-      var actual = AES(key).cbc(salt).decrypt(inp);
-      expect(String.fromCharCodes(actual), equals(expected));
+      var iv = 'lka9JLKasljkdPsd'.codeUnits;
+      var plain = 'A not very secret message'.codeUnits;
+      var cipher = fromHex(
+          '1FAF5E6B855A8F48A38BA6F0C68260EF22CA50E3E00D9F567149F7D66E8981E5');
+      var aes = AES.pkcs7(key).cbc(iv);
+      test('encrypt', () {
+        var actual = aes.encrypt(plain);
+        expect(toHex(actual), equals(toHex(cipher)));
+      });
+      test('decrypt', () {
+        var reverse = aes.decrypt(cipher);
+        expect(toHex(reverse), equals(toHex(plain)));
+      });
     });
-    test('256-bit with PKCS#7 padding', () {
-      var inp = fromHex(
-          '55D9375493876E2DE608BFFDE6AFF486A4FF0671B84BB39A0A62D8312D5B631A');
+    group('AES256', () {
       var key = 'abcdefghijklmnopqrstuvwxyz012345'.codeUnits;
-      var salt = 'lka9JLKasljkdPsd'.codeUnits;
-      var expected = 'A not very secret message';
-      var actual = AES(key).cbc(salt).decrypt(inp);
-      expect(String.fromCharCodes(actual), equals(expected));
+      var iv = 'lka9JLKasljkdPsd'.codeUnits;
+      var plain = 'A not very secret message'.codeUnits;
+      var cipher = fromHex(
+          '55D9375493876E2DE608BFFDE6AFF486A4FF0671B84BB39A0A62D8312D5B631A');
+      var aes = AES.pkcs7(key).cbc(iv);
+      test('encrypt', () {
+        var actual = aes.encrypt(plain);
+        expect(toHex(actual), equals(toHex(cipher)));
+      });
+      test('decrypt', () {
+        var reverse = aes.decrypt(cipher);
+        expect(toHex(reverse), equals(toHex(plain)));
+      });
     });
   });
 
@@ -157,7 +229,7 @@ void main() {
     });
   });
 
-  test('reset salt', () {
+  test('reset iv', () {
     var iv = randomBytes(16);
     var key = randomBytes(24);
     var aes = AES(key).cbc(iv);

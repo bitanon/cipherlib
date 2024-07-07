@@ -201,5 +201,5 @@ class Salsa20 extends SaltedCipher {
 
   @override
   @pragma('vm:prefer-inline')
-  Salsa20Sink createSink() => Salsa20Sink(key, salt, counter);
+  Salsa20Sink createSink() => Salsa20Sink(key, iv, counter);
 }

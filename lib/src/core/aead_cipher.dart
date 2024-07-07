@@ -25,9 +25,9 @@ abstract class AEADCipher implements CipherBase {
 
 /// The result fromo AEAD ciphers
 class AEADResult {
-  /// The salt used for encryption. This can be null only if the cipher does
-  /// not support salt.
-  final Uint8List? salt;
+  /// A random IV used for encryption. It can be null if and only if cipher does
+  /// not support IV.
+  final Uint8List? iv;
 
   /// The output message
   final Uint8List message;
@@ -38,6 +38,6 @@ class AEADResult {
   const AEADResult({
     required this.message,
     required this.mac,
-    this.salt,
+    this.iv,
   });
 }

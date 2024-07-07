@@ -38,9 +38,9 @@ class ChaCha20Poly1305 extends ChaCha20 with AEADCipher {
       ChaCha20.fromList(key, iv).poly1305(aad);
 
   @override
-  void resetSalt() {
-    super.resetSalt();
-    var otk = ChaCha20Sink(key, salt, 0).add(Uint8List(32));
+  void resetIV() {
+    super.resetIV();
+    var otk = ChaCha20Sink(key, iv, 0).add(Uint8List(32));
     _aead.key.setAll(0, otk);
   }
 
@@ -57,7 +57,7 @@ class ChaCha20Poly1305 extends ChaCha20 with AEADCipher {
       }
     }
     return AEADResult(
-      salt: salt,
+      iv: iv,
       mac: digest,
       message: cipher,
     );
@@ -68,8 +68,8 @@ class ChaCha20Poly1305 extends ChaCha20 with AEADCipher {
 extension ChaCha20ExtentionForPoly1305 on ChaCha20 {
   @pragma('vm:prefer-inline')
   ChaCha20Poly1305 poly1305([List<int>? aad]) {
-    var otk = ChaCha20Sink(key, salt, 0).add(Uint8List(32));
+    var otk = ChaCha20Sink(key, iv, 0).add(Uint8List(32));
     var aead = Poly1305AEAD(otk, aad);
-    return ChaCha20Poly1305._(key, salt, aead);
+    return ChaCha20Poly1305._(key, iv, aead);
   }
 }

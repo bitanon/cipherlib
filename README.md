@@ -19,12 +19,21 @@ There are only 2 dependencies used by this package:
 
 | Ciphers           | Public class and methods                                         |    Source     |
 | ----------------- | ---------------------------------------------------------------- | :-----------: |
-| AES               | `AES`, `AESMode`, `aesEncrypt`, `aesDecrypt`                     | NIST.FIPS.197 |
+| AES               | `AES`,                                                           | NIST.FIPS.197 |
 | XOR               | `XOR`, `xor`, `xorStream`                                        |   Wikipedia   |
 | ChaCha20          | `ChaCha20`, `chacha20`, `chacha20Stream`                         |   RFC-8439    |
 | ChaCha20/Poly1305 | `ChaCha20Poly1305`, `chacha20poly1305`, `chacha20poly1305Stream` |   RFC-8439    |
 | Salsa20           | `Salsa20`, `salsa20`, `salsa20Stream`                            | Snuffle-2005  |
 | Salsa20/Poly1305  | `Salsa20Poly1305`, `salsa20poly1305`, `salsa20poly1305Stream`    | Snuffle-2005  |
+
+Available modes for AES:
+
+- `ECB` : Electronic Codeblock
+- `CBC` : Cipher Block Chaining
+- `CTR` : Counter
+- `CFB` : Cipher Feedback
+- `OFB` : Output Feedback
+- `PCBC` : Propagating Cipher Block Chaining
 
 ## Getting started
 
@@ -41,12 +50,27 @@ Check the [API Reference](https://pub.dev/documentation/cipherlib/latest/cipherl
 Examples can be found inside the `example` folder.
 
 ```dart
-import 'dart:convert';
-
 import 'package:cipherlib/cipherlib.dart';
 import 'package:hashlib_codecs/hashlib_codecs.dart';
 
 void main() {
+  print('----- AES -----');
+  {
+    var plain = 'A not very secret message';
+    var key = 'abcdefghijklmnop'.codeUnits;
+    var iv = 'lka9JLKasljkdPsd'.codeUnits;
+    print('  Text: $plain');
+    print('   Key: ${toHex(key)}');
+    print(' Nonce: ${toHex(iv)}');
+    print('  ECB: ${toHex(AES(key).ecb().encryptString(plain))}');
+    print('  CBC: ${toHex(AES(key).cbc(iv).encryptString(plain))}');
+    print(' PCBC: ${toHex(AES(key).pcbc(iv).encryptString(plain))}');
+    print('  CTR: ${toHex(AES(key).ctr(iv).encryptString(plain))}');
+    print('  CFB: ${toHex(AES(key).cfb(iv).encryptString(plain))}');
+    print('  OFB: ${toHex(AES(key).ofb(iv).encryptString(plain))}');
+  }
+  print('');
+
   print('----- XOR -----');
   {
     var key = [0x54];
@@ -58,22 +82,24 @@ void main() {
     print('   XOR: ${toBinary(cipher)}');
     print(' Plain: ${toBinary(plain)}');
   }
+  print('');
 
   print('----- ChaCha20 -----');
   {
     var text = "Hide me!";
     var key = fromHex(
         "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f");
-    var nonce = fromHex("00000000000000004a00000000000000");
-    var res = chacha20poly1305(utf8.encode(text), key, nonce: nonce);
-    var plain = chacha20(res.message, key, nonce);
+    var nonce = fromHex("00000000000000004a000000");
+    var res = chacha20poly1305(toUtf8(text), key, nonce: nonce);
+    var plain = chacha20(res.message, key, nonce: nonce);
     print('  Text: $text');
     print('   Key: ${toHex(key)}');
     print(' Nonce: ${toHex(nonce)}');
     print('Cipher: ${toHex(res.message)}');
     print('   Tag: ${res.mac.hex()}');
-    print(' Plain: ${utf8.decode(plain)}');
+    print(' Plain: ${fromUtf8(plain)}');
   }
+  print('');
 
   print('----- Salsa20 -----');
   {
@@ -81,14 +107,14 @@ void main() {
     var key = fromHex(
         "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f");
     var nonce = fromHex("00000000000000004a00000000000000");
-    var res = salsa20poly1305(utf8.encode(text), key, nonce: nonce);
-    var plain = salsa20(res.message, key);
+    var res = salsa20poly1305(toUtf8(text), key, nonce: nonce);
+    var plain = salsa20(res.message, key, nonce: nonce);
     print('  Text: $text');
     print('   Key: ${toHex(key)}');
     print(' Nonce: ${toHex(nonce)}');
     print('Cipher: ${toHex(res.message)}');
     print('   Tag: ${res.mac.hex()}');
-    print(' Plain: ${utf8.decode(plain)}');
+    print(' Plain: ${fromUtf8(plain)}');
   }
 }
 ```

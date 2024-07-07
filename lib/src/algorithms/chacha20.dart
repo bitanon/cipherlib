@@ -229,5 +229,5 @@ class ChaCha20 extends SaltedCipher {
 
   @override
   @pragma('vm:prefer-inline')
-  CipherSink createSink() => ChaCha20Sink(key, salt, counter);
+  CipherSink createSink() => ChaCha20Sink(key, iv, counter);
 }

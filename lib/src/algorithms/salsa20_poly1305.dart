@@ -32,9 +32,9 @@ class Salsa20Poly1305 extends Salsa20 with AEADCipher {
       Salsa20.fromList(key, iv).poly1305(aad);
 
   @override
-  void resetSalt() {
-    super.resetSalt();
-    var otk = Salsa20Sink(key, salt, 0).add(Uint8List(32));
+  void resetIV() {
+    super.resetIV();
+    var otk = Salsa20Sink(key, iv, 0).add(Uint8List(32));
     _aead.key.setAll(0, otk);
   }
 
@@ -51,7 +51,7 @@ class Salsa20Poly1305 extends Salsa20 with AEADCipher {
       }
     }
     return AEADResult(
-      salt: salt,
+      iv: iv,
       mac: digest,
       message: cipher,
     );
@@ -62,8 +62,8 @@ class Salsa20Poly1305 extends Salsa20 with AEADCipher {
 extension Salsa20ExtentionForPoly1305 on Salsa20 {
   @pragma('vm:prefer-inline')
   Salsa20Poly1305 poly1305([List<int>? aad]) {
-    var otk = Salsa20Sink(key, salt, 0).add(Uint8List(32));
+    var otk = Salsa20Sink(key, iv, 0).add(Uint8List(32));
     var aead = Poly1305AEAD(otk, aad);
-    return Salsa20Poly1305._(key, salt, aead);
+    return Salsa20Poly1305._(key, iv, aead);
   }
 }

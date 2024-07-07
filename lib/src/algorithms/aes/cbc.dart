@@ -12,14 +12,14 @@ import 'package:hashlib/hashlib.dart';
 class AESInCBCModeEncryptSink extends CipherSink {
   AESInCBCModeEncryptSink(
     this._key,
-    Uint8List _salt,
+    Uint8List iv,
     this._padding,
   ) {
-    if (_salt.lengthInBytes != 16) {
-      throw ArgumentError('Salt must be 16-bytes');
+    if (iv.lengthInBytes != 16) {
+      throw StateError('IV must be 16-bytes');
     }
     for (int i = 0; i < 16; ++i) {
-      _iv[i] = _salt[i];
+      _iv[i] = iv[i];
     }
   }
 
@@ -91,14 +91,14 @@ class AESInCBCModeEncryptSink extends CipherSink {
 class AESInCBCModeDecryptSink extends CipherSink {
   AESInCBCModeDecryptSink(
     this._key,
-    Uint8List _salt,
+    Uint8List iv,
     this._padding,
   ) {
-    if (_salt.lengthInBytes != 16) {
-      throw ArgumentError('Salt must be 16-bytes');
+    if (iv.lengthInBytes != 16) {
+      throw StateError('IV must be 16-bytes');
     }
     for (int i = 0; i < 16; ++i) {
-      _iv[i] = _salt[i];
+      _iv[i] = iv[i];
     }
   }
 
@@ -182,14 +182,14 @@ class AESInCBCModeEncrypt extends SaltedCipher {
 
   const AESInCBCModeEncrypt(
     this.key,
-    Uint8List salt, [
+    Uint8List iv, [
     this.padding = Padding.pkcs7,
-  ]) : super(salt);
+  ]) : super(iv);
 
   @override
   @pragma('vm:prefer-inline')
   AESInCBCModeEncryptSink createSink() =>
-      AESInCBCModeEncryptSink(key, salt, padding);
+      AESInCBCModeEncryptSink(key, iv, padding);
 }
 
 /// Provides decryption for AES cipher in CBC mode.
@@ -205,14 +205,14 @@ class AESInCBCModeDecrypt extends SaltedCipher {
 
   const AESInCBCModeDecrypt(
     this.key,
-    Uint8List salt, [
+    Uint8List iv, [
     this.padding = Padding.pkcs7,
-  ]) : super(salt);
+  ]) : super(iv);
 
   @override
   @pragma('vm:prefer-inline')
   AESInCBCModeDecryptSink createSink() =>
-      AESInCBCModeDecryptSink(key, salt, padding);
+      AESInCBCModeDecryptSink(key, iv, padding);
 }
 
 /// Provides encryption and decryption for AES cipher in CBC mode.
@@ -231,27 +231,32 @@ class AESInCBCMode extends CollateCipher {
     required this.decryptor,
   });
 
+  /// Creates a AES cipher in CBC mode.
+  ///
+  /// Parameters:
+  /// - [key] The key for encryption and decryption
+  /// - [iv] 128-bit random initialization vector or salt
   factory AESInCBCMode(
-    List<int> key,
-    List<int>? salt, [
+    List<int> key, {
+    List<int>? iv,
     Padding padding = Padding.pkcs7,
-  ]) {
-    salt ??= randomBytes(16);
+  }) {
+    iv ??= randomBytes(16);
+    var iv8 = iv is Uint8List ? iv : Uint8List.fromList(iv);
     var key8 = key is Uint8List ? key : Uint8List.fromList(key);
-    var salt8 = salt is Uint8List ? salt : Uint8List.fromList(salt);
     return AESInCBCMode._(
-      encryptor: AESInCBCModeEncrypt(key8, salt8, padding),
-      decryptor: AESInCBCModeDecrypt(key8, salt8, padding),
+      encryptor: AESInCBCModeEncrypt(key8, iv8, padding),
+      decryptor: AESInCBCModeDecrypt(key8, iv8, padding),
     );
   }
+
+  /// IV for the cipher
+  Uint8List get iv => encryptor.iv;
 
   /// Padding scheme for the messages
   Padding get padding => encryptor.padding;
 
-  /// Salt for the cipher
-  Uint8List get salt => encryptor.salt;
-
-  /// Replaces the current IV or salt with random bytes
+  /// Replaces current IV with a new random one
   @pragma('vm:prefer-inline')
-  void resetIV() => fillRandom(salt.buffer);
+  void resetIV() => fillRandom(iv.buffer);
 }

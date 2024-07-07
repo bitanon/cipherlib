@@ -1,69 +1,271 @@
 // Copyright (c) 2024, Sudipto Chandra
 // All rights reserved. Check LICENSE file for details.
 
+import 'dart:typed_data';
+
 import 'package:cipherlib/cipherlib.dart';
 import 'package:hashlib/hashlib.dart';
 import 'package:hashlib_codecs/hashlib_codecs.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group("encryption", () {
-    test('128-bit with PKCS#7 padding', () {
-      var inp = 'A not very secret message'.codeUnits;
-      var key = 'abcdefghijklmnop'.codeUnits;
-      var nonce = Int64.bytes('lka9JLKa'.codeUnits);
-      var counter = Int64.bytes('sljkdPsd'.codeUnits);
-      var expected = '047B37EBDE11A491CB3F7842E48E54F8326E293619E69BE24B';
-      var actual = AES(key).ctr(nonce, counter).encrypt(inp);
-      expect(toHex(actual, upper: true), equals(expected));
+  group('NIST SP 800-38A', () {
+    // https://csrc.nist.gov/pubs/sp/800/38/a/final
+    group('CTR data - 1 for AES128', () {
+      // https://www.ibm.com/docs/en/linux-on-systems?topic=examples-aes-ctr-mode-example
+      var key = Uint8List.fromList([
+        0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6, //
+        0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c,
+      ]);
+      var iv = Uint8List.fromList([
+        0xf0, 0xf1, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6, 0xf7, //
+        0xf8, 0xf9, 0xfa, 0xfb, 0xfc, 0xfd, 0xfe, 0xff,
+      ]);
+      var data = Uint8List.fromList([
+        0x6b, 0xc1, 0xbe, 0xe2, 0x2e, 0x40, 0x9f, 0x96, //
+        0xe9, 0x3d, 0x7e, 0x11, 0x73, 0x93, 0x17, 0x2a,
+      ]);
+      var expected = Uint8List.fromList([
+        0x87, 0x4d, 0x61, 0x91, 0xb6, 0x20, 0xe3, 0x26, //
+        0x1b, 0xef, 0x68, 0x64, 0x99, 0x0d, 0xb6, 0xce,
+      ]);
+      test('encryption', () {
+        var actual = AES(key).ctr(iv).encrypt(data);
+        expect(toHex(actual), equals(toHex(expected)));
+      });
+      test('decryption', () {
+        var reverse = AES(key).ctr(iv).decrypt(expected);
+        expect(toHex(reverse), equals(toHex(data)));
+      });
     });
-    test('192-bit with PKCS#7 padding', () {
-      var inp = 'A not very secret message'.codeUnits;
-      var key = 'abcdefghijklmnopqrstuvwx'.codeUnits;
-      var nonce = Int64.bytes('lka9JLKa'.codeUnits);
-      var counter = Int64.bytes('sljkdPsd'.codeUnits);
-      var expected = 'A85734374F88C90877C39D7A4C78177F5F80290F7E2F4B4B15';
-      var actual = AES(key).ctr(nonce, counter).encrypt(inp);
-      expect(toHex(actual, upper: true), equals(expected));
+    group('CTR data - 2 for AES128', () {
+      var key = Uint8List.fromList([
+        0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6, //
+        0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c,
+      ]);
+      var iv = Uint8List.fromList([
+        0xf0, 0xf1, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6, 0xf7, //
+        0xf8, 0xf9, 0xfa, 0xfb, 0xfc, 0xfd, 0xfe, 0xff,
+      ]);
+      var data = Uint8List.fromList([
+        0x6b, 0xc1, 0xbe, 0xe2, 0x2e, 0x40, 0x9f, 0x96, //
+        0xe9, 0x3d, 0x7e, 0x11, 0x73, 0x93, 0x17, 0x2a,
+        0xae, 0x2d, 0x8a, 0x57, 0x1e, 0x03, 0xac, 0x9c,
+        0x9e, 0xb7, 0x6f, 0xac, 0x45, 0xaf, 0x8e, 0x51,
+        0x30, 0xc8, 0x1c, 0x46, 0xa3, 0x5c, 0xe4, 0x11,
+        0xe5, 0xfb, 0xc1, 0x19, 0x1a, 0x0a, 0x52, 0xef,
+        0xf6, 0x9f, 0x24, 0x45, 0xdf, 0x4f, 0x9b, 0x17,
+        0xad, 0x2b, 0x41, 0x7b, 0xe6, 0x6c, 0x37, 0x10,
+      ]);
+      var expected = Uint8List.fromList([
+        0x87, 0x4d, 0x61, 0x91, 0xb6, 0x20, 0xe3, 0x26, //
+        0x1b, 0xef, 0x68, 0x64, 0x99, 0x0d, 0xb6, 0xce,
+        0x98, 0x06, 0xf6, 0x6b, 0x79, 0x70, 0xfd, 0xff,
+        0x86, 0x17, 0x18, 0x7b, 0xb9, 0xff, 0xfd, 0xff,
+        0x5a, 0xe4, 0xdf, 0x3e, 0xdb, 0xd5, 0xd3, 0x5e,
+        0x5b, 0x4f, 0x09, 0x02, 0x0d, 0xb0, 0x3e, 0xab,
+        0x1e, 0x03, 0x1d, 0xda, 0x2f, 0xbe, 0x03, 0xd1,
+        0x79, 0x21, 0x70, 0xa0, 0xf3, 0x00, 0x9c, 0xee,
+      ]);
+      test('encryption', () {
+        var actual = AES(key).ctr(iv).encrypt(data);
+        expect(toHex(actual), equals(toHex(expected)));
+      });
+      test('decryption', () {
+        var reverse = AES(key).ctr(iv).decrypt(expected);
+        expect(toHex(reverse), equals(toHex(data)));
+      });
     });
-    test('256-bit with PKCS#7 padding', () {
-      var inp = 'A not very secret message'.codeUnits;
-      var key = 'abcdefghijklmnopqrstuvwxyz012345'.codeUnits;
-      var nonce = Int64.bytes('lka9JLKa'.codeUnits);
-      var counter = Int64.bytes('sljkdPsd'.codeUnits);
-      var expected = '05A2F1FF79461F903C9E9DE82FF710244D36E35AF3AA8B6695';
-      var actual = AES(key).ctr(nonce, counter).encrypt(inp);
-      expect(toHex(actual, upper: true), equals(expected));
+    group('CTR data - 3 for AES192', () {
+      var key = Uint8List.fromList([
+        0x60, 0x3d, 0xeb, 0x10, 0x15, 0xca, 0x71, 0xbe, //
+        0x2b, 0x73, 0xae, 0xf0, 0x85, 0x7d, 0x77, 0x81,
+        0x1f, 0x35, 0x2c, 0x07, 0x3b, 0x61, 0x08, 0xd7,
+        0x2d, 0x98, 0x10, 0xa3, 0x09, 0x14, 0xdf, 0xf4,
+      ]);
+      var iv = Uint8List.fromList([
+        0xf0, 0xf1, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6, 0xf7, //
+        0xf8, 0xf9, 0xfa, 0xfb, 0xfc, 0xfd, 0xfe, 0xff,
+      ]);
+      var data = Uint8List.fromList([
+        0x6b, 0xc1, 0xbe, 0xe2, 0x2e, 0x40, 0x9f, 0x96, //
+        0xe9, 0x3d, 0x7e, 0x11, 0x73, 0x93, 0x17, 0x2a,
+      ]);
+      var expected = Uint8List.fromList([
+        0x60, 0x1e, 0xc3, 0x13, 0x77, 0x57, 0x89, 0xa5, //
+        0xb7, 0xa7, 0xf5, 0x04, 0xbb, 0xf3, 0xd2, 0x28,
+      ]);
+      test('encryption', () {
+        var actual = AES(key).ctr(iv).encrypt(data);
+        expect(toHex(actual), equals(toHex(expected)));
+      });
+      test('decryption', () {
+        var reverse = AES(key).ctr(iv).decrypt(expected);
+        expect(toHex(reverse), equals(toHex(data)));
+      });
+    });
+    group('CTR data - 4 for AES192', () {
+      var key = Uint8List.fromList([
+        0x60, 0x3d, 0xeb, 0x10, 0x15, 0xca, 0x71, 0xbe, //
+        0x2b, 0x73, 0xae, 0xf0, 0x85, 0x7d, 0x77, 0x81,
+        0x1f, 0x35, 0x2c, 0x07, 0x3b, 0x61, 0x08, 0xd7,
+        0x2d, 0x98, 0x10, 0xa3, 0x09, 0x14, 0xdf, 0xf4,
+      ]);
+      var iv = Uint8List.fromList([
+        0xf0, 0xf1, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6, 0xf7, //
+        0xf8, 0xf9, 0xfa, 0xfb, 0xfc, 0xfd, 0xff, 0x00,
+      ]);
+      var data = Uint8List.fromList([
+        0xae, 0x2d, 0x8a, 0x57, 0x1e, 0x03, 0xac, 0x9c, //
+        0x9e, 0xb7, 0x6f, 0xac, 0x45, 0xaf, 0x8e, 0x51,
+      ]);
+      var expected = Uint8List.fromList([
+        0xf4, 0x43, 0xe3, 0xca, 0x4d, 0x62, 0xb5, 0x9a, //
+        0xca, 0x84, 0xe9, 0x90, 0xca, 0xca, 0xf5, 0xc5,
+      ]);
+      test('encryption', () {
+        var actual = AES(key).ctr(iv).encrypt(data);
+        expect(toHex(actual), equals(toHex(expected)));
+      });
+      test('decryption', () {
+        var reverse = AES(key).ctr(iv).decrypt(expected);
+        expect(toHex(reverse), equals(toHex(data)));
+      });
+    });
+    group('CTR data - 5 for AES256', () {
+      var key = Uint8List.fromList([
+        0x60, 0x3d, 0xeb, 0x10, 0x15, 0xca, 0x71, 0xbe, //
+        0x2b, 0x73, 0xae, 0xf0, 0x85, 0x7d, 0x77, 0x81,
+        0x1f, 0x35, 0x2c, 0x07, 0x3b, 0x61, 0x08, 0xd7,
+        0x2d, 0x98, 0x10, 0xa3, 0x09, 0x14, 0xdf, 0xf4,
+      ]);
+      var iv = Uint8List.fromList([
+        0xf0, 0xf1, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6, 0xf7, //
+        0xf8, 0xf9, 0xfa, 0xfb, 0xfc, 0xfd, 0xfe, 0xff,
+      ]);
+      var data = Uint8List.fromList([
+        0x6b, 0xc1, 0xbe, 0xe2, 0x2e, 0x40, 0x9f, 0x96, //
+        0xe9, 0x3d, 0x7e, 0x11, 0x73, 0x93, 0x17, 0x2a,
+        0xae, 0x2d, 0x8a, 0x57, 0x1e, 0x03, 0xac, 0x9c,
+        0x9e, 0xb7, 0x6f, 0xac, 0x45, 0xaf, 0x8e, 0x51,
+        0x30, 0xc8, 0x1c, 0x46, 0xa3, 0x5c, 0xe4, 0x11,
+        0xe5, 0xfb, 0xc1, 0x19, 0x1a, 0x0a, 0x52, 0xef,
+        0xf6, 0x9f, 0x24, 0x45, 0xdf, 0x4f, 0x9b, 0x17,
+        0xad, 0x2b, 0x41, 0x7b, 0xe6, 0x6c, 0x37, 0x10,
+      ]);
+      var expected = Uint8List.fromList([
+        0x60, 0x1e, 0xc3, 0x13, 0x77, 0x57, 0x89, 0xa5, //
+        0xb7, 0xa7, 0xf5, 0x04, 0xbb, 0xf3, 0xd2, 0x28,
+        0xf4, 0x43, 0xe3, 0xca, 0x4d, 0x62, 0xb5, 0x9a,
+        0xca, 0x84, 0xe9, 0x90, 0xca, 0xca, 0xf5, 0xc5,
+        0x2b, 0x09, 0x30, 0xda, 0xa2, 0x3d, 0xe9, 0x4c,
+        0xe8, 0x70, 0x17, 0xba, 0x2d, 0x84, 0x98, 0x8d,
+        0xdf, 0xc9, 0xc5, 0x8d, 0xb6, 0x7a, 0xad, 0xa6,
+        0x13, 0xc2, 0xdd, 0x08, 0x45, 0x79, 0x41, 0xa6,
+      ]);
+      test('encryption', () {
+        var actual = AES(key).ctr(iv).encrypt(data);
+        expect(toHex(actual), equals(toHex(expected)));
+      });
+      test('decryption', () {
+        var reverse = AES(key).ctr(iv).decrypt(expected);
+        expect(toHex(reverse), equals(toHex(data)));
+      });
+    });
+    group('CTR data - 6 for AES256', () {
+      var key = Uint8List.fromList([
+        0x60, 0x3d, 0xeb, 0x10, 0x15, 0xca, 0x71, 0xbe, //
+        0x2b, 0x73, 0xae, 0xf0, 0x85, 0x7d, 0x77, 0x81,
+        0x1f, 0x35, 0x2c, 0x07, 0x3b, 0x61, 0x08, 0xd7,
+        0x2d, 0x98, 0x10, 0xa3, 0x09, 0x14, 0xdf, 0xf4,
+      ]);
+      var iv = Uint8List.fromList([
+        0xf0, 0xf1, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6, 0xf7, //
+        0xf8, 0xf9, 0xfa, 0xfb, 0xfc, 0xfd, 0xfe, 0xff,
+      ]);
+      var data = Uint8List.fromList([
+        0x6b, 0xc1, 0xbe, 0xe2, 0x2e, 0x40, 0x9f, 0x96, //
+        0xe9, 0x3d, 0x7e, 0x11, 0x73, 0x93, 0x17, 0x2a,
+        0xae, 0x2d, 0x8a, 0x57, 0x1e, 0x03, 0xac, 0x9c,
+        0x9e, 0xb7, 0x6f, 0xac, 0x45, 0xaf, 0x8e, 0x51,
+        0x30, 0xc8, 0x1c, 0x46, 0xa3, 0x5c, 0xe4, 0x11,
+        0xe5, 0xfb, 0xc1, 0x19, 0x1a, 0x0a, 0x52, 0xef,
+        0xf6, 0x9f, 0x24, 0x45, 0xdf, 0x4f, 0x9b, 0x17,
+      ]);
+      var expected = Uint8List.fromList([
+        0x60, 0x1e, 0xc3, 0x13, 0x77, 0x57, 0x89, 0xa5, //
+        0xb7, 0xa7, 0xf5, 0x04, 0xbb, 0xf3, 0xd2, 0x28,
+        0xf4, 0x43, 0xe3, 0xca, 0x4d, 0x62, 0xb5, 0x9a,
+        0xca, 0x84, 0xe9, 0x90, 0xca, 0xca, 0xf5, 0xc5,
+        0x2b, 0x09, 0x30, 0xda, 0xa2, 0x3d, 0xe9, 0x4c,
+        0xe8, 0x70, 0x17, 0xba, 0x2d, 0x84, 0x98, 0x8d,
+        0xdf, 0xc9, 0xc5, 0x8d, 0xb6, 0x7a, 0xad, 0xa6,
+      ]);
+      test('encryption', () {
+        var actual = AES(key).ctr(iv).encrypt(data);
+        expect(toHex(actual), equals(toHex(expected)));
+      });
+      test('decryption', () {
+        var reverse = AES(key).ctr(iv).decrypt(expected);
+        expect(toHex(reverse), equals(toHex(data)));
+      });
     });
   });
 
-  group("decryption", () {
-    test('128-bit with PKCS#7 padding', () {
-      var inp = fromHex('047B37EBDE11A491CB3F7842E48E54F8326E293619E69BE24B');
+  test('throws error on invalid salt size', () {
+    var aes = AES(Uint8List(16));
+    expect(() => aes.ofb(Uint8List(15)).encrypt([0]), throwsStateError);
+    expect(() => aes.ofb(Uint8List(8)).decrypt([0]), throwsStateError);
+  });
+
+  group("PKCS#7 padding", () {
+    group('AES128', () {
       var key = 'abcdefghijklmnop'.codeUnits;
-      var nonce = Int64.bytes('lka9JLKa'.codeUnits);
-      var counter = Int64.bytes('sljkdPsd'.codeUnits);
-      var expected = 'A not very secret message';
-      var actual = AES(key).ctr(nonce, counter).decrypt(inp);
-      expect(String.fromCharCodes(actual), equals(expected));
+      var iv = 'lka9JLKasljkdPsd'.codeUnits;
+      var plain = 'A not very secret message'.codeUnits;
+      var cipher =
+          fromHex('047B37EBDE11A491CB3F7842E48E54F8326E293619E69BE24B');
+      var aes = AES.pkcs7(key).ctr(iv);
+      test('encrypt', () {
+        var actual = aes.encrypt(plain);
+        expect(toHex(actual), equals(toHex(cipher)));
+      });
+      test('decrypt', () {
+        var reverse = aes.decrypt(cipher);
+        expect(toHex(reverse), equals(toHex(plain)));
+      });
     });
-    test('192-bit with PKCS#7 padding', () {
-      var inp = fromHex('A85734374F88C90877C39D7A4C78177F5F80290F7E2F4B4B15');
+    group('AES192', () {
       var key = 'abcdefghijklmnopqrstuvwx'.codeUnits;
-      var nonce = Int64.bytes('lka9JLKa'.codeUnits);
-      var counter = Int64.bytes('sljkdPsd'.codeUnits);
-      var expected = 'A not very secret message';
-      var actual = AES(key).ctr(nonce, counter).decrypt(inp);
-      expect(String.fromCharCodes(actual), equals(expected));
+      var iv = 'lka9JLKasljkdPsd'.codeUnits;
+      var plain = 'A not very secret message'.codeUnits;
+      var cipher =
+          fromHex('A85734374F88C90877C39D7A4C78177F5F80290F7E2F4B4B15');
+      var aes = AES.pkcs7(key).ctr(iv);
+      test('encrypt', () {
+        var actual = aes.encrypt(plain);
+        expect(toHex(actual), equals(toHex(cipher)));
+      });
+      test('decrypt', () {
+        var reverse = aes.decrypt(cipher);
+        expect(toHex(reverse), equals(toHex(plain)));
+      });
     });
-    test('256-bit with PKCS#7 padding', () {
-      var inp = fromHex('05A2F1FF79461F903C9E9DE82FF710244D36E35AF3AA8B6695');
+    group('AES256', () {
       var key = 'abcdefghijklmnopqrstuvwxyz012345'.codeUnits;
-      var nonce = Int64.bytes('lka9JLKa'.codeUnits);
-      var counter = Int64.bytes('sljkdPsd'.codeUnits);
-      var expected = 'A not very secret message';
-      var actual = AES(key).ctr(nonce, counter).decrypt(inp);
-      expect(String.fromCharCodes(actual), equals(expected));
+      var iv = 'lka9JLKasljkdPsd'.codeUnits;
+      var plain = 'A not very secret message'.codeUnits;
+      var cipher =
+          fromHex('05A2F1FF79461F903C9E9DE82FF710244D36E35AF3AA8B6695');
+      var aes = AES.pkcs7(key).ctr(iv);
+      test('encrypt', () {
+        var actual = aes.encrypt(plain);
+        expect(toHex(actual), equals(toHex(cipher)));
+      });
+      test('decrypt', () {
+        var reverse = aes.decrypt(cipher);
+        expect(toHex(reverse), equals(toHex(plain)));
+      });
     });
   });
 
@@ -72,7 +274,7 @@ void main() {
       var key = randomBytes(16);
       for (int j = 0; j < 100; j++) {
         var inp = randomBytes(j);
-        var iv = Int64.random();
+        var iv = randomBytes(16);
         var cipher = AES(key).ctr(iv).encrypt(inp);
         var plain = AES(key).ctr(iv).decrypt(cipher);
         expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
@@ -82,7 +284,7 @@ void main() {
       var key = randomBytes(24);
       for (int j = 0; j < 100; j++) {
         var inp = randomBytes(j);
-        var iv = Int64.random();
+        var iv = randomBytes(16);
         var cipher = AES(key).ctr(iv).encrypt(inp);
         var plain = AES(key).ctr(iv).decrypt(cipher);
         expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
@@ -92,9 +294,20 @@ void main() {
       var key = randomBytes(32);
       for (int j = 0; j < 100; j++) {
         var inp = randomBytes(j);
-        var iv = Int64.random();
+        var iv = randomBytes(16);
         var cipher = AES(key).ctr(iv).encrypt(inp);
         var plain = AES(key).ctr(iv).decrypt(cipher);
+        expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
+      }
+    });
+    test("with nonce and counter", () {
+      var key = randomBytes(32);
+      for (int j = 0; j < 100; j++) {
+        var inp = randomBytes(j);
+        var nonce = Salt64.random();
+        var aes = AESInCTRMode.nonce(key, nonce: nonce);
+        var cipher = aes.encrypt(inp);
+        var plain = aes.decrypt(cipher);
         expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
       }
     });
@@ -104,7 +317,7 @@ void main() {
     test('encryption', () {
       var key = randomBytes(32);
       for (int j = 0; j < 100; j++) {
-        var iv = Int64.random();
+        var iv = randomBytes(16);
         final aes = AES(key).ctr(iv);
 
         var input = randomBytes(j);
@@ -126,7 +339,7 @@ void main() {
     test('decryption', () {
       var key = randomBytes(32);
       for (int j = 0; j < 100; j++) {
-        var iv = Int64.random();
+        var iv = randomBytes(16);
         final aes = AES(key).ctr(iv);
 
         var input = randomBytes(j);
@@ -143,37 +356,12 @@ void main() {
     });
   });
 
-  test('reset nonce', () {
-    var iv = Int64.random();
+  test('reset iv', () {
+    var iv = randomBytes(16);
     var key = randomBytes(24);
     var aes = AES(key).ctr(iv);
     for (int j = 0; j < 100; j++) {
-      aes.resetNonce();
-      var inp = randomBytes(j);
-      var cipher = aes.encrypt(inp);
-      var plain = aes.decrypt(cipher);
-      expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
-    }
-  });
-  test('reset counter', () {
-    var iv = Int64.random();
-    var key = randomBytes(24);
-    var aes = AES(key).ctr(iv);
-    for (int j = 0; j < 100; j++) {
-      aes.resetCounter();
-      var inp = randomBytes(j);
-      var cipher = aes.encrypt(inp);
-      var plain = aes.decrypt(cipher);
-      expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
-    }
-  });
-  test('reset nonce and counter', () {
-    var iv = Int64.random();
-    var key = randomBytes(24);
-    var aes = AES(key).ctr(iv);
-    for (int j = 0; j < 100; j++) {
-      aes.resetNonce();
-      aes.resetCounter();
+      aes.resetIV();
       var inp = randomBytes(j);
       var cipher = aes.encrypt(inp);
       var plain = aes.decrypt(cipher);

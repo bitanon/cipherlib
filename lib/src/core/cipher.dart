@@ -2,6 +2,7 @@
 // All rights reserved. Check LICENSE file for details.
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:hashlib/hashlib.dart' show fillRandom;
@@ -111,17 +112,31 @@ abstract class CollateCipher implements CipherBase {
   /// Decrypts the [stream] using the algorithm
   @pragma('vm:prefer-inline')
   Stream<int> decryptStream(Stream<int> stream) => decryptor.stream(stream);
+
+  /// Encrypts the [message] using the algorithm
+  @pragma('vm:prefer-inline')
+  Uint8List encryptString(String message, [Encoding? encoding]) =>
+      encryptor.convert(
+        encoding == null ? message.codeUnits : encoding.encode(message),
+      );
+
+  /// Decrypts the [message] using the algorithm
+  @pragma('vm:prefer-inline')
+  Uint8List decryptString(String message, [Encoding? encoding]) =>
+      decryptor.convert(
+        encoding == null ? message.codeUnits : encoding.encode(message),
+      );
 }
 
-/// Template for Ciphers accepting a random salt
+/// Template for Ciphers accepting a random initialization vector or salt
 abstract class SaltedCipher extends Cipher {
   /// The salt or initialization vector
-  final Uint8List salt;
+  final Uint8List iv;
 
-  /// Creates the cipher with an initial salt value
-  const SaltedCipher(this.salt);
+  /// Creates the cipher with a random initialization vector
+  const SaltedCipher(this.iv);
 
-  /// Replace the current salt with a new one
+  /// Replaces current IV with a new random one
   @pragma('vm:prefer-inline')
-  void resetSalt() => fillRandom(salt.buffer);
+  void resetIV() => fillRandom(iv.buffer);
 }
