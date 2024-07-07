@@ -109,6 +109,36 @@ void main() {
     expect(() => aes.decrypt(Uint8List(10)), throwsStateError);
   });
 
+  group('empty message', () {
+    var key = fromHex('2b7e151628aed2a6abf7158809cf4f3c');
+    var plain = Uint8List(0);
+    var cipher = Uint8List(0);
+    var aes = AES(key).ecb();
+    test('encrypt', () {
+      var actual = aes.encrypt(plain);
+      expect(toHex(actual), equals(toHex(cipher)));
+    });
+    test('decrypt', () {
+      var reverse = aes.decrypt(cipher);
+      expect(toHex(reverse), equals(toHex(plain)));
+    });
+  });
+
+  group('non block', () {
+    var key = fromHex('2b7e151628aed2a6abf7158809cf4f3c');
+    var plain = fromHex('6bc1');
+    var cipher = fromHex('3dd9b756926018faf1fe43ab6545256c');
+    var aes = AES(key).ecb();
+    test('encrypt', () {
+      var actual = aes.encrypt(plain);
+      expect(toHex(actual), equals(toHex(cipher)));
+    });
+    test('decrypt', () {
+      var reverse = aes.decrypt(cipher);
+      expect(toHex(reverse), equals(toHex(plain)));
+    });
+  });
+
   group("PKCS#7 padding", () {
     group('AES128', () {
       var key = 'abcdefghijklmnop'.codeUnits;

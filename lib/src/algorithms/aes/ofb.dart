@@ -88,6 +88,11 @@ class AESInOFBMode extends CollateCipher {
     required this.decryptor,
   });
 
+  /// Creates a AES cipher in OFB mode.
+  ///
+  /// Parameters:
+  /// - [key] The key for encryption and decryption
+  /// - [iv] 128-bit random initialization vector or salt
   factory AESInOFBMode(List<int> key, [List<int>? iv]) {
     iv ??= randomBytes(16);
     var iv8 = iv is Uint8List ? iv : Uint8List.fromList(iv);

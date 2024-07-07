@@ -16,6 +16,7 @@ class AESInECBModeEncryptSink extends CipherSink {
 
   int _pos = 0;
   bool _closed = false;
+  int _messageLength = 0;
   final Uint8List _key;
   final Padding _padding;
   late final Uint32List _key32 = Uint32List.view(_key.buffer);
@@ -29,6 +30,10 @@ class AESInECBModeEncryptSink extends CipherSink {
       throw StateError('The sink is closed');
     }
     _closed = last;
+    _messageLength += data.length;
+    if (last && _messageLength == 0) {
+      return Uint8List(0);
+    }
 
     int i, j, p, n;
     p = 0;
@@ -83,6 +88,7 @@ class AESInECBModeDecryptSink extends CipherSink {
   int _pos = 0;
   int _rpos = 0;
   bool _closed = false;
+  int _messageLength = 0;
   final Uint8List _key;
   final Padding _padding;
   late final Uint32List _key32 = Uint32List.view(_key.buffer);
@@ -97,6 +103,10 @@ class AESInECBModeDecryptSink extends CipherSink {
       throw StateError('The sink is closed');
     }
     _closed = last;
+    _messageLength += data.length;
+    if (last && _messageLength == 0) {
+      return Uint8List(0);
+    }
 
     int i, j, k, p, n;
     p = 0;
@@ -226,6 +236,11 @@ class AESInECBMode extends CollateCipher {
     required this.decryptor,
   });
 
+  /// Creates a AES cipher in ECB mode.
+  ///
+  /// Parameters:
+  /// - [key] The key for encryption and decryption
+  /// - [padding] The padding scheme for the messages
   factory AESInECBMode(
     List<int> key, [
     Padding padding = Padding.pkcs7,

@@ -25,6 +25,7 @@ class AESInPCBCModeEncryptSink extends CipherSink {
 
   int _pos = 0;
   bool _closed = false;
+  int _messageLength = 0;
   final Uint8List _key;
   final Padding _padding;
   late final Uint32List _key32 = Uint32List.view(_key.buffer);
@@ -40,6 +41,10 @@ class AESInPCBCModeEncryptSink extends CipherSink {
       throw StateError('The sink is closed');
     }
     _closed = last;
+    _messageLength += data.length;
+    if (last && _messageLength == 0) {
+      return Uint8List(0);
+    }
 
     int i, j, p, n;
     p = 0;
@@ -107,6 +112,7 @@ class AESInPCBCModeDecryptSink extends CipherSink {
   int _pos = 0;
   int _rpos = 0;
   bool _closed = false;
+  int _messageLength = 0;
   final Uint8List _key;
   final Padding _padding;
   late final Uint32List _key32 = Uint32List.view(_key.buffer);
@@ -123,6 +129,10 @@ class AESInPCBCModeDecryptSink extends CipherSink {
       throw StateError('The sink is closed');
     }
     _closed = last;
+    _messageLength += data.length;
+    if (last && _messageLength == 0) {
+      return Uint8List(0);
+    }
 
     int i, j, k, p, n;
     p = 0;
@@ -235,6 +245,12 @@ class AESInPCBCMode extends CollateCipher {
     required this.decryptor,
   });
 
+  /// Creates a AES cipher in PCBC mode.
+  ///
+  /// Parameters:
+  /// - [key] The key for encryption and decryption
+  /// - [iv] 128-bit random initialization vector or salt
+  /// - [padding] The padding scheme for the messages
   factory AESInPCBCMode(
     List<int> key, {
     List<int>? iv,

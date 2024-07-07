@@ -141,24 +141,42 @@ class AES {
   ///
   /// Parameters:
   /// - [iv] (initialization vector) is the random 16-byte salt.
+  /// - [sbyte] number of bytes to take per block. (Default: 16)
   ///
   /// ```
-  ///              Key          Plaintext
-  ///               |               |
-  ///               v               v
-  /// IV ---> [block cipher] ---> (XOR) ---> Ciphertext
-  ///     ________________________________________|
-  ///    |         Key          Plaintext
-  ///    |          |               |
-  ///    |          v               v
-  ///    ---> [block cipher] ---> (XOR) ---> Ciphertext
-  ///     ________________________________________|
-  ///    |         Key          Plaintext
-  ///    |          |               |
-  ///    |          v               v
-  ///    ---> [block cipher] ---> (XOR) ---> Ciphertext
+  ///              Key                      Plaintext (s-bit)
+  ///               |                            |
+  ///               v                            v
+  /// IV ---> [block cipher] -- [>>(16-s)] --> (XOR) ---> Ciphertext
+  ///     |         _____________________________|        (s-bit)
+  ///     |        |
+  ///     v        v
+  ///  [<< s] -> (XOR)     Key                    Plaintext (s-bit)
+  ///      ________|        |                          |
+  ///     |        |        v                          v
+  ///     |        -> [block cipher] --[>>(16-s)]--> (XOR) --> (s-bit)
+  ///     |         ___________________________________|
+  ///     |        |
+  ///     v        v
+  ///  [<< s] -> (XOR)     Key                    Plaintext (s-bit)
+  ///              |        |                          |
+  ///              |        v                          v
+  ///              -> [block cipher] --[>>(16-s)]--> (XOR) --> (s-bit)
   /// ```
-  AESInCFBMode cfb(List<int> iv) => AESInCFBMode(key, iv);
+  AESInCFBMode cfb(List<int> iv, [int sbyte = 16]) => AESInCFBMode(
+        key,
+        iv: iv,
+        sbyte: sbyte,
+      );
+
+  /// Variant of [cfb] with s = 8
+  AESInCFBMode cfb8(List<int> iv) => cfb(iv, 1);
+
+  /// Variant of [cfb] with s = 64
+  AESInCFBMode cfb64(List<int> iv) => cfb(iv, 8);
+
+  /// Variant of [cfb] with s = 128
+  AESInCFBMode cfb128(List<int> iv) => cfb(iv, 16);
 
   /// The Output Feedback (OFB) mode operates similarly to CFB but generates the
   /// keystream independently of both plaintext and ciphertext. This makes OFB
