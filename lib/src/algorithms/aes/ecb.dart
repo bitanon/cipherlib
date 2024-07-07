@@ -3,9 +3,12 @@
 
 import 'dart:typed_data';
 
-import 'package:cipherlib/src/algorithms/aes/_core.dart';
 import 'package:cipherlib/src/algorithms/padding.dart';
 import 'package:cipherlib/src/core/cipher.dart';
+import 'package:cipherlib/src/core/cipher_sink.dart';
+import 'package:cipherlib/src/core/collate_cipher.dart';
+
+import '_core.dart';
 
 /// The sink used for encryption by the [AESInECBModeEncrypt] algorithm.
 class AESInECBModeEncryptSink extends CipherSink {
@@ -25,25 +28,40 @@ class AESInECBModeEncryptSink extends CipherSink {
   late final _xkey32 = AESCore.$expandEncryptionKey(_key32);
 
   @override
-  Uint8List add(List<int> data, [bool last = false]) {
+  bool get closed => _closed;
+
+  @override
+  void reset() {
+    _pos = 0;
+    _closed = false;
+    _messageLength = 0;
+  }
+
+  @override
+  Uint8List add(
+    List<int> data, [
+    int start = 0,
+    int? end,
+    bool last = false,
+  ]) {
     if (_closed) {
       throw StateError('The sink is closed');
     }
     _closed = last;
-    _messageLength += data.length;
+    end ??= data.length;
+    _messageLength += end - start;
     if (last && _messageLength == 0) {
       return Uint8List(0);
     }
 
     int i, j, p, n;
     p = 0;
-    n = _pos + data.length;
+    n = _pos + end - start;
     if (last) {
       n += 16 - (n & 15);
     }
-
     var output = Uint8List(n);
-    for (i = 0; i < data.length; ++i) {
+    for (i = start; i < end; ++i) {
       _block[_pos] = data[i];
       _pos++;
       if (_pos == 16) {
@@ -98,22 +116,38 @@ class AESInECBModeDecryptSink extends CipherSink {
   late final _xkey32 = AESCore.$expandDecryptionKey(_key32);
 
   @override
-  Uint8List add(List<int> data, [bool last = false]) {
+  bool get closed => _closed;
+
+  @override
+  void reset() {
+    _pos = 0;
+    _rpos = 0;
+    _closed = false;
+    _messageLength = 0;
+  }
+
+  @override
+  Uint8List add(
+    List<int> data, [
+    int start = 0,
+    int? end,
+    bool last = false,
+  ]) {
     if (_closed) {
       throw StateError('The sink is closed');
     }
     _closed = last;
-    _messageLength += data.length;
+    end ??= data.length;
+    _messageLength += end - start;
     if (last && _messageLength == 0) {
       return Uint8List(0);
     }
 
     int i, j, k, p, n;
     p = 0;
-    n = _rpos + data.length;
-
+    n = _rpos + end - start;
     var output = Uint8List(n);
-    for (i = 0; i < data.length; ++i) {
+    for (i = start; i < end; ++i) {
       _block[_pos] = data[i];
       _pos++;
       if (_pos == 16) {

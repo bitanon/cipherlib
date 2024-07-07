@@ -2,12 +2,9 @@
 // All rights reserved. Check LICENSE file for details.
 
 import 'dart:async';
-import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:hashlib/hashlib.dart' show fillRandom;
-
-const int _defaultChunkSize = 1024;
+import 'cipher_sink.dart';
 
 abstract class CipherBase {
   const CipherBase();
@@ -16,29 +13,27 @@ abstract class CipherBase {
   String get name;
 }
 
-/// Template for Cipher algorithm sink.
-abstract class CipherSink implements Sink<List<int>> {
-  const CipherSink();
+/// Template for Cipher algorithm that uses the same logic for
+/// both encryption and decryption.
+abstract class StreamCipherBase
+    implements CipherBase, StreamTransformer<List<int>, Uint8List> {
+  const StreamCipherBase();
 
-  /// Adds [data] to the sink to returns the converted result.
-  ///
-  /// Throws [StateError] if called after a call to [close],
-  /// or a call to [add] with [last] set to true.
-  @override
-  Uint8List add(List<int> data, [bool last = false]);
+  /// Transforms the [stream]
+  Stream<int> stream(Stream<int> stream);
 
-  /// Closes the sink and returns the last converted result.
-  ///
-  /// Same as calling `add([], true)`.
+  /// Transforms the chunked [stream]
   @override
-  @pragma('vm:prefer-inline')
-  Uint8List close() => add([], true);
+  Stream<Uint8List> bind(Stream<List<int>> stream);
+
+  @override
+  StreamTransformer<RS, RT> cast<RS, RT>() =>
+      StreamTransformer.castFrom<List<int>, Uint8List, RS, RT>(this);
 }
 
 /// Template for Cipher algorithm that uses the same logic for
 /// both encryption and decryption.
-abstract class Cipher extends CipherBase
-    implements StreamTransformer<List<int>, Uint8List> {
+abstract class Cipher extends StreamCipherBase {
   const Cipher();
 
   /// Creates a sink for the algorithm
@@ -46,7 +41,8 @@ abstract class Cipher extends CipherBase
 
   /// Transforms the [message].
   @pragma('vm:prefer-inline')
-  Uint8List convert(List<int> message) => createSink().add(message, true);
+  Uint8List convert(List<int> message) =>
+      createSink().add(message, 0, null, true);
 
   @override
   Stream<Uint8List> bind(Stream<List<int>> stream) async* {
@@ -58,14 +54,14 @@ abstract class Cipher extends CipherBase
       }
       cache = data;
     }
-    yield sink.add(cache ?? [], true);
+    yield sink.add(cache ?? [], 0, null, true);
   }
 
-  /// Transforms the [stream]
+  @override
   Stream<int> stream(Stream<int> stream) async* {
     int p = 0;
     var sink = createSink();
-    var chunk = Uint8List(_defaultChunkSize);
+    var chunk = Uint8List(1024);
     await for (var x in stream) {
       chunk[p++] = x;
       if (p == chunk.length) {
@@ -75,68 +71,8 @@ abstract class Cipher extends CipherBase
         p = 0;
       }
     }
-    List<int> rest = (p == 0) ? [] : Uint8List.view(chunk.buffer, 0, p);
-    for (var e in sink.add(rest, true)) {
+    for (var e in sink.add(chunk, 0, p, true)) {
       yield e;
     }
   }
-
-  @override
-  StreamTransformer<RS, RT> cast<RS, RT>() =>
-      StreamTransformer.castFrom<List<int>, Uint8List, RS, RT>(this);
-}
-
-/// Template for Cipher algorithm which does not use the same logic for
-/// both encryption and decryption.
-abstract class CollateCipher implements CipherBase {
-  const CollateCipher();
-
-  /// The cipher algorithm for encryption.
-  Cipher get encryptor;
-
-  /// The cipher algorithm for decryption.
-  Cipher get decryptor;
-
-  /// Encrypts the [message] using the algorithm
-  @pragma('vm:prefer-inline')
-  Uint8List encrypt(List<int> message) => encryptor.convert(message);
-
-  /// Decrypts the [message] using the algorithm
-  @pragma('vm:prefer-inline')
-  Uint8List decrypt(List<int> message) => decryptor.convert(message);
-
-  /// Encrypts the [stream] using the algorithm
-  @pragma('vm:prefer-inline')
-  Stream<int> encryptStream(Stream<int> stream) => encryptor.stream(stream);
-
-  /// Decrypts the [stream] using the algorithm
-  @pragma('vm:prefer-inline')
-  Stream<int> decryptStream(Stream<int> stream) => decryptor.stream(stream);
-
-  /// Encrypts the [message] using the algorithm
-  @pragma('vm:prefer-inline')
-  Uint8List encryptString(String message, [Encoding? encoding]) =>
-      encryptor.convert(
-        encoding == null ? message.codeUnits : encoding.encode(message),
-      );
-
-  /// Decrypts the [message] using the algorithm
-  @pragma('vm:prefer-inline')
-  Uint8List decryptString(String message, [Encoding? encoding]) =>
-      decryptor.convert(
-        encoding == null ? message.codeUnits : encoding.encode(message),
-      );
-}
-
-/// Template for Ciphers accepting a random initialization vector or salt
-abstract class SaltedCipher extends Cipher {
-  /// The salt or initialization vector
-  final Uint8List iv;
-
-  /// Creates the cipher with a random initialization vector
-  const SaltedCipher(this.iv);
-
-  /// Replaces current IV with a new random one
-  @pragma('vm:prefer-inline')
-  void resetIV() => fillRandom(iv.buffer);
 }

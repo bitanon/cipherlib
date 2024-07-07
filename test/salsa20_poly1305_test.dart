@@ -18,13 +18,12 @@ void main() {
         nonce: nonce,
       );
       var verified = salsa20poly1305(
-        res.message,
+        res.data,
         key,
-        mac: res.mac.bytes,
+        mac: res.tag.bytes,
         nonce: nonce,
       );
-      expect(verified.message, equals(text), reason: '[text: $j]');
-      expect(verified.mac.hex(), equals(res.mac.hex()), reason: '[mac: $j]');
+      expect(verified.data, equals(text), reason: '[text size: $j]');
     }
   });
 }

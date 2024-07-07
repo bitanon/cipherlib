@@ -29,9 +29,9 @@ void main() {
           nonce: nonce,
           aad: aad,
         );
-        expect(other.cipherText, equals(my.message),
+        expect(other.cipherText, equals(my.data),
             reason: '[text: $j, aad: ${key[0]}]');
-        expect(other.mac.bytes, equals(my.mac.bytes),
+        expect(other.mac.bytes, equals(my.tag.bytes),
             reason: '[text: $j, aad: ${key[0]}]]');
       }
     });

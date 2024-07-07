@@ -2,12 +2,14 @@
 // All rights reserved. Check LICENSE file for details.
 
 export 'aes.dart';
+export 'algorithms/aead_cipher.dart';
 export 'algorithms/padding.dart';
 export 'chacha20.dart';
 export 'chacha20_poly1305.dart';
-export 'core/aead_cipher.dart';
-export 'core/aead_mac_sink.dart';
 export 'core/cipher.dart';
+export 'core/cipher_sink.dart';
+export 'core/collate_cipher.dart';
+export 'core/salted_cipher.dart';
 export 'salsa20.dart';
 export 'salsa20_poly1305.dart';
 export 'utils/salt.dart';

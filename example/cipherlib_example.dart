@@ -39,12 +39,12 @@ void main() {
         "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f");
     var nonce = fromHex("00000000000000004a000000");
     var res = chacha20poly1305(toUtf8(text), key, nonce: nonce);
-    var plain = chacha20(res.message, key, nonce: nonce);
+    var plain = chacha20(res.data, key, nonce: nonce);
     print('  Text: $text');
     print('   Key: ${toHex(key)}');
     print(' Nonce: ${toHex(nonce)}');
-    print('Cipher: ${toHex(res.message)}');
-    print('   Tag: ${res.mac.hex()}');
+    print('Cipher: ${toHex(res.data)}');
+    print('   Tag: ${res.tag.hex()}');
     print(' Plain: ${fromUtf8(plain)}');
   }
   print('');
@@ -56,12 +56,12 @@ void main() {
         "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f");
     var nonce = fromHex("00000000000000004a00000000000000");
     var res = salsa20poly1305(toUtf8(text), key, nonce: nonce);
-    var plain = salsa20(res.message, key, nonce: nonce);
+    var plain = salsa20(res.data, key, nonce: nonce);
     print('  Text: $text');
     print('   Key: ${toHex(key)}');
     print(' Nonce: ${toHex(nonce)}');
-    print('Cipher: ${toHex(res.message)}');
-    print('   Tag: ${res.mac.hex()}');
+    print('Cipher: ${toHex(res.data)}');
+    print('   Tag: ${res.tag.hex()}');
     print(' Plain: ${fromUtf8(plain)}');
   }
 }

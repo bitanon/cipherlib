@@ -3,49 +3,70 @@
 
 import 'dart:typed_data';
 
-import 'package:cipherlib/cipherlib.dart';
-import 'package:cipherlib/src/algorithms/aes/_core.dart';
+import 'package:cipherlib/src/core/cipher_sink.dart';
+import 'package:cipherlib/src/core/collate_cipher.dart';
+import 'package:cipherlib/src/core/salted_cipher.dart';
+import 'package:cipherlib/src/utils/salt.dart';
 import 'package:hashlib/hashlib.dart';
+
+import '_core.dart';
 
 /// The sink used for both encryption and decryption by the
 /// [AESInCTRModeCipher] algorithm.
 class AESInCTRModeSink extends CipherSink {
-  AESInCTRModeSink(this._key, Uint8List iv) {
-    if (iv.length != 16) {
-      throw StateError('IV must be 16 bytes');
-    }
-    for (int i = 0; i < 16; ++i) {
-      _iv[i] = iv[i];
-    }
+  AESInCTRModeSink(
+    this._key,
+    this._iv,
+  ) {
+    reset();
   }
 
   int _pos = 0;
   bool _closed = false;
   final Uint8List _key;
+  final Uint8List _iv;
   late final Uint32List _key32 = Uint32List.view(_key.buffer);
-  final _iv = Uint8List(16);
+  final _salt = Uint8List(16);
   final _block = Uint8List(16); // 128-bit
   late final _block32 = Uint32List.view(_block.buffer);
   late final _xkey32 = AESCore.$expandEncryptionKey(_key32);
 
   @override
-  Uint8List add(List<int> data, [bool last = false]) {
+  bool get closed => _closed;
+
+  @override
+  void reset() {
+    _pos = 0;
+    _closed = false;
+    for (int i = 0; i < 16; ++i) {
+      _salt[i] = _iv[i];
+    }
+  }
+
+  @override
+  Uint8List add(
+    List<int> data, [
+    int start = 0,
+    int? end,
+    bool last = false,
+  ]) {
     if (_closed) {
       throw StateError('The sink is closed');
     }
     _closed = last;
+    end ??= data.length;
 
     int i, j;
-    var output = Uint8List(data.length);
-    for (i = 0; i < data.length; ++i) {
+    var output = Uint8List(end - start);
+    for (i = start; i < end; ++i) {
       if (_pos == 0) {
         for (j = 0; j < 16; ++j) {
-          _block[j] = _iv[j];
+          _block[j] = _salt[j];
         }
         AESCore.$encrypt(_block32, _xkey32);
         for (j = 15; j >= 8; j--) {
-          _iv[j]++;
-          if (_iv[j] != 0) break;
+          _salt[j]++;
+          if (_salt[j] != 0) break;
         }
       }
       output[i] = _block[_pos] ^ data[i];
@@ -101,6 +122,9 @@ class AESInCTRMode extends CollateCipher {
     iv ??= randomBytes(16);
     var iv8 = iv is Uint8List ? iv : Uint8List.fromList(iv);
     var key8 = key is Uint8List ? key : Uint8List.fromList(key);
+    if (iv8.lengthInBytes < 16) {
+      throw StateError('IV must be at least 16-bytes');
+    }
     return AESInCTRMode._(
       encryptor: AESInCTRModeCipher(key8, iv8),
       decryptor: AESInCTRModeCipher(key8, iv8),

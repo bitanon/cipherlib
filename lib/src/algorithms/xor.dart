@@ -4,30 +4,48 @@
 import 'dart:typed_data';
 
 import 'package:cipherlib/src/core/cipher.dart';
+import 'package:cipherlib/src/core/cipher_sink.dart';
 
 /// This sink is used by the [XOR] algorithm.
 class XORSink extends CipherSink {
-  int _pos = 0;
-  bool _closed = false;
-  final Uint8List _key;
-  late final int _maxPos = _key.length - 1;
-
   XORSink(this._key) {
     if (_key.isEmpty) {
-      throw ArgumentError('The key is empty');
+      throw ArgumentError('The key must not be empty');
     }
   }
 
+  int _pos = 0;
+  bool _closed = false;
+  final Uint8List _key;
+
   @override
-  Uint8List add(List<int> data, [bool last = false]) {
+  bool get closed => _closed;
+
+  @override
+  void reset() {
+    _pos = 0;
+    _closed = false;
+  }
+
+  @override
+  Uint8List add(
+    List<int> data, [
+    int start = 0,
+    int? end,
+    bool last = false,
+  ]) {
     if (_closed) {
       throw StateError('The sink is closed');
     }
     _closed = last;
-    var result = Uint8List.fromList(data);
-    for (int i = 0; i < result.length; i++) {
-      result[i] ^= _key[_pos];
-      _pos = _pos == _maxPos ? 0 : _pos + 1;
+    end ??= data.length;
+
+    var result = Uint8List(end - start);
+    for (int i = start; i < end; i++) {
+      if (_pos == _key.length) {
+        _pos = 0;
+      }
+      result[i] = data[i] ^ _key[_pos];
     }
     return result;
   }

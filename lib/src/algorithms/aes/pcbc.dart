@@ -3,66 +3,82 @@
 
 import 'dart:typed_data';
 
-import 'package:cipherlib/src/algorithms/aes/_core.dart';
 import 'package:cipherlib/src/algorithms/padding.dart';
-import 'package:cipherlib/src/core/cipher.dart';
+import 'package:cipherlib/src/core/cipher_sink.dart';
+import 'package:cipherlib/src/core/collate_cipher.dart';
+import 'package:cipherlib/src/core/salted_cipher.dart';
 import 'package:hashlib/hashlib.dart';
+
+import '_core.dart';
 
 /// The sink used for encryption by the [AESInPCBCModeEncrypt] algorithm.
 class AESInPCBCModeEncryptSink extends CipherSink {
   AESInPCBCModeEncryptSink(
     this._key,
-    Uint8List iv,
+    this._iv,
     this._padding,
   ) {
-    if (iv.lengthInBytes != 16) {
-      throw StateError('IV must be 16-bytes');
-    }
-    for (int i = 0; i < 16; ++i) {
-      _iv[i] = iv[i];
-    }
+    reset();
   }
 
   int _pos = 0;
   bool _closed = false;
   int _messageLength = 0;
   final Uint8List _key;
+  final Uint8List _iv;
   final Padding _padding;
   late final Uint32List _key32 = Uint32List.view(_key.buffer);
-  final _iv = Uint8List(16);
+  final _salt = Uint8List(16);
   final _block = Uint8List(16); // 128-bit
   final _history = Uint8List(16);
   late final _block32 = Uint32List.view(_block.buffer);
   late final _xkey32 = AESCore.$expandEncryptionKey(_key32);
 
   @override
-  Uint8List add(List<int> data, [bool last = false]) {
+  bool get closed => _closed;
+
+  @override
+  void reset() {
+    _pos = 0;
+    _closed = false;
+    for (int i = 0; i < 16; ++i) {
+      _salt[i] = _iv[i];
+    }
+  }
+
+  @override
+  Uint8List add(
+    List<int> data, [
+    int start = 0,
+    int? end,
+    bool last = false,
+  ]) {
     if (_closed) {
       throw StateError('The sink is closed');
     }
     _closed = last;
-    _messageLength += data.length;
+    end ??= data.length;
+    _messageLength += end - start;
     if (last && _messageLength == 0) {
       return Uint8List(0);
     }
 
     int i, j, p, n;
     p = 0;
-    n = _pos + data.length;
+    n = _pos + end - start;
     if (last) {
       n += 16 - (n & 15);
     }
-
     var output = Uint8List(n);
-    for (i = 0; i < data.length; ++i) {
-      _block[_pos] = data[i] ^ _iv[_pos];
+    for (i = start; i < end; ++i) {
+      _block[_pos] = data[i] ^ _salt[_pos];
       _history[_pos] = data[i];
       _pos++;
       if (_pos == 16) {
         AESCore.$encrypt(_block32, _xkey32);
         for (j = 0; j < 16; ++j) {
           output[p++] = _block[j];
-          _iv[j] = _block[j] ^ _history[j];
+          _salt[j] = _block[j] ^ _history[j];
         }
         _pos = 0;
       }
@@ -71,7 +87,7 @@ class AESInPCBCModeEncryptSink extends CipherSink {
     if (last) {
       if (_padding.pad(_block, _pos)) {
         for (; _pos < 16; ++_pos) {
-          _block[_pos] ^= _iv[_pos];
+          _block[_pos] ^= _salt[_pos];
         }
         AESCore.$encrypt(_block32, _xkey32);
         for (j = 0; j < 16; ++j) {
@@ -98,15 +114,10 @@ class AESInPCBCModeEncryptSink extends CipherSink {
 class AESInPCBCModeDecryptSink extends CipherSink {
   AESInPCBCModeDecryptSink(
     this._key,
-    Uint8List iv,
+    this._iv,
     this._padding,
   ) {
-    if (iv.lengthInBytes != 16) {
-      throw StateError('IV must be 16-bytes');
-    }
-    for (int i = 0; i < 16; ++i) {
-      _iv[i] = iv[i];
-    }
+    reset();
   }
 
   int _pos = 0;
@@ -114,32 +125,51 @@ class AESInPCBCModeDecryptSink extends CipherSink {
   bool _closed = false;
   int _messageLength = 0;
   final Uint8List _key;
+  final Uint8List _iv;
   final Padding _padding;
   late final Uint32List _key32 = Uint32List.view(_key.buffer);
   final _block = Uint8List(16); // 128-bit
-  final _iv = Uint8List(16);
+  final _salt = Uint8List(16);
   final _nextIV = Uint8List(16);
   final _residue = Uint8List(16);
   late final _block32 = Uint32List.view(_block.buffer);
   late final _xkey32 = AESCore.$expandDecryptionKey(_key32);
 
   @override
-  Uint8List add(List<int> data, [bool last = false]) {
+  bool get closed => _closed;
+
+  @override
+  void reset() {
+    _pos = 0;
+    _rpos = 0;
+    _closed = false;
+    for (int i = 0; i < 16; ++i) {
+      _salt[i] = _iv[i];
+    }
+  }
+
+  @override
+  Uint8List add(
+    List<int> data, [
+    int start = 0,
+    int? end,
+    bool last = false,
+  ]) {
     if (_closed) {
       throw StateError('The sink is closed');
     }
     _closed = last;
-    _messageLength += data.length;
+    end ??= data.length;
+    _messageLength += end - start;
     if (last && _messageLength == 0) {
       return Uint8List(0);
     }
 
     int i, j, k, p, n;
     p = 0;
-    n = _rpos + data.length;
-
+    n = _rpos + end - start;
     var output = Uint8List(n);
-    for (i = 0; i < data.length; ++i) {
+    for (i = start; i < end; ++i) {
       _block[_pos] = data[i];
       _nextIV[_pos] = data[i];
       _pos++;
@@ -152,8 +182,8 @@ class AESInPCBCModeDecryptSink extends CipherSink {
             }
             _rpos = 0;
           }
-          _residue[_rpos] = _block[j] ^ _iv[j];
-          _iv[j] = _nextIV[j] ^ _residue[_rpos];
+          _residue[_rpos] = _block[j] ^ _salt[j];
+          _salt[j] = _nextIV[j] ^ _residue[_rpos];
           _rpos++;
         }
         _pos = 0;
@@ -259,6 +289,9 @@ class AESInPCBCMode extends CollateCipher {
     iv ??= randomBytes(16);
     var iv8 = iv is Uint8List ? iv : Uint8List.fromList(iv);
     var key8 = key is Uint8List ? key : Uint8List.fromList(key);
+    if (iv8.lengthInBytes < 16) {
+      throw StateError('IV must be at least 16-bytes');
+    }
     return AESInPCBCMode._(
       encryptor: AESInPCBCModeEncrypt(key8, iv8, padding),
       decryptor: AESInPCBCModeDecrypt(key8, iv8, padding),

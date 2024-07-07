@@ -35,7 +35,7 @@ void main() {
         nonce: nonce,
         aad: aad,
       );
-      expect(res.mac.hex(), equals('1ae10b594f09e26a7e902ecbd0600691'));
+      expect(res.tag.hex(), equals('1ae10b594f09e26a7e902ecbd0600691'));
     });
     test('convert without aad', () {
       var res = chacha20poly1305(
@@ -43,7 +43,7 @@ void main() {
         key,
         nonce: nonce,
       );
-      expect(res.mac.hex(), equals('6a23a4681fd59456aea1d29f82477216'));
+      expect(res.tag.hex(), equals('6a23a4681fd59456aea1d29f82477216'));
     });
     test('verify and decrypt', () {
       var res = chacha20poly1305(
@@ -55,12 +55,11 @@ void main() {
       var verified = chacha20poly1305(
         cipher,
         key,
-        mac: res.mac.bytes,
+        mac: res.tag.bytes,
         nonce: nonce,
         aad: aad,
       );
-      expect(verified.message, equals(sample.codeUnits));
-      expect(verified.mac.hex(), equals(res.mac.hex()));
+      expect(verified.data, equals(sample.codeUnits));
     });
   });
 
@@ -75,13 +74,12 @@ void main() {
         nonce: nonce,
       );
       var verified = chacha20poly1305(
-        res.message,
+        res.data,
         key,
-        mac: res.mac.bytes,
+        mac: res.tag.bytes,
         nonce: nonce,
       );
-      expect(verified.message, equals(text), reason: '[text: $j]');
-      expect(verified.mac.hex(), equals(res.mac.hex()), reason: '[mac: $j]');
+      expect(verified.data, equals(text), reason: '[text size: $j]');
     }
   });
 }
