@@ -8,15 +8,16 @@ import 'dart:typed_data';
 import 'cipher.dart';
 
 /// Template for Cipher algorithm which does not use the same logic for
-/// both encryption and decryption.
-abstract class CollateCipher implements CipherBase {
+/// encryption and decryption.
+abstract class CollateCipher<E extends Cipher, D extends Cipher>
+    implements CipherBase {
   const CollateCipher();
 
   /// The cipher algorithm for encryption.
-  Cipher get encryptor;
+  E get encryptor;
 
   /// The cipher algorithm for decryption.
-  Cipher get decryptor;
+  D get decryptor;
 
   /// Encrypts the [message] using the algorithm
   @pragma('vm:prefer-inline')

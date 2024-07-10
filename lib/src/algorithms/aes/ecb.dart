@@ -270,7 +270,7 @@ class AESInECBMode extends CollateCipher {
     required this.decryptor,
   });
 
-  /// Creates a AES cipher in ECB mode.
+  /// Creates AES cipher in ECB mode.
   ///
   /// Parameters:
   /// - [key] The key for encryption and decryption

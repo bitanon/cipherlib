@@ -5,7 +5,6 @@ import 'dart:typed_data';
 
 import 'package:cipherlib/src/algorithms/padding.dart';
 import 'package:cipherlib/src/core/cipher_sink.dart';
-import 'package:cipherlib/src/core/collate_cipher.dart';
 import 'package:cipherlib/src/core/salted_cipher.dart';
 import 'package:hashlib/hashlib.dart';
 
@@ -258,7 +257,7 @@ class AESInCBCModeDecrypt extends SaltedCipher {
 }
 
 /// Provides encryption and decryption for AES cipher in CBC mode.
-class AESInCBCMode extends CollateCipher {
+class AESInCBCMode extends SaltedCollateCipher {
   @override
   String get name => "AES/CBC/${padding.name}";
 
@@ -273,7 +272,7 @@ class AESInCBCMode extends CollateCipher {
     required this.decryptor,
   });
 
-  /// Creates a AES cipher in CBC mode.
+  /// Creates AES cipher in CBC mode.
   ///
   /// Parameters:
   /// - [key] The key for encryption and decryption
@@ -296,13 +295,6 @@ class AESInCBCMode extends CollateCipher {
     );
   }
 
-  /// IV for the cipher
-  Uint8List get iv => encryptor.iv;
-
   /// Padding scheme for the messages
   Padding get padding => encryptor.padding;
-
-  /// Replaces current IV with a new random one
-  @pragma('vm:prefer-inline')
-  void resetIV() => fillRandom(iv.buffer);
 }

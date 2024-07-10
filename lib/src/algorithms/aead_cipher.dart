@@ -47,7 +47,7 @@ class AEADCipherSink implements CipherSink, MACSinkBase {
   }
 
   bool _verifyMode;
-  int _messageLength = 0;
+  int _dataLength = 0;
   final List<int>? _aad;
   final CipherSink _cipher;
   final MACSinkBase _hasher;
@@ -84,7 +84,7 @@ class AEADCipherSink implements CipherSink, MACSinkBase {
     if (keypair != null) {
       _hasher.init(keypair);
     }
-    if (_aad != null && _aad!.isNotEmpty) {
+    if (_aad != null) {
       _hasher.add(_aad!);
       // pad with zero
       int n = _aad!.length;
@@ -92,7 +92,7 @@ class AEADCipherSink implements CipherSink, MACSinkBase {
         _hasher.add(Uint8List(16 - (n & 15)));
       }
     }
-    _messageLength = 0;
+    _dataLength = 0;
   }
 
   @override
@@ -105,24 +105,36 @@ class AEADCipherSink implements CipherSink, MACSinkBase {
     end ??= data.length;
     var cipher = _cipher.add(data, start, end, last);
     if (_verifyMode) {
-      _messageLength += end - start;
+      _dataLength += end - start;
       _hasher.add(data, start, end);
     } else {
-      _messageLength += cipher.length;
+      _dataLength += cipher.length;
       _hasher.add(cipher);
     }
     if (last) {
       // pad with zero
-      if (_messageLength & 15 != 0) {
-        _hasher.add(Uint8List(16 - (_messageLength & 15)));
+      if (_dataLength & 15 != 0) {
+        _hasher.add(Uint8List(16 - (_dataLength & 15)));
       }
       int n = _aad?.length ?? 0;
-      _hasher.add(Uint32List.fromList([
+      _hasher.add([
         n,
+        n >>> 8,
+        n >>> 16,
+        n >>> 24,
         n >>> 32,
-        _messageLength,
-        _messageLength >>> 32,
-      ]).buffer.asUint8List());
+        n >>> 40,
+        n >>> 48,
+        n >>> 56,
+        _dataLength,
+        _dataLength >>> 8,
+        _dataLength >>> 16,
+        _dataLength >>> 24,
+        _dataLength >>> 32,
+        _dataLength >>> 40,
+        _dataLength >>> 48,
+        _dataLength >>> 56,
+      ]);
     }
     return cipher;
   }

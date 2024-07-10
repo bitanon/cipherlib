@@ -3,8 +3,8 @@
 
 import 'dart:typed_data';
 
+import 'package:cipherlib/src/algorithms/padding.dart';
 import 'package:cipherlib/src/core/cipher_sink.dart';
-import 'package:cipherlib/src/core/collate_cipher.dart';
 import 'package:cipherlib/src/core/salted_cipher.dart';
 import 'package:hashlib/hashlib.dart';
 
@@ -56,7 +56,8 @@ class AESInCFBModeEncryptSink extends CipherSink {
     _closed = last;
     end ??= data.length;
 
-    int i, j;
+    int i, j, p;
+    p = 0;
     j = _pos + 16 - _sbyte;
     var output = Uint8List(end - start);
     for (i = start; i < end; ++i) {
@@ -70,8 +71,8 @@ class AESInCFBModeEncryptSink extends CipherSink {
         }
         j = 16 - _sbyte;
       }
-      output[i] = _block[_pos++] ^ data[i];
-      _salt[j++] = output[i];
+      output[p] = _block[_pos++] ^ data[i];
+      _salt[j++] = output[p++];
       if (_pos == _sbyte) {
         _pos = 0;
       }
@@ -127,7 +128,8 @@ class AESInCFBModeDecryptSink extends CipherSink {
     _closed = last;
     end ??= data.length;
 
-    int i, j;
+    int i, j, p;
+    p = 0;
     j = _pos + 16 - _sbyte;
     var output = Uint8List(end - start);
     for (i = start; i < end; ++i) {
@@ -141,7 +143,7 @@ class AESInCFBModeDecryptSink extends CipherSink {
         }
         j = 16 - _sbyte;
       }
-      output[i] = _block[_pos++] ^ data[i];
+      output[p++] = _block[_pos++] ^ data[i];
       _salt[j++] = data[i];
       if (_pos == _sbyte) {
         _pos = 0;
@@ -195,9 +197,9 @@ class AESInCFBModeDecrypt extends SaltedCipher {
 }
 
 /// Provides encryption and decryption for AES cipher in CFB mode.
-class AESInCFBMode extends CollateCipher {
+class AESInCFBMode extends SaltedCollateCipher {
   @override
-  String get name => "AES/CFB";
+  String get name => "AES/CFB/${Padding.none.name}";
 
   @override
   final AESInCFBModeEncrypt encryptor;
@@ -210,7 +212,7 @@ class AESInCFBMode extends CollateCipher {
     required this.decryptor,
   });
 
-  /// Creates a AES cipher in CFB mode.
+  /// Creates AES cipher in CFB mode.
   ///
   /// Parameters:
   /// - [key] The key for encryption and decryption
@@ -235,11 +237,4 @@ class AESInCFBMode extends CollateCipher {
       decryptor: AESInCFBModeDecrypt(key8, iv8, sbyte),
     );
   }
-
-  /// IV for the cipher
-  Uint8List get iv => encryptor.iv;
-
-  /// Replaces current IV with a new random one
-  @pragma('vm:prefer-inline')
-  void resetIV() => fillRandom(iv.buffer);
 }
