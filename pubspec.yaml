@@ -1,6 +1,6 @@
 name: cipherlib
 description: Implementations of cryptographic algorithms for encryption and decryption in Dart.
-version: 0.0.9
+version: 0.0.10
 repository: https://github.com/bitanon/cipherlib
 
 environment:

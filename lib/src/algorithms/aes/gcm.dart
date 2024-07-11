@@ -191,8 +191,17 @@ class AESInGCMModeEncryptSink extends _AESInGCMModeSinkBase {
   AESInGCMModeEncryptSink(
     Uint8List key,
     Uint8List iv,
-    Iterable<int>? aad,
-  ) : super(key, iv, aad);
+    Iterable<int>? aad, [
+    this._tagSize = 16,
+  ]) : super(key, iv, aad) {
+    if (_tagSize < 1) {
+      throw StateError('Tag size must be at least 1');
+    } else if (_tagSize > 16) {
+      throw StateError('Tag size must be at most 16');
+    }
+  }
+
+  final int _tagSize;
 
   @override
   Uint8List add(
@@ -210,7 +219,7 @@ class AESInGCMModeEncryptSink extends _AESInGCMModeSinkBase {
 
     int i, j, n, p;
     n = end - start;
-    if (last) n += 16;
+    if (last) n += _tagSize;
     var output = Uint8List(n);
 
     p = 0;
@@ -219,7 +228,8 @@ class AESInGCMModeEncryptSink extends _AESInGCMModeSinkBase {
         _nextBlock();
       }
       output[p] = _block[_pos] ^ data[i];
-      _tag[_pos++] ^= output[p++];
+      _tag[_pos] ^= output[p++];
+      _pos++;
       if (_pos == 16) {
         _multiply128(_tag, _hkey);
         _pos = 0;
@@ -232,7 +242,7 @@ class AESInGCMModeEncryptSink extends _AESInGCMModeSinkBase {
       }
       _serialize64(_aadLength, _dataLength);
       _multiply128(_tag, _hkey);
-      for (j = 0; j < 16; ++j) {
+      for (j = 0; j < _tagSize; ++j) {
         _tag[j] ^= _first[j];
         output[p++] = _tag[j];
       }
@@ -248,10 +258,18 @@ class AESInGCMModeDecryptSink extends _AESInGCMModeSinkBase {
   AESInGCMModeDecryptSink(
     Uint8List key,
     Uint8List iv,
-    Iterable<int>? aad,
-  ) : super(key, iv, aad);
+    Iterable<int>? aad, [
+    this._tagSize = 16,
+  ]) : super(key, iv, aad) {
+    if (_tagSize < 1) {
+      throw StateError('Tag size must be at least 1');
+    } else if (_tagSize > 16) {
+      throw StateError('Tag size must be at most 16');
+    }
+  }
 
-  final _residue = Uint8List(16);
+  final int _tagSize;
+  late final _residue = Uint8List(_tagSize);
 
   @override
   Uint8List add(
@@ -271,40 +289,45 @@ class AESInGCMModeDecryptSink extends _AESInGCMModeSinkBase {
 
     p = 0;
     for (i = start; i < end; ++i) {
-      if (_dataLength >= 16) {
+      if (_dataLength >= _tagSize) {
         if (_pos == 0) {
           _nextBlock();
         }
         output[p++] = _block[_pos] ^ _residue[_rpos];
-        _tag[_rpos] ^= _residue[_rpos];
-        if (_rpos == 15) {
+        _tag[_pos] ^= _residue[_rpos];
+        _pos++;
+        if (_pos == 16) {
           _multiply128(_tag, _hkey);
+          _pos = 0;
         }
-        _pos = (_pos + 1) & 15;
       }
-      _residue[_rpos] = data[i];
-      _rpos = (_rpos + 1) & 15;
+      _residue[_rpos++] = data[i];
       _dataLength++;
+      if (_rpos == _tagSize) {
+        _rpos = 0;
+      }
     }
 
     if (last) {
-      _dataLength -= 16;
+      _dataLength -= _tagSize;
       if (_dataLength < 0) {
         throw StateError('Invalid message size');
       }
-      if (_rpos > 0) {
+      if (_pos > 0) {
         _multiply128(_tag, _hkey);
       }
       _serialize64(_aadLength, _dataLength);
       _multiply128(_tag, _hkey);
-      for (j = 0; j < 16; ++j) {
+      for (j = 0; j < _tagSize; ++j) {
         _tag[j] ^= _first[j];
       }
-      for (j = 0; j < 16; ++j) {
-        if (_tag[j] != _residue[_rpos]) {
+      for (j = 0; j < _tagSize; ++j) {
+        if (_tag[j] != _residue[_rpos++]) {
           throw StateError('Message authentication check failed');
         }
-        _rpos = (_rpos + 1) & 15;
+        if (_rpos == _tagSize) {
+          _rpos = 0;
+        }
       }
     }
 
@@ -326,18 +349,23 @@ class AESInGCMModeEncrypt extends SaltedCipher {
   /// Key for the cipher
   final Uint8List key;
 
+  /// The length of the message authentication tag in bytes
+  final int tagSize;
+
   /// Additional authenticated data for AEAD construction
   final Iterable<int>? aad;
 
   const AESInGCMModeEncrypt(
     this.key,
-    Uint8List iv, [
+    Uint8List iv, {
     this.aad,
-  ]) : super(iv);
+    this.tagSize = 16,
+  }) : super(iv);
 
   @override
   @pragma('vm:prefer-inline')
-  AESInGCMModeEncryptSink createSink() => AESInGCMModeEncryptSink(key, iv, aad);
+  AESInGCMModeEncryptSink createSink() =>
+      AESInGCMModeEncryptSink(key, iv, aad, tagSize);
 }
 
 /// Provides AES cipher in GCM mode for decryption.
@@ -348,18 +376,23 @@ class AESInGCMModeDecrypt extends SaltedCipher {
   /// Key for the cipher
   final Uint8List key;
 
+  /// The length of the message authentication tag in bytes
+  final int tagSize;
+
   /// Additional authenticated data for AEAD construction
   final Iterable<int>? aad;
 
   const AESInGCMModeDecrypt(
     this.key,
-    Uint8List iv, [
+    Uint8List iv, {
     this.aad,
-  ]) : super(iv);
+    this.tagSize = 16,
+  }) : super(iv);
 
   @override
   @pragma('vm:prefer-inline')
-  AESInGCMModeDecryptSink createSink() => AESInGCMModeDecryptSink(key, iv, aad);
+  AESInGCMModeDecryptSink createSink() =>
+      AESInGCMModeDecryptSink(key, iv, aad, tagSize);
 }
 
 /// Provides encryption and decryption for AES cipher in GCM mode.
@@ -383,17 +416,20 @@ class AESInGCMMode extends SaltedCollateCipher {
   /// Parameters:
   /// - [key] The key for encryption and decryption
   /// - [iv] A random initialization vector or salt of any length
+  /// - [aad] Additional authentication data for tag generation
+  /// - [tagSize] The length of the message authentication tag in bytes
   factory AESInGCMMode(
     List<int> key, {
     List<int>? iv,
     Iterable<int>? aad,
+    int tagSize = 16,
   }) {
     iv ??= randomBytes(12);
     var iv8 = iv is Uint8List ? iv : Uint8List.fromList(iv);
     var key8 = key is Uint8List ? key : Uint8List.fromList(key);
     return AESInGCMMode._(
-      encryptor: AESInGCMModeEncrypt(key8, iv8, aad),
-      decryptor: AESInGCMModeDecrypt(key8, iv8, aad),
+      encryptor: AESInGCMModeEncrypt(key8, iv8, aad: aad, tagSize: tagSize),
+      decryptor: AESInGCMModeDecrypt(key8, iv8, aad: aad, tagSize: tagSize),
     );
   }
 }

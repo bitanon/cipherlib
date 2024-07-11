@@ -4,6 +4,7 @@
 import 'package:cipherlib/cipherlib.dart';
 import 'package:hashlib/hashlib.dart';
 import 'package:hashlib_codecs/hashlib_codecs.dart';
+import 'package:test/expect.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -93,7 +94,7 @@ void main() {
           '1ba30b396a0aac973d58e091'
           '5bc94fbc3221a5db94fae95ae7121a47',
         );
-        var aes = AES(key).gcm(iv, aad);
+        var aes = AES(key).gcm(iv, aad: aad);
         test('encrypt', () {
           var actual = aes.encrypt(plain);
           expect(toHex(actual), equals(toHex(cipher)));
@@ -123,7 +124,7 @@ void main() {
           '4989b5e1ebac0f07c23f4598'
           '3612d2e79e3b0785561be14aaca2fccb',
         );
-        var aes = AES(key).gcm(iv, aad);
+        var aes = AES(key).gcm(iv, aad: aad);
         test('encrypt', () {
           var actual = aes.encrypt(plain);
           expect(toHex(actual), equals(toHex(cipher)));
@@ -158,7 +159,7 @@ void main() {
           'd62875d2aca417034c34aee5'
           '619cc5aefffe0bfa462af43c1699d050',
         );
-        var aes = AES(key).gcm(iv, aad);
+        var aes = AES(key).gcm(iv, aad: aad);
         test('encrypt', () {
           var actual = aes.encrypt(plain);
           expect(toHex(actual), equals(toHex(cipher)));
@@ -271,7 +272,7 @@ void main() {
           '18e2448b2fe324d9ccda2710'
           '2519498e80f1478f37ba55bd6d27618c',
         );
-        var aes = AES(key).gcm(iv, aad);
+        var aes = AES(key).gcm(iv, aad: aad);
         test('encrypt', () {
           var actual = aes.encrypt(plain);
           expect(toHex(actual), equals(toHex(cipher)));
@@ -304,7 +305,7 @@ void main() {
           'e93a19a58e8b473fa0f062f7'
           '65dcc57fcf623a24094fcca40d3533f8',
         );
-        var aes = AES(key).gcm(iv, aad);
+        var aes = AES(key).gcm(iv, aad: aad);
         test('encrypt', () {
           var actual = aes.encrypt(plain);
           expect(toHex(actual), equals(toHex(cipher)));
@@ -342,7 +343,7 @@ void main() {
           'e67c036745fa22e7e9b7373b'
           'dcf566ff291c25bbb8568fc3d376a6d9',
         );
-        var aes = AES(key).gcm(iv, aad);
+        var aes = AES(key).gcm(iv, aad: aad);
         test('encrypt', () {
           var actual = aes.encrypt(plain);
           expect(toHex(actual), equals(toHex(cipher)));
@@ -455,7 +456,7 @@ void main() {
           'c5f61e6393ba7a0abcc9f662'
           '76fc6ece0f4e1768cddf8853bb2d551b',
         );
-        var aes = AES(key).gcm(iv, aad);
+        var aes = AES(key).gcm(iv, aad: aad);
         test('encrypt', () {
           var actual = aes.encrypt(plain);
           expect(toHex(actual), equals(toHex(cipher)));
@@ -488,7 +489,7 @@ void main() {
           '62ac430e64abe499f47c9b1f'
           '3a337dbf46a792c45e454913fe2ea8f2',
         );
-        var aes = AES(key).gcm(iv, aad);
+        var aes = AES(key).gcm(iv, aad: aad);
         test('encrypt', () {
           var actual = aes.encrypt(plain);
           expect(toHex(actual), equals(toHex(cipher)));
@@ -526,7 +527,7 @@ void main() {
           'a2418997200ef82e44ae7e3f'
           'a44a8266ee1c8eb0c8b5d4cf5ae9f19a',
         );
-        var aes = AES(key).gcm(iv, aad);
+        var aes = AES(key).gcm(iv, aad: aad);
         test('encrypt', () {
           var actual = aes.encrypt(plain);
           expect(toHex(actual), equals(toHex(cipher)));
@@ -539,8 +540,118 @@ void main() {
     });
   });
 
+  group('different tag length', () {
+    group('with invalid tag length', () {
+      var key = fromHex('00000000000000000000000000000000');
+      var iv = fromHex('000000000000000000000000');
+      var plain = <int>[];
+      test('less than 1', () {
+        expect(() => AES(key).gcm(iv, tagSize: 0).encrypt(plain),
+            throwsStateError);
+        expect(() => AES(key).gcm(iv, tagSize: -10).encrypt(plain),
+            throwsStateError);
+      });
+      test('greater than 16', () {
+        expect(() => AES(key).gcm(iv, tagSize: 17).encrypt(plain),
+            throwsStateError);
+        expect(() => AES(key).gcm(iv, tagSize: 32).encrypt(plain),
+            throwsStateError);
+      });
+    });
+    group('with empty message', () {
+      var key = fromHex('00000000000000000000000000000000');
+      var iv = fromHex('000000000000000000000000');
+      var plain = <int>[];
+      var cipher = fromHex(
+        '58e2fccefa7e30',
+      );
+      var aes = AES(key).gcm(iv, tagSize: 7);
+      test('encrypt', () {
+        var actual = aes.encrypt(plain);
+        expect(toHex(actual), equals(toHex(cipher)));
+      });
+      test('decrypt', () {
+        var reverse = aes.decrypt(cipher);
+        expect(toHex(reverse), equals(toHex(plain)));
+      });
+    });
+    group('with block message', () {
+      var key = fromHex('00000000000000000000000000000000');
+      var iv = fromHex('000000000000000000000000');
+      var plain = fromHex(
+        '00000000000000000000000000000000',
+      );
+      var cipher = fromHex(
+        '0388dace60b6a392f328c2b971b2fe78'
+        'ab6e47d42cec13bdf53a67',
+      );
+      var aes = AES(key).gcm(iv, tagSize: 11);
+      test('encrypt', () {
+        var actual = aes.encrypt(plain);
+        expect(toHex(actual), equals(toHex(cipher)));
+      });
+      test('decrypt', () {
+        var reverse = aes.decrypt(cipher);
+        expect(toHex(reverse), equals(toHex(plain)));
+      });
+    });
+    group('with long message and aad', () {
+      var key = fromHex(
+        'feffe9928665731c6d6a8f9467308308'
+        'feffe9928665731c6d6a8f9467308308',
+      );
+      var iv = fromHex('cafebabefacedbad');
+      var aad = fromHex(
+        'feedfacedeadbeeffeedfacedeadbeef'
+        'abaddad2',
+      );
+      var plain = fromHex(
+        'd9313225f88406e5a55909c5aff5269a'
+        '86a7a9531534f7da2e4c303d8a318a72'
+        '1c3c0c95956809532fcf0e2449a6b525'
+        'b16aedf5aa0de657ba637b39',
+      );
+      var cipher = fromHex(
+        'c3762df1ca787d32ae47c13bf19844cb'
+        'af1ae14d0b976afac52ff7d79bba9de0'
+        'feb582d33934a4f0954cc2363bc73f78'
+        '62ac430e64abe499f47c9b1f'
+        '3a337dbf46',
+      );
+      var aes = AES(key).gcm(iv, aad: aad, tagSize: 5);
+      test('encrypt', () {
+        var actual = aes.encrypt(plain);
+        expect(toHex(actual), equals(toHex(cipher)));
+      });
+      test('decrypt', () {
+        var reverse = aes.decrypt(cipher);
+        expect(toHex(reverse), equals(toHex(plain)));
+      });
+    });
+  });
+
+  test('throws error when decrypting from partial ciphertext', () {
+    var key = fromHex(
+      '00000000000000000000000000000000'
+      '00000000000000000000000000000000',
+    );
+    var iv = fromHex(
+      '000000000000000000000000',
+    );
+    var cipher = fromHex(
+      'cea7403d4d606b6e074ec5d3baf39d18'
+      'd0d1c8a799996bf0265b98b5d48ab919',
+    );
+    var aes = AES(key).gcm(iv);
+    aes.decrypt(cipher.take(32).toList());
+    expect(() => aes.decrypt(cipher.take(25).toList()), throwsStateError);
+    expect(() => aes.decrypt(cipher.take(16).toList()), throwsStateError);
+    expect(() => aes.decrypt(cipher.take(4).toList()), throwsStateError);
+    expect(() => aes.decrypt([]), throwsStateError);
+  });
+
   group("96-bit nonce", () {
-    group('AES128', () {
+    group('AES-128', () {
       var key = 'abcdefghijklmnop'.codeUnits;
       var iv = 'lka9JLKasljk'.codeUnits;
       var plain = 'A not very secret message'.codeUnits;
@@ -558,7 +669,7 @@ void main() {
         expect(toHex(reverse), equals(toHex(plain)));
       });
     });
-    group('AES192', () {
+    group('AES-192', () {
       var key = 'abcdefghijklmnopqrstuvwx'.codeUnits;
       var iv = 'lka9JLKasljk'.codeUnits;
       var plain = 'A not very secret message'.codeUnits;
@@ -576,7 +687,7 @@ void main() {
         expect(toHex(reverse), equals(toHex(plain)));
       });
     });
-    group('AES256', () {
+    group('AES-256', () {
       var key = 'abcdefghijklmnopqrstuvwxyz012345'.codeUnits;
       var iv = 'lka9JLKasljk'.codeUnits;
       var plain = 'A not very secret message'.codeUnits;
@@ -597,7 +708,7 @@ void main() {
   });
 
   group("160-bit nonce", () {
-    group('AES128', () {
+    group('AES-128', () {
       var key = 'abcdefghijklmnop'.codeUnits;
       var iv = 'lka9JLKasljk1234kppe'.codeUnits;
       var plain = 'A not very secret message'.codeUnits;
@@ -615,7 +726,7 @@ void main() {
         expect(toHex(reverse), equals(toHex(plain)));
       });
     });
-    group('AES192', () {
+    group('AES-192', () {
       var key = 'abcdefghijklmnopqrstuvwx'.codeUnits;
       var iv = 'lka9JLKasljk1234kppe'.codeUnits;
       var plain = 'A not very secret message'.codeUnits;
@@ -633,13 +744,70 @@ void main() {
         expect(toHex(reverse), equals(toHex(plain)));
       });
     });
-    group('AES256', () {
+    group('AES-256', () {
       var key = 'abcdefghijklmnopqrstuvwxyz012345'.codeUnits;
       var iv = 'lka9JLKasljk1234kppe'.codeUnits;
       var plain = 'A not very secret message'.codeUnits;
       var cipher = fromHex(
         '9ae339bfd7fa400ffd29d896c952baf20eaa1ee69'
         '462ee77e58435436dd5235440dc1947d26e37f956',
+      );
+      var aes = AES(key).gcm(iv);
+      test('encrypt', () {
+        var actual = aes.encrypt(plain);
+        expect(toHex(actual), equals(toHex(cipher)));
+      });
+      test('decrypt', () {
+        var reverse = aes.decrypt(cipher);
+        expect(toHex(reverse), equals(toHex(plain)));
+      });
+    });
+  });
+
+  group("64-bit nonce", () {
+    group('AES-128', () {
+      var key = 'abcdefghijklmnop'.codeUnits;
+      var iv = 'lka9JLKa'.codeUnits;
+      var plain = 'A not very secret message'.codeUnits;
+      var cipher = fromHex(
+        '7be8fb33e5d2e48b3b64890a68b9ba1b2b51157c3'
+        '891b6d0b65c7ff455b046495be3e87fee9ed76f04',
+      );
+      var aes = AES(key).gcm(iv);
+      test('encrypt', () {
+        var actual = aes.encrypt(plain);
+        expect(toHex(actual), equals(toHex(cipher)));
+      });
+      test('decrypt', () {
+        var reverse = aes.decrypt(cipher);
+        expect(toHex(reverse), equals(toHex(plain)));
+      });
+    });
+    group('AES-192', () {
+      var key = 'abcdefghijklmnopqrstuvwx'.codeUnits;
+      var iv = 'lka9JLKa'.codeUnits;
+      var plain = 'A not very secret message'.codeUnits;
+      var cipher = fromHex(
+        'bcc265c938514d712c35707a6c499f2340ba9219e'
+        '9136ef7c0d2657e292ea3c17fa1aa6b46711dd9ca',
+      );
+      var aes = AES(key).gcm(iv);
+      test('encrypt', () {
+        var actual = aes.encrypt(plain);
+        expect(toHex(actual), equals(toHex(cipher)));
+      });
+      test('decrypt', () {
+        var reverse = aes.decrypt(cipher);
+        expect(toHex(reverse), equals(toHex(plain)));
+      });
+    });
+    group('AES-256', () {
+      var key = 'abcdefghijklmnopqrstuvwxyz012345'.codeUnits;
+      var iv = 'lka9JLKa'.codeUnits;
+      var plain = 'A not very secret message'.codeUnits;
+      var cipher = fromHex(
+        '900377cd2b6e0c99d6dfaf36bc6a9710e2bd3d200'
+        '79d3f2f04b9d51be50ef51416fd69f9aeea1d2971',
       );
       var aes = AES(key).gcm(iv);
       test('encrypt', () {

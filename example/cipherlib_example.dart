@@ -12,10 +12,11 @@ void main() {
     print(' Nonce: ${toHex(iv)}');
     print('  ECB: ${toHex(AES(key).ecb().encryptString(plain))}');
     print('  CBC: ${toHex(AES(key).cbc(iv).encryptString(plain))}');
-    print(' PCBC: ${toHex(AES(key).pcbc(iv).encryptString(plain))}');
     print('  CTR: ${toHex(AES(key).ctr(iv).encryptString(plain))}');
+    print('  GCM: ${toHex(AES(key).gcm(iv).encryptString(plain))}');
     print('  CFB: ${toHex(AES(key).cfb(iv).encryptString(plain))}');
     print('  OFB: ${toHex(AES(key).ofb(iv).encryptString(plain))}');
+    print(' PCBC: ${toHex(AES(key).pcbc(iv).encryptString(plain))}');
   }
   print('');
 

@@ -246,14 +246,21 @@ class AES {
   /// Parameters:
   /// - [iv] (initialization vector) is the random salt of arbitrary length.
   /// - [aad] (additional authentication data) is used to generated unique tag.
+  /// - [tagSize] Length of the authentication tag in bytes. (Default: 16)
   ///
   /// The encryption output of this mode is combined with the ciphertext and
   /// 128-bit message authentication tag. During decryption, the authentication
   /// tag is checked with the generated tag. It will throw [StateError] on
   /// verification failure or on invalid ciphertext size.
-  AESInGCMMode gcm(List<int> iv, [Iterable<int>? aad]) => AESInGCMMode(
+  AESInGCMMode gcm(
+    List<int> iv, {
+    Iterable<int>? aad,
+    int tagSize = 16,
+  }) =>
+      AESInGCMMode(
         key,
         iv: iv,
         aad: aad,
+        tagSize: tagSize,
       );
 }
