@@ -5,6 +5,7 @@ import 'package:cipherlib/src/algorithms/aes/cbc.dart';
 import 'package:cipherlib/src/algorithms/aes/cfb.dart';
 import 'package:cipherlib/src/algorithms/aes/ctr.dart';
 import 'package:cipherlib/src/algorithms/aes/ecb.dart';
+import 'package:cipherlib/src/algorithms/aes/gcm.dart';
 import 'package:cipherlib/src/algorithms/aes/ofb.dart';
 import 'package:cipherlib/src/algorithms/aes/pcbc.dart';
 import 'package:cipherlib/src/algorithms/padding.dart';
@@ -13,6 +14,7 @@ export 'package:cipherlib/src/algorithms/aes/cbc.dart';
 export 'package:cipherlib/src/algorithms/aes/cfb.dart';
 export 'package:cipherlib/src/algorithms/aes/ctr.dart';
 export 'package:cipherlib/src/algorithms/aes/ecb.dart';
+export 'package:cipherlib/src/algorithms/aes/gcm.dart';
 export 'package:cipherlib/src/algorithms/aes/ofb.dart';
 export 'package:cipherlib/src/algorithms/aes/pcbc.dart';
 
@@ -234,5 +236,24 @@ class AES {
         key,
         iv: iv,
         padding: padding,
+      );
+
+  /// The Galois Counter Mode (GCM) is an advanced mode of operation for block
+  /// ciphers that combines the counter mode of encryption with Galois field
+  /// multiplication for authentication. GCM provides both data confidentiality
+  /// and authenticity, making it a widely used and highly secure mode.
+  ///
+  /// Parameters:
+  /// - [iv] (initialization vector) is the random salt of arbitrary length.
+  /// - [aad] (additional authentication data) is used to generated unique tag.
+  ///
+  /// The encryption output of this mode is combined with the ciphertext and
+  /// 128-bit message authentication tag. During decryption, the authentication
+  /// tag is checked with the generated tag. It will throw [StateError] on
+  /// verification failure or on invalid ciphertext size.
+  AESInGCMMode gcm(List<int> iv, [Iterable<int>? aad]) => AESInGCMMode(
+        key,
+        iv: iv,
+        aad: aad,
       );
 }
