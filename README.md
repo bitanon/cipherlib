@@ -35,6 +35,7 @@ Available modes for AES:
 - `CFB` : Cipher Feedback
 - `OFB` : Output Feedback
 - `PCBC` : Propagating Cipher Block Chaining
+- `XTS` : XEX (XOR-Encrypt-XOR) Tweakable Block Cipher with Ciphertext Stealing
 
 ## Getting started
 
@@ -58,7 +59,7 @@ void main() {
   print('----- AES -----');
   {
     var plain = 'A not very secret message';
-    var key = 'abcdefghijklmnop'.codeUnits;
+    var key = 'abcdefghijklmnopabcdefghijklmnop'.codeUnits;
     var iv = 'lka9JLKasljkdPsd'.codeUnits;
     print('  Text: $plain');
     print('   Key: ${toHex(key)}');
@@ -69,6 +70,7 @@ void main() {
     print('  GCM: ${toHex(AES(key).gcm(iv).encryptString(plain))}');
     print('  CFB: ${toHex(AES(key).cfb(iv).encryptString(plain))}');
     print('  OFB: ${toHex(AES(key).ofb(iv).encryptString(plain))}');
+    print('  XTS: ${toHex(AES(key).xts(iv).encryptString(plain))}');
     print(' PCBC: ${toHex(AES(key).pcbc(iv).encryptString(plain))}');
   }
   print('');
@@ -93,12 +95,12 @@ void main() {
         "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f");
     var nonce = fromHex("00000000000000004a000000");
     var res = chacha20poly1305(toUtf8(text), key, nonce: nonce);
-    var plain = chacha20(res.message, key, nonce: nonce);
+    var plain = chacha20(res.data, key, nonce: nonce);
     print('  Text: $text');
     print('   Key: ${toHex(key)}');
     print(' Nonce: ${toHex(nonce)}');
-    print('Cipher: ${toHex(res.message)}');
-    print('   Tag: ${res.mac.hex()}');
+    print('Cipher: ${toHex(res.data)}');
+    print('   Tag: ${res.tag.hex()}');
     print(' Plain: ${fromUtf8(plain)}');
   }
   print('');
@@ -110,12 +112,12 @@ void main() {
         "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f");
     var nonce = fromHex("00000000000000004a00000000000000");
     var res = salsa20poly1305(toUtf8(text), key, nonce: nonce);
-    var plain = salsa20(res.message, key, nonce: nonce);
+    var plain = salsa20(res.data, key, nonce: nonce);
     print('  Text: $text');
     print('   Key: ${toHex(key)}');
     print(' Nonce: ${toHex(nonce)}');
-    print('Cipher: ${toHex(res.message)}');
-    print('   Tag: ${res.mac.hex()}');
+    print('Cipher: ${toHex(res.data)}');
+    print('   Tag: ${res.tag.hex()}');
     print(' Plain: ${fromUtf8(plain)}');
   }
 }

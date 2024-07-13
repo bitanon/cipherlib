@@ -5,7 +5,7 @@ void main() {
   print('----- AES -----');
   {
     var plain = 'A not very secret message';
-    var key = 'abcdefghijklmnop'.codeUnits;
+    var key = 'abcdefghijklmnopabcdefghijklmnop'.codeUnits;
     var iv = 'lka9JLKasljkdPsd'.codeUnits;
     print('  Text: $plain');
     print('   Key: ${toHex(key)}');
@@ -16,6 +16,7 @@ void main() {
     print('  GCM: ${toHex(AES(key).gcm(iv).encryptString(plain))}');
     print('  CFB: ${toHex(AES(key).cfb(iv).encryptString(plain))}');
     print('  OFB: ${toHex(AES(key).ofb(iv).encryptString(plain))}');
+    print('  XTS: ${toHex(AES(key).xts(iv).encryptString(plain))}');
     print(' PCBC: ${toHex(AES(key).pcbc(iv).encryptString(plain))}');
   }
   print('');

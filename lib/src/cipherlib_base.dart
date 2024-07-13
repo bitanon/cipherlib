@@ -12,5 +12,5 @@ export 'core/collate_cipher.dart';
 export 'core/salted_cipher.dart';
 export 'salsa20.dart';
 export 'salsa20_poly1305.dart';
-export 'utils/salt.dart';
+export 'utils/nonce.dart';
 export 'xor.dart';

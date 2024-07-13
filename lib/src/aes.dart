@@ -8,6 +8,7 @@ import 'package:cipherlib/src/algorithms/aes/ecb.dart';
 import 'package:cipherlib/src/algorithms/aes/gcm.dart';
 import 'package:cipherlib/src/algorithms/aes/ofb.dart';
 import 'package:cipherlib/src/algorithms/aes/pcbc.dart';
+import 'package:cipherlib/src/algorithms/aes/xts.dart';
 import 'package:cipherlib/src/algorithms/padding.dart';
 
 export 'package:cipherlib/src/algorithms/aes/cbc.dart';
@@ -17,6 +18,7 @@ export 'package:cipherlib/src/algorithms/aes/ecb.dart';
 export 'package:cipherlib/src/algorithms/aes/gcm.dart';
 export 'package:cipherlib/src/algorithms/aes/ofb.dart';
 export 'package:cipherlib/src/algorithms/aes/pcbc.dart';
+export 'package:cipherlib/src/algorithms/aes/xts.dart';
 
 /// AES (Advanced Encryption Standard) is a symmetric encryption algorithm used
 /// for securing data. It operates on fixed-size blocks of data (128 bits) using
@@ -35,6 +37,9 @@ class AES {
   /// The padding scheme for the messages
   final Padding padding;
 
+  /// Creates an AES algorithm instance with the [key], where the length of
+  /// the key must be either 16, 24, or 32-bytes. An additional [padding]
+  /// parameter can be configured for modes that requires a padding scheme.
   const AES(
     this.key, [
     this.padding = Padding.pkcs7,
@@ -57,6 +62,10 @@ class AES {
   ///
   /// **Not Recommended: It is vulnerable to pattern analysis.**
   ///
+  /// This implementation follows the specification from [NIST SP 800-38A -
+  /// Recommendation for Block Cipher Modes of Operation: Methods and
+  /// Techniques][spec].
+  ///
   /// ```
   ///                     key
   ///                      |
@@ -73,6 +82,8 @@ class AES {
   ///                      v
   /// Plaintext ---> [block cipher] ---> Ciphertext
   /// ```
+  ///
+  /// [spec]: https://csrc.nist.gov/pubs/sp/800/38/a/final
   AESInECBMode ecb() => AESInECBMode(key, padding);
 
   /// The Cipher Block Chaining (CBC) mode chains together blocks of plaintext
@@ -80,6 +91,10 @@ class AES {
   /// An initialization vector (IV) is used for the first block to ensure unique
   /// encryption. CBC mode provides better security than ECB but requires
   /// sequential processing.
+  ///
+  /// This implementation follows the specification from [NIST SP 800-38A -
+  /// Recommendation for Block Cipher Modes of Operation: Methods and
+  /// Techniques][spec].
   ///
   /// Parameters:
   /// - [iv] (initialization vector) is the random 16-byte salt.
@@ -100,6 +115,8 @@ class AES {
   ///                  v              v
   /// Plaintext ---> (XOR) ---> [block cipher] ---> Ciphertext
   /// ```
+  ///
+  /// [spec]: https://csrc.nist.gov/pubs/sp/800/38/a/final
   AESInCBCMode cbc(List<int> iv) => AESInCBCMode(
         key,
         iv: iv,
@@ -111,6 +128,10 @@ class AES {
   /// XORed with the plaintext to produce ciphertext. CTR mode allows parallel
   /// encryption and decryption, making it efficient for high-performance
   /// applications.
+  ///
+  /// This implementation follows the specification from [NIST SP 800-38A -
+  /// Recommendation for Block Cipher Modes of Operation: Methods and
+  /// Techniques][spec].
   ///
   /// Parameters:
   /// - [iv] (initialization vector) is the random 16-byte salt. For CTR mode
@@ -133,6 +154,8 @@ class AES {
   ///                               v               v
   /// <Nonce, Counter+1> ---> [block cipher] ---> (XOR) ---> Ciphertext
   /// ```
+  ///
+  /// [spec]: https://csrc.nist.gov/pubs/sp/800/38/a/final
   AESInCTRMode ctr(List<int> iv) => AESInCTRMode(key, iv);
 
   /// The CFB (Cipher Feedback) mode turns a block cipher into a
@@ -140,6 +163,10 @@ class AES {
   /// input to the block cipher to produce a keystream, which is then XORed with
   /// the plaintext to produce ciphertext. CFB does not require a padding to the
   /// plaintext and can be used for error recovery.
+  ///
+  /// This implementation follows the specification from [NIST SP 800-38A -
+  /// Recommendation for Block Cipher Modes of Operation: Methods and
+  /// Techniques][spec].
   ///
   /// Parameters:
   /// - [iv] (initialization vector) is the random 16-byte salt.
@@ -165,6 +192,8 @@ class AES {
   ///              |        v                          v
   ///              -> [block cipher] --[>>(16-s)]--> (XOR) --> (s-bit)
   /// ```
+  ///
+  /// [spec]: https://csrc.nist.gov/pubs/sp/800/38/a/final
   AESInCFBMode cfb(List<int> iv, [int sbyte = 16]) => AESInCFBMode(
         key,
         iv: iv,
@@ -185,6 +214,10 @@ class AES {
   /// immune to transmission errors but requires careful management of the IV to
   /// avoid security issues.
   ///
+  /// This implementation follows the specification from [NIST SP 800-38A -
+  /// Recommendation for Block Cipher Modes of Operation: Methods and
+  /// Techniques][spec].
+  ///
   /// Parameters:
   /// - [iv] (initialization vector) is the random 16-byte salt.
   ///
@@ -204,6 +237,8 @@ class AES {
   ///    |          v                  v
   ///    ---> [block cipher] ------> (XOR) ---> Ciphertext
   /// ```
+  ///
+  /// [spec]: https://csrc.nist.gov/pubs/sp/800/38/a/final
   AESInOFBMode ofb(List<int> iv) => AESInOFBMode(key, iv);
 
   /// The Propagating Cipher Block Chaining (PCBC) mode is a variant of CBC that
@@ -243,6 +278,10 @@ class AES {
   /// multiplication for authentication. GCM provides both data confidentiality
   /// and authenticity, making it a widely used and highly secure mode.
   ///
+  /// This implementation follows the specification from [NIST SP 800-38D -
+  /// Recommendation for Block Cipher Modes of Operation: Galois/Counter Mode
+  /// (GCM) and GMAC][spec].
+  ///
   /// Parameters:
   /// - [iv] (initialization vector) is the random salt of arbitrary length.
   /// - [aad] (additional authentication data) is used to generated unique tag.
@@ -252,6 +291,8 @@ class AES {
   /// 128-bit message authentication tag. During decryption, the authentication
   /// tag is checked with the generated tag. It will throw [StateError] on
   /// verification failure or on invalid ciphertext size.
+  ///
+  /// [spec]: https://csrc.nist.gov/pubs/sp/800/38/d/final
   AESInGCMMode gcm(
     List<int> iv, {
     Iterable<int>? aad,
@@ -263,4 +304,26 @@ class AES {
         aad: aad,
         tagSize: tagSize,
       );
+
+  /// The XTS or XEX (XOR-Encrypt-XOR) Tweakable Block Cipher with Ciphertext
+  /// Stealing mode is a disk encryption mode of operation for cryptographic
+  /// block ciphers. _It is designed specifically for encrypting data stored on
+  /// block-oriented storage devices_.
+  ///
+  /// This mode combines the advantages of [ecb] and [cbc] while avoiding their
+  /// weaknesses, making it well-suited for disk encryption.
+  ///
+  /// This implementation follows the specification from [1619-2018 - IEEE
+  /// Standard for Cryptographic Protection of Data on Block-Oriented Storage
+  /// Devices][spec].
+  ///
+  /// Parameters:
+  /// - [tweak] The initial tweak value (16-bytes). If you want to use the
+  ///   sector value please use [AESInXTSMode.fromSector].
+  ///
+  /// The [key] is divided in two equal parts for the XTS mode, and first part
+  /// is used as the sector key, second part as the cipher key.
+  ///
+  /// [spec]: https://ieeexplore.ieee.org/document/8637988
+  AESInXTSMode xts(List<int> tweak) => AESInXTSMode(key, tweak);
 }

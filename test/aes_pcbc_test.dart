@@ -65,8 +65,8 @@ void main() {
 
         var enc = aes.encryptor.createSink();
         var output = <int>[];
-        for (int i = 0; i < input.length; i += 23) {
-          output.addAll(enc.add(input.skip(i).take(23).toList()));
+        for (int i = 0; i < input.length; i += 13) {
+          output.addAll(enc.add(input.skip(i).take(13).toList()));
         }
         output.addAll(enc.close());
         expect(toHex(output), equals(toHex(cipher)), reason: '[size: $j]');
@@ -75,7 +75,6 @@ void main() {
         expect(toHex(plain), equals(toHex(input)), reason: '[size: $j]');
       }
     });
-
     test('decryption', () {
       var key = randomBytes(32);
       for (int j = 0; j < 100; j++) {
@@ -90,6 +89,26 @@ void main() {
         for (int i = 0; i < cipher.length; i += 23) {
           output.addAll(dec.add(cipher.skip(i).take(23).toList()));
         }
+        output.addAll(dec.close());
+        expect(toHex(output), equals(toHex(input)), reason: '[size: $j]');
+      }
+    });
+    test('encryption + decryption', () {
+      var key = randomBytes(32);
+      for (int j = 0; j < 100; j++) {
+        var iv = randomBytes(16);
+        var input = randomBytes(j);
+
+        final aes = AES(key).pcbc(iv);
+        var enc = aes.encryptor.createSink();
+        var dec = aes.decryptor.createSink();
+
+        var output = <int>[];
+        for (int i = 0; i < input.length; i += 23) {
+          var part = input.skip(i).take(23).toList();
+          output.addAll(dec.add(enc.add(part)));
+        }
+        output.addAll(dec.add(enc.close()));
         output.addAll(dec.close());
         expect(toHex(output), equals(toHex(input)), reason: '[size: $j]');
       }
