@@ -107,7 +107,7 @@ void main() {
     var iv = fromHex('000102030405060708090a0b0c0d0e0f');
     var plain = Uint8List(0);
     var cipher = Uint8List(0);
-    var aes = AES(key).cbc(iv);
+    var aes = AES.noPadding(key).cbc(iv);
     test('encrypt', () {
       var actual = aes.encrypt(plain);
       expect(toHex(actual), equals(toHex(cipher)));

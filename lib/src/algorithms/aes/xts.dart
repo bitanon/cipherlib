@@ -38,7 +38,7 @@ class AESInXTSModeEncryptSink extends CipherSink {
 
   int _pos = 0;
   int _rpos = 0;
-  int _msgLen = 0;
+  int _msgLength = 0;
   bool _closed = false;
   final Uint8List _ekey;
   final Uint8List _tkey;
@@ -60,12 +60,12 @@ class AESInXTSModeEncryptSink extends CipherSink {
   void reset() {
     _pos = 0;
     _rpos = 0;
-    _msgLen = 0;
+    _msgLength = 0;
     _closed = false;
     for (int i = 0; i < 16; ++i) {
       _tweak[i] = _iv[i];
     }
-    AESCore.$encrypt(_tweak32, _xtkey32);
+    AESCore.$encryptLE(_tweak32, _xtkey32);
   }
 
   @override
@@ -85,21 +85,21 @@ class AESInXTSModeEncryptSink extends CipherSink {
 
     n = _pos + end - start;
     if (!last) n -= 16;
-    n += _msgLen < 16 ? _rpos : 16;
+    n += _msgLength < 16 ? _rpos : 16;
     if (!last) n -= (n & 15);
     if (n < 0) n = 0;
     var output = Uint8List(n);
 
     p = 0;
     for (i = start; i < end; ++i) {
-      if (_msgLen >= 16) {
+      if (_msgLength >= 16) {
         _block[_pos] = _residue[_rpos];
         _pos++;
         if (_pos == 16) {
           for (j = 0; j < 16; j++) {
             _block[j] ^= _tweak[j];
           }
-          AESCore.$encrypt(_block32, _xekey32);
+          AESCore.$encryptLE(_block32, _xekey32);
           for (j = 0; j < 16; ++j) {
             output[p++] = _block[j] ^ _tweak[j];
           }
@@ -109,11 +109,11 @@ class AESInXTSModeEncryptSink extends CipherSink {
       }
       _residue[_rpos++] = data[i];
       _rpos &= 15;
-      _msgLen++;
+      _msgLength++;
     }
 
     if (last) {
-      if (_msgLen < 16) {
+      if (_msgLength < 16) {
         throw StateError('The message length must be at least 16-bytes');
       }
       if (_pos != _rpos) {
@@ -128,7 +128,7 @@ class AESInXTSModeEncryptSink extends CipherSink {
         for (j = 0; j < 16; j++) {
           _block[j] ^= _tweak[j];
         }
-        AESCore.$encrypt(_block32, _xekey32);
+        AESCore.$encryptLE(_block32, _xekey32);
         for (j = 0; j < 16; ++j) {
           output[p++] = _block[j] ^ _tweak[j];
         }
@@ -137,7 +137,7 @@ class AESInXTSModeEncryptSink extends CipherSink {
         for (j = 0; j < 16; j++) {
           _block[j] ^= _tweak[j];
         }
-        AESCore.$encrypt(_block32, _xekey32);
+        AESCore.$encryptLE(_block32, _xekey32);
         for (j = 0; j < 16; j++) {
           _block[j] ^= _tweak[j];
         }
@@ -150,7 +150,7 @@ class AESInXTSModeEncryptSink extends CipherSink {
         for (j = 0; j < 16; j++) {
           _block[j] ^= _tweak[j];
         }
-        AESCore.$encrypt(_block32, _xekey32);
+        AESCore.$encryptLE(_block32, _xekey32);
         for (j = 0; j < 16; j++) {
           _block[j] ^= _tweak[j];
         }
@@ -179,7 +179,7 @@ class AESInXTSModeEncryptSink extends CipherSink {
 /// [spec]: https://ieeexplore.ieee.org/document/8637988
 class AESInXTSModeDecryptSink extends CipherSink {
   AESInXTSModeDecryptSink(
-    this._ekey,
+    this._dkey,
     this._tkey,
     this._iv,
   ) {
@@ -188,20 +188,20 @@ class AESInXTSModeDecryptSink extends CipherSink {
 
   int _pos = 0;
   int _rpos = 0;
-  int _msgLen = 0;
+  int _msgLength = 0;
   bool _closed = false;
-  final Uint8List _ekey;
+  final Uint8List _dkey;
   final Uint8List _tkey;
   final Uint8List _iv;
   final _residue = Uint8List(16);
   final _tweak = Uint8List(16);
   final _temp = Uint8List(16);
   final _block = Uint8List(16); // 128-bit
-  late final _ekey32 = Uint32List.view(_ekey.buffer);
+  late final _dkey32 = Uint32List.view(_dkey.buffer);
   late final _tkey32 = Uint32List.view(_tkey.buffer);
   late final _block32 = Uint32List.view(_block.buffer);
   late final _tweak32 = Uint32List.view(_tweak.buffer);
-  late final _xekey32 = AESCore.$expandDecryptionKey(_ekey32);
+  late final _xdkey32 = AESCore.$expandDecryptionKey(_dkey32);
   late final _xtkey32 = AESCore.$expandEncryptionKey(_tkey32);
 
   @override
@@ -211,12 +211,12 @@ class AESInXTSModeDecryptSink extends CipherSink {
   void reset() {
     _pos = 0;
     _rpos = 0;
-    _msgLen = 0;
+    _msgLength = 0;
     _closed = false;
     for (int i = 0; i < 16; ++i) {
       _tweak[i] = _iv[i];
     }
-    AESCore.$encrypt(_tweak32, _xtkey32);
+    AESCore.$encryptLE(_tweak32, _xtkey32);
   }
 
   @override
@@ -236,21 +236,21 @@ class AESInXTSModeDecryptSink extends CipherSink {
 
     n = _pos + end - start;
     if (!last) n -= 16;
-    n += _msgLen < 16 ? _rpos : 16;
+    n += _msgLength < 16 ? _rpos : 16;
     if (!last) n -= (n & 15);
     if (n < 0) n = 0;
     var output = Uint8List(n);
 
     p = 0;
     for (i = start; i < end; ++i) {
-      if (_msgLen >= 16) {
+      if (_msgLength >= 16) {
         _block[_pos] = _residue[_rpos];
         _pos++;
         if (_pos == 16) {
           for (j = 0; j < 16; j++) {
             _block[j] ^= _tweak[j];
           }
-          AESCore.$decrypt(_block32, _xekey32);
+          AESCore.$decryptLE(_block32, _xdkey32);
           for (j = 0; j < 16; ++j) {
             output[p++] = _block[j] ^ _tweak[j];
           }
@@ -260,11 +260,11 @@ class AESInXTSModeDecryptSink extends CipherSink {
       }
       _residue[_rpos++] = data[i];
       _rpos &= 15;
-      _msgLen++;
+      _msgLength++;
     }
 
     if (last) {
-      if (_msgLen < 16) {
+      if (_msgLength < 16) {
         throw StateError('The message length must be at least 16-bytes');
       }
       if (_pos != _rpos) {
@@ -279,7 +279,7 @@ class AESInXTSModeDecryptSink extends CipherSink {
         for (j = 0; j < 16; j++) {
           _block[j] ^= _tweak[j];
         }
-        AESCore.$decrypt(_block32, _xekey32);
+        AESCore.$decryptLE(_block32, _xdkey32);
         for (j = 0; j < 16; ++j) {
           output[p++] = _block[j] ^ _tweak[j];
         }
@@ -292,7 +292,7 @@ class AESInXTSModeDecryptSink extends CipherSink {
         for (j = 0; j < 16; j++) {
           _block[j] ^= _tweak[j];
         }
-        AESCore.$decrypt(_block32, _xekey32);
+        AESCore.$decryptLE(_block32, _xdkey32);
         for (j = 0; j < 16; j++) {
           _block[j] ^= _tweak[j];
         }
@@ -304,7 +304,7 @@ class AESInXTSModeDecryptSink extends CipherSink {
         for (j = 0; j < 16; j++) {
           _block[j] ^= _temp[j];
         }
-        AESCore.$decrypt(_block32, _xekey32);
+        AESCore.$decryptLE(_block32, _xdkey32);
         for (j = 0; j < 16; ++j) {
           output[p++] = _block[j] ^ _temp[j];
         }
@@ -404,7 +404,6 @@ class AESInXTSMode extends SaltedCollateCipher {
     var mid = key8.length >>> 1;
     var ekey = key8.sublist(0, mid);
     var tkey = key8.sublist(mid);
-
     return AESInXTSMode._(
       encryptor: AESInXTSModeEncrypt(ekey, tkey, iv8),
       decryptor: AESInXTSModeDecrypt(ekey, tkey, iv8),

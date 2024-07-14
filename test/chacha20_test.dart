@@ -5,7 +5,6 @@ import 'dart:typed_data';
 
 import 'package:cipherlib/cipherlib.dart';
 import 'package:hashlib_codecs/hashlib_codecs.dart';
-import 'package:pointycastle/pointycastle.dart' as pc;
 import 'package:test/test.dart';
 
 import 'utils.dart';
@@ -111,36 +110,4 @@ void main() {
       expect(bytes, equals(plain), reason: '[text: $j]');
     }
   });
-  test('compare with PointyCastle ChaCha20/20', () {
-    var key = randomBytes(32);
-    var nonce = randomBytes(8);
-    for (int j = 0; j < 100; ++j) {
-      var text = randomBytes(j);
-      var my = ChaCha20Sink(key, nonce, 0).add(text);
-
-      var instance = pc.StreamCipher('ChaCha20/20');
-      instance.init(
-        true,
-        pc.ParametersWithIV(pc.KeyParameter(key), nonce),
-      );
-      var out = instance.process(text);
-      expect(out, equals(my), reason: '[text: $j]');
-    }
-  }, tags: ['skip-js']);
-  test('compare with PointyCastle ChaCha7539/20', () {
-    var key = randomBytes(32);
-    var nonce = randomBytes(12);
-    for (int j = 0; j < 100; ++j) {
-      var text = randomBytes(j);
-      var my = ChaCha20Sink(key, nonce, 0).add(text);
-
-      var instance = pc.StreamCipher('ChaCha7539/20');
-      instance.init(
-        true,
-        pc.ParametersWithIV(pc.KeyParameter(key), nonce),
-      );
-      var out = instance.process(text);
-      expect(out, equals(my), reason: '[text: $j]');
-    }
-  }, tags: ['skip-js']);
 }

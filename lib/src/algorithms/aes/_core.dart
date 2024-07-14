@@ -226,66 +226,101 @@ abstract class AESCore {
     return dw;
   }
 
-  /// Encrypts a plaintext block.
+  /// Encrypts a plaintext block in little-endian mode.
+  ///
+  /// Parameters:
+  /// - [box] : plaintext as 32-bit words
+  /// - [rk] : expanded key for encryption as 32-bit words
+  static void $encryptLE(Uint32List box, Uint32List rk) {
+    box[0] = _swap32(box[0]);
+    box[1] = _swap32(box[1]);
+    box[2] = _swap32(box[2]);
+    box[3] = _swap32(box[3]);
+    $encrypt(box, rk);
+    box[0] = _swap32(box[0]);
+    box[1] = _swap32(box[1]);
+    box[2] = _swap32(box[2]);
+    box[3] = _swap32(box[3]);
+  }
+
+  /// Encrypts a plaintext block in big-endian mode.
   ///
   /// Parameters:
   /// - [box] : plaintext as 32-bit words
   /// - [rk] : expanded key for encryption as 32-bit words
   static void $encrypt(Uint32List box, Uint32List rk) {
-    int s0, s1, s2, s3, t0, t1, t2, t3;
-    int p = 0, n = rk.length - 4;
+    int p, n, s0, s1, s2, s3, t0, t1, t2, t3;
+    p = 0;
+    n = rk.length - 4;
     // s = AddRoundKey(box)
-    s0 = _swap32(box[0]) ^ rk[p++];
-    s1 = _swap32(box[1]) ^ rk[p++];
-    s2 = _swap32(box[2]) ^ rk[p++];
-    s3 = _swap32(box[3]) ^ rk[p++];
+    s0 = box[0] ^ rk[p++];
+    s1 = box[1] ^ rk[p++];
+    s2 = box[2] ^ rk[p++];
+    s3 = box[3] ^ rk[p++];
     // Rounds: s = AddRoundKey(MixColumns(ShiftRows(SubTypes(s))))
     while (p < n) {
-      t0 = _byteMix(s0, s1, s2, s3);
-      t1 = _byteMix(s1, s2, s3, s0);
-      t2 = _byteMix(s2, s3, s0, s1);
-      t3 = _byteMix(s3, s0, s1, s2);
-      s0 = t0 ^ rk[p++];
-      s1 = t1 ^ rk[p++];
-      s2 = t2 ^ rk[p++];
-      s3 = t3 ^ rk[p++];
+      t0 = _byteMix(s0, s1, s2, s3) ^ rk[p++];
+      t1 = _byteMix(s1, s2, s3, s0) ^ rk[p++];
+      t2 = _byteMix(s2, s3, s0, s1) ^ rk[p++];
+      t3 = _byteMix(s3, s0, s1, s2) ^ rk[p++];
+      s0 = t0;
+      s1 = t1;
+      s2 = t2;
+      s3 = t3;
     }
     // box = AddRoundKey(ShiftRows(SubBytes(s)))
-    box[0] = _swap32(_byteSub(s0, s1, s2, s3) ^ rk[p++]);
-    box[1] = _swap32(_byteSub(s1, s2, s3, s0) ^ rk[p++]);
-    box[2] = _swap32(_byteSub(s2, s3, s0, s1) ^ rk[p++]);
-    box[3] = _swap32(_byteSub(s3, s0, s1, s2) ^ rk[p++]);
+    box[0] = _byteSub(s0, s1, s2, s3) ^ rk[p++];
+    box[1] = _byteSub(s1, s2, s3, s0) ^ rk[p++];
+    box[2] = _byteSub(s2, s3, s0, s1) ^ rk[p++];
+    box[3] = _byteSub(s3, s0, s1, s2) ^ rk[p++];
   }
 
-  /// Decrypts a plaintext block.
+  /// Decrypts a plaintext block in little-endian mode.
+  ///
+  /// Parameters:
+  /// - [box] : ciphertext as 32-bit words
+  /// - [rk] : expanded key for decryption as 32-bit words
+  static void $decryptLE(Uint32List box, Uint32List rk) {
+    box[0] = _swap32(box[0]);
+    box[1] = _swap32(box[1]);
+    box[2] = _swap32(box[2]);
+    box[3] = _swap32(box[3]);
+    $decrypt(box, rk);
+    box[0] = _swap32(box[0]);
+    box[1] = _swap32(box[1]);
+    box[2] = _swap32(box[2]);
+    box[3] = _swap32(box[3]);
+  }
+
+  /// Decrypts a plaintext block in big-endian mode.
   ///
   /// Parameters:
   /// - [box] : ciphertext as 32-bit words
   /// - [rk] : expanded key for decryption as 32-bit words
   static void $decrypt(Uint32List box, Uint32List rk) {
-    int s0, s1, s2, s3, t0, t1, t2, t3;
-    int n = rk.length - 1;
+    int n, s0, s1, s2, s3, t0, t1, t2, t3;
+    n = rk.length - 1;
     // s = AddRoundKey(box)
-    s3 = _swap32(box[3]) ^ rk[n--];
-    s2 = _swap32(box[2]) ^ rk[n--];
-    s1 = _swap32(box[1]) ^ rk[n--];
-    s0 = _swap32(box[0]) ^ rk[n--];
+    s3 = box[3] ^ rk[n--];
+    s2 = box[2] ^ rk[n--];
+    s1 = box[1] ^ rk[n--];
+    s0 = box[0] ^ rk[n--];
     // Rounds: s = InvMixColumns(AddRoundKey(InvSubBytes(InvShiftRows(s))))
     while (n > 4) {
-      t3 = _byteMixInv(s3, s2, s1, s0);
-      t2 = _byteMixInv(s2, s1, s0, s3);
-      t1 = _byteMixInv(s1, s0, s3, s2);
-      t0 = _byteMixInv(s0, s3, s2, s1);
-      s3 = t3 ^ rk[n--];
-      s2 = t2 ^ rk[n--];
-      s1 = t1 ^ rk[n--];
-      s0 = t0 ^ rk[n--];
+      t3 = _byteMixInv(s3, s2, s1, s0) ^ rk[n--];
+      t2 = _byteMixInv(s2, s1, s0, s3) ^ rk[n--];
+      t1 = _byteMixInv(s1, s0, s3, s2) ^ rk[n--];
+      t0 = _byteMixInv(s0, s3, s2, s1) ^ rk[n--];
+      s3 = t3;
+      s2 = t2;
+      s1 = t1;
+      s0 = t0;
     }
     // box = AddRoundKey(InvSubBytes(InvShiftRows(s)))
-    box[3] = _swap32(_byteSubInv(s3, s2, s1, s0) ^ rk[n--]);
-    box[2] = _swap32(_byteSubInv(s2, s1, s0, s3) ^ rk[n--]);
-    box[1] = _swap32(_byteSubInv(s1, s0, s3, s2) ^ rk[n--]);
-    box[0] = _swap32(_byteSubInv(s0, s3, s2, s1) ^ rk[n--]);
+    box[3] = _byteSubInv(s3, s2, s1, s0) ^ rk[n--];
+    box[2] = _byteSubInv(s2, s1, s0, s3) ^ rk[n--];
+    box[1] = _byteSubInv(s1, s0, s3, s2) ^ rk[n--];
+    box[0] = _byteSubInv(s0, s3, s2, s1) ^ rk[n--];
   }
 
   @pragma('vm:prefer-inline')
@@ -310,6 +345,13 @@ abstract class AESCore {
       (_sbox[(x >>> 24)]);
 
   @pragma('vm:prefer-inline')
+  static int _wordMixInv(int x) =>
+      _dmix0[_sbox[(x >>> 24)]] ^
+      _dmix1[_sbox[(x >>> 16) & 0xFF]] ^
+      _dmix2[_sbox[(x >>> 8) & 0xFF]] ^
+      _dmix3[_sbox[(x) & 0xFF]];
+
+  @pragma('vm:prefer-inline')
   static int _byteSub(int s0, int s1, int s2, int s3) =>
       (_sbox[(s0 >>> 24)] << 24) ^
       (_sbox[(s1 >>> 16) & 0xFF] << 16) ^
@@ -329,13 +371,6 @@ abstract class AESCore {
       (_dsbox[(s1 >>> 16) & 0xFF] << 16) ^
       (_dsbox[(s2 >>> 8) & 0xFF] << 8) ^
       (_dsbox[(s3) & 0xFF]);
-
-  @pragma('vm:prefer-inline')
-  static int _wordMixInv(int x) =>
-      _dmix0[_sbox[(x >>> 24)]] ^
-      _dmix1[_sbox[(x >>> 16) & 0xFF]] ^
-      _dmix2[_sbox[(x >>> 8) & 0xFF]] ^
-      _dmix3[_sbox[(x) & 0xFF]];
 
   @pragma('vm:prefer-inline')
   static int _byteMixInv(int s0, int s1, int s2, int s3) =>

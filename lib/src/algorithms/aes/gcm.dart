@@ -10,40 +10,40 @@ import 'package:hashlib/hashlib.dart';
 
 import '_core.dart';
 
-/// Multiply [M] and [H] in 128-bit Galois field.
-///
-/// Returns `M * H mod P` in GF(2^128), where
-/// `P = 0xE1000000000000000000000000000`
-void _multiply128(Uint8List M, Uint8List H) {
-  int i, j, k, x, y, c;
-  var v = H.sublist(0);
-  var z = Uint8List(16);
-  for (i = 0; i < 16; i++) {
-    x = M[i];
-    for (k = 0x80; k > 0; k >>>= 1) {
-      // add M
-      if (x & k != 0) {
-        for (j = 0; j < 16; ++j) {
-          z[j] ^= v[j];
-        }
-      }
-      // shift right
-      c = 0;
-      for (j = 0; j < 16; j++) {
-        y = v[j];
-        v[j] = c | (y >>> 1);
-        c = (y & 1) << 7;
-      }
-      // modulus
-      if (c != 0) {
-        v[0] ^= 0xE1;
-      }
-    }
-  }
-  for (i = 0; i < 16; ++i) {
-    M[i] = z[i];
-  }
-}
+const List<int> _pow2 = <int>[
+  0x80,
+  0x40,
+  0x20,
+  0x10,
+  0x08,
+  0x04,
+  0x02,
+  0x01,
+  0x8000,
+  0x4000,
+  0x2000,
+  0x1000,
+  0x0800,
+  0x0400,
+  0x0200,
+  0x0100,
+  0x800000,
+  0x400000,
+  0x200000,
+  0x100000,
+  0x080000,
+  0x040000,
+  0x020000,
+  0x010000,
+  0x80000000,
+  0x40000000,
+  0x20000000,
+  0x10000000,
+  0x08000000,
+  0x04000000,
+  0x02000000,
+  0x01000000,
+];
 
 /// This implementation is derived from [NIST GCM Specification][spec].
 ///
@@ -61,7 +61,7 @@ abstract class _AESInGCMModeSinkBase extends CipherSink {
   int _rpos = 0;
   bool _closed = false;
   int _aadLength = 0;
-  int _dataLength = 0;
+  int _msgLength = 0;
   final Uint8List _key;
   final Uint8List _iv;
   final Iterable<int>? _aad;
@@ -70,10 +70,13 @@ abstract class _AESInGCMModeSinkBase extends CipherSink {
   final _tag = Uint8List(16);
   final _first = Uint8List(16);
   final _hkey = Uint8List(16); // key for GHASH
+  final _hcache = Uint8List(2048); // 16 * 128
+  late final _tag32 = Uint32List.view(_tag.buffer);
   late final _key32 = Uint32List.view(_key.buffer);
   late final _block32 = Uint32List.view(_block.buffer);
   late final _first32 = Uint32List.view(_first.buffer);
   late final _hkey32 = Uint32List.view(_hkey.buffer);
+  late final _hcache32 = Uint32List.view(_hcache.buffer);
   late final _xkey32 = AESCore.$expandEncryptionKey(_key32);
 
   @override
@@ -86,7 +89,7 @@ abstract class _AESInGCMModeSinkBase extends CipherSink {
     _pos = 0;
     _rpos = 0;
     _aadLength = 0;
-    _dataLength = 0;
+    _msgLength = 0;
     _closed = false;
 
     // GHASH init
@@ -94,7 +97,8 @@ abstract class _AESInGCMModeSinkBase extends CipherSink {
       _tag[i] = 0;
       _hkey[i] = 0;
     }
-    AESCore.$encrypt(_hkey32, _xkey32);
+    AESCore.$encryptLE(_hkey32, _xkey32);
+    _buildCache();
 
     // build counter 0
     if (_iv.lengthInBytes == 12) {
@@ -112,15 +116,15 @@ abstract class _AESInGCMModeSinkBase extends CipherSink {
       for (int x in _iv) {
         _tag[n++] ^= x;
         if (n == 16) {
-          _multiply128(_tag, _hkey);
+          _multiply128();
           n = 0;
         }
       }
       if (n > 0) {
-        _multiply128(_tag, _hkey);
+        _multiply128();
       }
       _serialize64(0, _iv.length);
-      _multiply128(_tag, _hkey);
+      _multiply128();
       for (i = 0; i < 16; ++i) {
         _counter[i] = _tag[i];
         _tag[i] = 0;
@@ -131,7 +135,7 @@ abstract class _AESInGCMModeSinkBase extends CipherSink {
     for (i = 0; i < 16; ++i) {
       _first[i] = _counter[i];
     }
-    AESCore.$encrypt(_first32, _xkey32);
+    AESCore.$encryptLE(_first32, _xkey32);
 
     // add aad
     if (_aad != null) {
@@ -139,13 +143,13 @@ abstract class _AESInGCMModeSinkBase extends CipherSink {
       for (int x in _aad!) {
         _tag[n++] ^= x;
         if (n == 16) {
-          _multiply128(_tag, _hkey);
+          _multiply128();
           _aadLength += 16;
           n = 0;
         }
       }
       if (n > 0) {
-        _multiply128(_tag, _hkey);
+        _multiply128();
         _aadLength += n;
       }
     }
@@ -160,7 +164,7 @@ abstract class _AESInGCMModeSinkBase extends CipherSink {
     for (i = 0; i < 16; ++i) {
       _block[i] = _counter[i];
     }
-    AESCore.$encrypt(_block32, _xkey32);
+    AESCore.$encryptLE(_block32, _xkey32);
   }
 
   void _serialize64(int a, int b) {
@@ -182,6 +186,56 @@ abstract class _AESInGCMModeSinkBase extends CipherSink {
     _tag[13] ^= b >>> 16;
     _tag[14] ^= b >>> 8;
     _tag[15] ^= b;
+  }
+
+  /// Build the [_hkey] cache for [_multiply128]
+  void _buildCache() {
+    int i, j, y, c;
+    for (i = 0; i < 16; i++) {
+      _hcache[i] = _hkey[i];
+    }
+    for (i = 16; i < 2048; i += 16) {
+      // shift right
+      c = 0;
+      for (j = 0; j < 16; j++) {
+        y = _hcache[i + j - 16];
+        _hcache[i + j] = c | (y >>> 1);
+        c = (y & 1) << 7;
+      }
+      // modulus
+      if (c != 0) {
+        _hcache[i] ^= 0xE1;
+      }
+    }
+  }
+
+  /// Multiply M=[_tag] and H=[_hkey] in 128-bit Galois field.
+  ///
+  /// Returns `M * H mod P` in GF(2^128), where
+  /// `P = 0xE1000000000000000000000000000`
+  void _multiply128() {
+    int i, x, p, t0, t1, t2, t3;
+    p = 0;
+    t0 = 0;
+    t1 = 0;
+    t2 = 0;
+    t3 = 0;
+    for (x in _tag32) {
+      for (i = 0; i < 32; i++) {
+        if (x & _pow2[i] != 0) {
+          t0 ^= _hcache32[p++];
+          t1 ^= _hcache32[p++];
+          t2 ^= _hcache32[p++];
+          t3 ^= _hcache32[p++];
+        } else {
+          p += 4;
+        }
+      }
+    }
+    _tag32[0] = t0;
+    _tag32[1] = t1;
+    _tag32[2] = t2;
+    _tag32[3] = t3;
   }
 }
 
@@ -215,7 +269,7 @@ class AESInGCMModeEncryptSink extends _AESInGCMModeSinkBase {
     }
     _closed = last;
     end ??= data.length;
-    _dataLength += end - start;
+    _msgLength += end - start;
 
     int i, j, n, p;
     n = end - start;
@@ -231,17 +285,17 @@ class AESInGCMModeEncryptSink extends _AESInGCMModeSinkBase {
       _tag[_pos] ^= output[p++];
       _pos++;
       if (_pos == 16) {
-        _multiply128(_tag, _hkey);
+        _multiply128();
         _pos = 0;
       }
     }
 
     if (last) {
       if (_pos > 0) {
-        _multiply128(_tag, _hkey);
+        _multiply128();
       }
-      _serialize64(_aadLength, _dataLength);
-      _multiply128(_tag, _hkey);
+      _serialize64(_aadLength, _msgLength);
+      _multiply128();
       for (j = 0; j < _tagSize; ++j) {
         _tag[j] ^= _first[j];
         output[p++] = _tag[j];
@@ -289,7 +343,7 @@ class AESInGCMModeDecryptSink extends _AESInGCMModeSinkBase {
 
     p = 0;
     for (i = start; i < end; ++i) {
-      if (_dataLength >= _tagSize) {
+      if (_msgLength >= _tagSize) {
         if (_pos == 0) {
           _nextBlock();
         }
@@ -297,27 +351,27 @@ class AESInGCMModeDecryptSink extends _AESInGCMModeSinkBase {
         _tag[_pos] ^= _residue[_rpos];
         _pos++;
         if (_pos == 16) {
-          _multiply128(_tag, _hkey);
+          _multiply128();
           _pos = 0;
         }
       }
       _residue[_rpos++] = data[i];
-      _dataLength++;
+      _msgLength++;
       if (_rpos == _tagSize) {
         _rpos = 0;
       }
     }
 
     if (last) {
-      _dataLength -= _tagSize;
-      if (_dataLength < 0) {
+      _msgLength -= _tagSize;
+      if (_msgLength < 0) {
         throw StateError('Invalid message size');
       }
       if (_pos > 0) {
-        _multiply128(_tag, _hkey);
+        _multiply128();
       }
-      _serialize64(_aadLength, _dataLength);
-      _multiply128(_tag, _hkey);
+      _serialize64(_aadLength, _msgLength);
+      _multiply128();
       for (j = 0; j < _tagSize; ++j) {
         _tag[j] ^= _first[j];
       }

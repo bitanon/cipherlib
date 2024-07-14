@@ -1,6 +1,6 @@
 ## 0.0.10
 
-- `AES` in ECB, CBC, CTR, CFB, OFB, GCM, PCBC modes.
-- `ChaCha20` cipher with `Poly1305` tag.
-- `Salsa20` cipher with `Poly1305` tag.
 - `XOR` cipher.
+- `Salsa20` cipher with `Poly1305` tag.
+- `ChaCha20` cipher with `Poly1305` tag.
+- `AES` in ECB, CBC, CTR, CFB, OFB, GCM, XTS, PCBC modes.

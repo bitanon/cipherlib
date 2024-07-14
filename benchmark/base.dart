@@ -8,7 +8,7 @@ import 'package:benchmark_harness/benchmark_harness.dart';
 
 Random random = Random();
 
-mixin _BenchmarkTools {
+mixin BenchmarkTools {
   int get size;
   int get iter;
   String get name;
@@ -17,7 +17,7 @@ mixin _BenchmarkTools {
     var nbhps = 1e6 * iter / runtime;
     var rate = nbhps * size;
     var rtms = runtime.round() / 1000;
-    var speed = '${formatSize(rate)}/s';
+    var speed = formatSpeed(rate);
     var mark = '${formatSize(size)} x $iter';
     print('$name($mark): $rtms ms => ${nbhps.round()} rounds @ $speed');
   }
@@ -28,7 +28,7 @@ mixin _BenchmarkTools {
       var runtime = diff[name]!;
       var hashRate = 1e6 * iter * size / runtime;
       diff[name] = runtime;
-      rate[name] = '${formatSize(hashRate)}/s';
+      rate[name] = formatSpeed(hashRate);
     }
     var mine = diff[name]!;
     var best = diff.values.fold(mine, min);
@@ -38,19 +38,33 @@ mixin _BenchmarkTools {
       if (value == best) {
         message += ' [best]';
       }
-      if (value > mine) {
-        var p = (100 * (value - mine) / mine).round();
-        message += ' ~ $p% slower';
-      } else if (value < mine) {
-        var p = (100 * (mine - value) / mine).round();
-        message += ' ~ $p% faster';
+      if (mine < value) {
+        var p = formatDecimal(value / mine);
+        message += ' => ${p}x slow';
+      } else if (mine > value) {
+        var p = formatDecimal(mine / value);
+        message += ' => ${p}x fast';
       }
       print(message);
     }
   }
+
+  Future<void> measureDiff([List<BenchmarkTools> others = const []]) async {
+    var diff = <String, double>{};
+    for (var benchmark in {this, ...others}) {
+      if (benchmark is Benchmark) {
+        diff[benchmark.name] = benchmark.measure();
+      } else if (benchmark is AsyncBenchmark) {
+        diff[benchmark.name] = await benchmark.measure();
+      } else {
+        continue;
+      }
+    }
+    $showDiff(diff);
+  }
 }
 
-abstract class Benchmark extends BenchmarkBase with _BenchmarkTools {
+abstract class Benchmark extends BenchmarkBase with BenchmarkTools {
   @override
   final int size;
   @override
@@ -73,17 +87,9 @@ abstract class Benchmark extends BenchmarkBase with _BenchmarkTools {
   void measureRate() {
     $showRate(measure());
   }
-
-  void measureDiff([List<BenchmarkBase> others = const []]) {
-    var diff = <String, double>{};
-    for (var benchmark in {this, ...others}) {
-      diff[benchmark.name] = benchmark.measure();
-    }
-    $showDiff(diff);
-  }
 }
 
-abstract class AsyncBenchmark extends AsyncBenchmarkBase with _BenchmarkTools {
+abstract class AsyncBenchmark extends AsyncBenchmarkBase with BenchmarkTools {
   @override
   final int size;
   @override
@@ -106,29 +112,43 @@ abstract class AsyncBenchmark extends AsyncBenchmarkBase with _BenchmarkTools {
   Future<void> measureRate() async {
     $showRate(await measure());
   }
+}
 
-  Future<void> measureDiff([List<dynamic> others = const []]) async {
-    var diff = <String, double>{};
-    for (var benchmark in {this, ...others}) {
-      if (benchmark is BenchmarkBase) {
-        diff[benchmark.name] = benchmark.measure();
-      } else if (benchmark is AsyncBenchmarkBase) {
-        diff[benchmark.name] = await benchmark.measure();
-      }
-    }
-    $showDiff(diff);
+String formatDecimal(double value, [int precision = 2]) {
+  var res = value.toStringAsFixed(precision);
+  if (precision == 0) {
+    return res;
   }
+  int p = res.length - 1;
+  while (res[p] == '0') {
+    p--;
+  }
+  if (res[p] == '.') {
+    p--;
+  }
+  return res.substring(0, p + 1);
 }
 
 String formatSize(num value) {
+  int i;
   double size = value.toDouble();
   const suffix = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
-  int i;
   for (i = 0; size >= 1024; i++) {
     size /= 1024;
   }
-  var left = size.floor();
-  var right = ((size - left) * 100).floorToDouble();
-  var deci = (right / 100).toStringAsFixed(2).substring(2);
-  return '$left${right > 0 ? '.$deci' : ''}${suffix[i]}';
+  return '${formatDecimal(size)}${suffix[i]}';
+}
+
+String formatSpeed(num value) {
+  int i;
+  double size = (value * 8).toDouble();
+  const suffix = ['', ' kbps', ' Mbps', ' Gbps', ' Tbps'];
+  size /= 1000;
+  for (i = 1; size >= 1000; i++) {
+    size /= 1000;
+  }
+  if (size >= 100) {
+    size = size.roundToDouble();
+  }
+  return '${formatDecimal(size)}${suffix[i]}';
 }

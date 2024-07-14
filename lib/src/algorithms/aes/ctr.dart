@@ -11,6 +11,15 @@ import 'package:hashlib/hashlib.dart';
 
 import '_core.dart';
 
+const int _mask32 = 0xFFFFFFFF;
+
+@pragma('vm:prefer-inline')
+int _swap32(int x) =>
+    ((x << 24) & 0xff000000) |
+    ((x << 8) & 0x00ff0000) |
+    ((x >>> 8) & 0x0000ff00) |
+    ((x >>> 24) & 0x000000ff);
+
 /// The sink used for both encryption and decryption by the
 /// [AESInCTRModeCipher] algorithm.
 class AESInCTRModeSink extends CipherSink {
@@ -25,10 +34,10 @@ class AESInCTRModeSink extends CipherSink {
   bool _closed = false;
   final Uint8List _key;
   final Uint8List _iv;
-  late final Uint32List _key32 = Uint32List.view(_key.buffer);
-  final _salt = Uint8List(16);
-  final _block = Uint8List(16); // 128-bit
-  late final _block32 = Uint32List.view(_block.buffer);
+  late int _s0, _s1, _s2, _s3;
+  final _block32 = Uint32List(4); // 128-bit
+  late final _key32 = Uint32List.view(_key.buffer);
+  late final _block = Uint8List.view(_block32.buffer);
   late final _xkey32 = AESCore.$expandEncryptionKey(_key32);
 
   @override
@@ -38,9 +47,10 @@ class AESInCTRModeSink extends CipherSink {
   void reset() {
     _pos = 0;
     _closed = false;
-    for (int i = 0; i < 16; ++i) {
-      _salt[i] = _iv[i];
-    }
+    _s0 = (_iv[0] << 24) | (_iv[1] << 16) | (_iv[2] << 8) | (_iv[3]);
+    _s1 = (_iv[4] << 24) | (_iv[5] << 16) | (_iv[6] << 8) | (_iv[7]);
+    _s2 = (_iv[8] << 24) | (_iv[9] << 16) | (_iv[10] << 8) | (_iv[11]);
+    _s3 = (_iv[12] << 24) | (_iv[13] << 16) | (_iv[14] << 8) | (_iv[15]);
   }
 
   @override
@@ -56,24 +66,28 @@ class AESInCTRModeSink extends CipherSink {
     _closed = last;
     end ??= data.length;
 
-    int i, j, p;
-    p = 0;
+    int i, p;
     var output = Uint8List(end - start);
+
+    p = 0;
     for (i = start; i < end; ++i) {
       if (_pos == 0) {
-        for (j = 0; j < 16; ++j) {
-          _block[j] = _salt[j];
-        }
+        _block32[0] = _s0;
+        _block32[1] = _s1;
+        _block32[2] = _s2;
+        _block32[3] = _s3;
         AESCore.$encrypt(_block32, _xkey32);
-        for (j = 15; j >= 8; j--) {
-          _salt[j]++;
-          if (_salt[j] != 0) break;
+        _block32[0] = _swap32(_block32[0]);
+        _block32[1] = _swap32(_block32[1]);
+        _block32[2] = _swap32(_block32[2]);
+        _block32[3] = _swap32(_block32[3]);
+        _s3 = (_s3 + 1) & _mask32;
+        if (_s3 == 0) {
+          _s2 = (_s2 + 1) & _mask32;
         }
       }
-      output[p++] = _block[_pos++] ^ data[i];
-      if (_pos == 16) {
-        _pos = 0;
-      }
+      output[p++] = _block[_pos] ^ data[i];
+      _pos = (_pos + 1) & 15;
     }
 
     return output;
@@ -121,11 +135,11 @@ class AESInCTRMode extends SaltedCollateCipher {
   /// - [iv] 128-bit random initialization vector or salt
   factory AESInCTRMode(List<int> key, [List<int>? iv]) {
     iv ??= randomBytes(16);
-    var iv8 = iv is Uint8List ? iv : Uint8List.fromList(iv);
-    var key8 = key is Uint8List ? key : Uint8List.fromList(key);
-    if (iv8.lengthInBytes < 16) {
+    if (iv.length < 16) {
       throw StateError('IV must be at least 16-bytes');
     }
+    var iv8 = iv is Uint8List ? iv : Uint8List.fromList(iv);
+    var key8 = key is Uint8List ? key : Uint8List.fromList(key);
     return AESInCTRMode._(
       encryptor: AESInCTRModeCipher(key8, iv8),
       decryptor: AESInCTRModeCipher(key8, iv8),

@@ -22,7 +22,6 @@ class AESInPCBCModeEncryptSink extends CipherSink {
 
   int _pos = 0;
   bool _closed = false;
-  int _messageLength = 0;
   final Uint8List _key;
   final Uint8List _iv;
   final Padding _padding;
@@ -57,10 +56,6 @@ class AESInPCBCModeEncryptSink extends CipherSink {
     }
     _closed = last;
     end ??= data.length;
-    _messageLength += end - start;
-    if (last && _messageLength == 0) {
-      return Uint8List(0);
-    }
 
     int i, j, p, n;
     p = 0;
@@ -74,7 +69,7 @@ class AESInPCBCModeEncryptSink extends CipherSink {
       _history[_pos] = data[i];
       _pos++;
       if (_pos == 16) {
-        AESCore.$encrypt(_block32, _xkey32);
+        AESCore.$encryptLE(_block32, _xkey32);
         for (j = 0; j < 16; ++j) {
           output[p++] = _block[j];
           _salt[j] = _block[j] ^ _history[j];
@@ -88,7 +83,7 @@ class AESInPCBCModeEncryptSink extends CipherSink {
         for (; _pos < 16; ++_pos) {
           _block[_pos] ^= _salt[_pos];
         }
-        AESCore.$encrypt(_block32, _xkey32);
+        AESCore.$encryptLE(_block32, _xkey32);
         for (j = 0; j < 16; ++j) {
           output[p++] = _block[j];
         }
@@ -122,7 +117,6 @@ class AESInPCBCModeDecryptSink extends CipherSink {
   int _pos = 0;
   int _rpos = 0;
   bool _closed = false;
-  int _messageLength = 0;
   final Uint8List _key;
   final Uint8List _iv;
   final Padding _padding;
@@ -159,10 +153,6 @@ class AESInPCBCModeDecryptSink extends CipherSink {
     }
     _closed = last;
     end ??= data.length;
-    _messageLength += end - start;
-    if (last && _messageLength == 0) {
-      return Uint8List(0);
-    }
 
     int i, j, k, p, n;
     p = 0;
@@ -173,7 +163,7 @@ class AESInPCBCModeDecryptSink extends CipherSink {
       _nextIV[_pos] = data[i];
       _pos++;
       if (_pos == 16) {
-        AESCore.$decrypt(_block32, _xkey32);
+        AESCore.$decryptLE(_block32, _xkey32);
         for (j = 0; j < 16; ++j) {
           if (_rpos == 16) {
             for (k = 0; k < 16; ++k) {
@@ -286,11 +276,11 @@ class AESInPCBCMode extends SaltedCollateCipher {
     Padding padding = Padding.pkcs7,
   }) {
     iv ??= randomBytes(16);
-    var iv8 = iv is Uint8List ? iv : Uint8List.fromList(iv);
-    var key8 = key is Uint8List ? key : Uint8List.fromList(key);
-    if (iv8.lengthInBytes < 16) {
+    if (iv.length < 16) {
       throw StateError('IV must be at least 16-bytes');
     }
+    var iv8 = iv is Uint8List ? iv : Uint8List.fromList(iv);
+    var key8 = key is Uint8List ? key : Uint8List.fromList(key);
     return AESInPCBCMode._(
       encryptor: AESInPCBCModeEncrypt(key8, iv8, padding),
       decryptor: AESInPCBCModeDecrypt(key8, iv8, padding),

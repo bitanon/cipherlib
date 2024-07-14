@@ -24,10 +24,10 @@ class AESInCFBModeEncryptSink extends CipherSink {
   bool _closed = false;
   final Uint8List _key;
   final Uint8List _iv;
-  late final Uint32List _key32 = Uint32List.view(_key.buffer);
   final int _sbyte;
   final _salt = Uint8List(16);
   final _block = Uint8List(16); // 128-bit
+  late final _key32 = Uint32List.view(_key.buffer);
   late final _block32 = Uint32List.view(_block.buffer);
   late final _xkey32 = AESCore.$expandEncryptionKey(_key32);
 
@@ -57,15 +57,16 @@ class AESInCFBModeEncryptSink extends CipherSink {
     end ??= data.length;
 
     int i, j, p;
+    var output = Uint8List(end - start);
+
     p = 0;
     j = _pos + 16 - _sbyte;
-    var output = Uint8List(end - start);
     for (i = start; i < end; ++i) {
       if (_pos == 0) {
         for (j = 0; j < 16; ++j) {
           _block[j] = _salt[j];
         }
-        AESCore.$encrypt(_block32, _xkey32);
+        AESCore.$encryptLE(_block32, _xkey32);
         for (j = _sbyte; j < 16; ++j) {
           _salt[j - _sbyte] = _salt[j];
         }
@@ -137,7 +138,7 @@ class AESInCFBModeDecryptSink extends CipherSink {
         for (j = 0; j < 16; ++j) {
           _block[j] = _salt[j];
         }
-        AESCore.$encrypt(_block32, _xkey32);
+        AESCore.$encryptLE(_block32, _xkey32);
         for (j = _sbyte; j < 16; ++j) {
           _salt[j - _sbyte] = _salt[j];
         }
@@ -223,15 +224,15 @@ class AESInCFBMode extends SaltedCollateCipher {
     List<int>? iv,
     int sbyte = 8,
   }) {
-    iv ??= randomBytes(16);
-    var iv8 = iv is Uint8List ? iv : Uint8List.fromList(iv);
-    var key8 = key is Uint8List ? key : Uint8List.fromList(key);
     if (sbyte < 1 || sbyte > 16) {
       throw StateError('sbyte must be between 1 and 16');
     }
-    if (iv8.lengthInBytes < 16) {
+    iv ??= randomBytes(16);
+    if (iv.length < 16) {
       throw StateError('IV must be at least 16-bytes');
     }
+    var iv8 = iv is Uint8List ? iv : Uint8List.fromList(iv);
+    var key8 = key is Uint8List ? key : Uint8List.fromList(key);
     return AESInCFBMode._(
       encryptor: AESInCFBModeEncrypt(key8, iv8, sbyte),
       decryptor: AESInCFBModeDecrypt(key8, iv8, sbyte),

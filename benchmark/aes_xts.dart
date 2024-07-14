@@ -4,7 +4,7 @@
 import 'dart:math';
 import 'dart:typed_data';
 
-import 'package:cipherlib/cipherlib.dart' as cipher;
+import 'package:cipherlib/cipherlib.dart';
 
 import 'base.dart';
 
@@ -12,21 +12,21 @@ Random random = Random();
 
 class CipherlibBenchmark extends Benchmark {
   final Uint8List key;
-  final Uint8List nonce;
+  final Uint8List iv;
 
-  CipherlibBenchmark(int size, int iter)
-      : key = Uint8List.fromList(List.filled(32, 0x9f)),
-        nonce = Uint8List.fromList(List.filled(16, 0x2f)),
+  CipherlibBenchmark(int size, int iter, int keySize)
+      : key = Uint8List.fromList(List.filled(2 * keySize, 0x9f)),
+        iv = Uint8List.fromList(List.filled(16, 0x87)),
         super('cipherlib', size, iter);
 
   @override
   void run() {
-    cipher.Salsa20Poly1305(key: key, iv: nonce).convert(input);
+    AES(key).xts(iv).encrypt(input);
   }
 }
 
-void main() {
-  print('--------- Salsa20/Poly1305 ----------');
+void main() async {
+  print('--------- AES/XTS ----------');
   final conditions = [
     [5 << 20, 10],
     [1 << 10, 5000],
@@ -36,7 +36,12 @@ void main() {
     int size = condition[0];
     int iter = condition[1];
     print('---- message: ${formatSize(size)} | iterations: $iter ----');
-    CipherlibBenchmark(size, iter).measureRate();
+    print('[AES-128]');
+    CipherlibBenchmark(size, iter, 16).measureRate();
+    print('[AES-192]');
+    CipherlibBenchmark(size, iter, 24).measureRate();
+    print('[AES-256]');
+    CipherlibBenchmark(size, iter, 32).measureRate();
     print('');
   }
 }

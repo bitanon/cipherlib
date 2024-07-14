@@ -119,21 +119,27 @@ abstract class Padding {
   }
 }
 
-class _NonePadding extends Padding {
+class _NonePadding implements Padding {
   @override
   final String name = "NoPadding";
 
   const _NonePadding();
 
   @override
-  bool pad(List<int> block, int pos, [int? size]) {
-    return false;
-  }
+  @pragma('vm:prefer-inline')
+  bool pad(List<int> block, int pos, [int? size]) => false;
 
   @override
-  int getPadLength(List<int> block, [int? size]) {
-    return 0;
-  }
+  @pragma('vm:prefer-inline')
+  int getPadLength(List<int> block, [int? size]) => 0;
+
+  @override
+  @pragma('vm:prefer-inline')
+  List<int> unpad(List<int> block, [int? size]) => size == null
+      ? block
+      : size == 0
+          ? Uint8List(0)
+          : block.sublist(0, size);
 }
 
 class _ZeroPadding extends Padding {

@@ -113,7 +113,7 @@ void main() {
     var key = fromHex('2b7e151628aed2a6abf7158809cf4f3c');
     var plain = Uint8List(0);
     var cipher = Uint8List(0);
-    var aes = AES(key).ecb();
+    var aes = AES.noPadding(key).ecb();
     test('encrypt', () {
       var actual = aes.encrypt(plain);
       expect(toHex(actual), equals(toHex(cipher)));

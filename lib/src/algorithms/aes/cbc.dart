@@ -22,13 +22,12 @@ class AESInCBCModeEncryptSink extends CipherSink {
 
   int _pos = 0;
   bool _closed = false;
-  int _messageLength = 0;
   final Uint8List _iv;
   final Uint8List _key;
   final Padding _padding;
-  late final Uint32List _key32 = Uint32List.view(_key.buffer);
+  final _temp = Uint8List(16);
   final _block = Uint8List(16); // 128-bit
-  final _salt = Uint8List(16);
+  late final _key32 = Uint32List.view(_key.buffer);
   late final _block32 = Uint32List.view(_block.buffer);
   late final _xkey32 = AESCore.$expandEncryptionKey(_key32);
 
@@ -39,9 +38,8 @@ class AESInCBCModeEncryptSink extends CipherSink {
   void reset() {
     _pos = 0;
     _closed = false;
-    _messageLength = 0;
     for (int i = 0; i < 16; ++i) {
-      _salt[i] = _iv[i];
+      _block[i] = _iv[i];
     }
   }
 
@@ -57,37 +55,37 @@ class AESInCBCModeEncryptSink extends CipherSink {
     }
     _closed = last;
     end ??= data.length;
-    _messageLength += end - start;
-    if (last && _messageLength == 0) {
-      return Uint8List(0);
-    }
 
     int i, j, p, n;
-    p = 0;
+
     n = _pos + end - start;
     if (last) {
       n += 16 - (n & 15);
     }
     var output = Uint8List(n);
+
+    p = 0;
     for (i = start; i < end; ++i) {
-      _block[_pos] = data[i] ^ _salt[_pos];
+      _block[_pos] ^= data[i];
       _pos++;
       if (_pos == 16) {
-        AESCore.$encrypt(_block32, _xkey32);
+        AESCore.$encryptLE(_block32, _xkey32);
         for (j = 0; j < 16; ++j) {
           output[p++] = _block[j];
-          _salt[j] = _block[j];
         }
         _pos = 0;
       }
     }
 
     if (last) {
+      for (j = _pos; j < 16; ++j) {
+        _temp[j] = _block[j];
+      }
       if (_padding.pad(_block, _pos)) {
-        for (; _pos < 16; ++_pos) {
-          _block[_pos] ^= _salt[_pos];
+        for (j = _pos; j < 16; ++j) {
+          _block[j] ^= _temp[j];
         }
-        AESCore.$encrypt(_block32, _xkey32);
+        AESCore.$encryptLE(_block32, _xkey32);
         for (j = 0; j < 16; ++j) {
           output[p++] = _block[j];
         }
@@ -121,7 +119,6 @@ class AESInCBCModeDecryptSink extends CipherSink {
   int _pos = 0;
   int _rpos = 0;
   bool _closed = false;
-  int _messageLength = 0;
   final Uint8List _key;
   final Uint8List _iv;
   final Padding _padding;
@@ -140,7 +137,6 @@ class AESInCBCModeDecryptSink extends CipherSink {
   void reset() {
     _pos = 0;
     _closed = false;
-    _messageLength = 0;
     for (int i = 0; i < 16; ++i) {
       _salt[i] = _iv[i];
     }
@@ -158,21 +154,19 @@ class AESInCBCModeDecryptSink extends CipherSink {
     }
     _closed = last;
     end ??= data.length;
-    _messageLength += end - start;
-    if (last && _messageLength == 0) {
-      return Uint8List(0);
-    }
 
     int i, j, k, p, n;
-    p = 0;
+
     n = _rpos + end - start;
     var output = Uint8List(n);
+
+    p = 0;
     for (i = start; i < end; ++i) {
       _block[_pos] = data[i];
       _nextSalt[_pos] = _block[_pos];
       _pos++;
       if (_pos == 16) {
-        AESCore.$decrypt(_block32, _xkey32);
+        AESCore.$decryptLE(_block32, _xkey32);
         for (j = 0; j < 16; ++j) {
           if (_rpos == 16) {
             for (k = 0; k < 16; ++k) {
@@ -284,11 +278,11 @@ class AESInCBCMode extends SaltedCollateCipher {
     Padding padding = Padding.pkcs7,
   }) {
     iv ??= randomBytes(16);
-    var iv8 = iv is Uint8List ? iv : Uint8List.fromList(iv);
-    var key8 = key is Uint8List ? key : Uint8List.fromList(key);
-    if (iv8.lengthInBytes < 16) {
+    if (iv.length < 16) {
       throw StateError('IV must be at least 16-bytes');
     }
+    var iv8 = iv is Uint8List ? iv : Uint8List.fromList(iv);
+    var key8 = key is Uint8List ? key : Uint8List.fromList(key);
     return AESInCBCMode._(
       encryptor: AESInCBCModeEncrypt(key8, iv8, padding),
       decryptor: AESInCBCModeDecrypt(key8, iv8, padding),

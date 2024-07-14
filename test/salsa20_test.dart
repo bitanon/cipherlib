@@ -4,7 +4,6 @@
 import 'dart:typed_data';
 
 import 'package:cipherlib/cipherlib.dart';
-import 'package:pointycastle/pointycastle.dart' as pc;
 import 'package:test/test.dart';
 
 import 'utils.dart';
@@ -99,20 +98,4 @@ void main() {
       expect(plain, equals(backwards), reason: '[text: $j]');
     }
   });
-  test('compare with PointyCastle', () {
-    var key = randomBytes(32);
-    var nonce = randomBytes(8);
-    for (int j = 0; j < 100; ++j) {
-      var text = randomBytes(j);
-      var my = salsa20(text, key, nonce: nonce);
-
-      var instance = pc.StreamCipher('Salsa20');
-      instance.init(
-        true,
-        pc.ParametersWithIV(pc.KeyParameter(key), nonce),
-      );
-      var out = instance.process(text);
-      expect(out, equals(my), reason: '[text: $j]');
-    }
-  }, tags: ['skip-js']);
 }

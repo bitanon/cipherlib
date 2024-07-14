@@ -75,7 +75,7 @@ void main() async {
     int size = condition[0];
     int iter = condition[1];
     print('---- message: ${formatSize(size)} | iterations: $iter ----');
-    CipherlibBenchmark(size, iter).measureDiff([
+    await CipherlibBenchmark(size, iter).measureDiff([
       PointyCastleBenchmark(size, iter),
     ]);
     print('---- stream: ${formatSize(size)} | iterations: $iter ----');

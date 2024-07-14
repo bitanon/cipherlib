@@ -194,7 +194,11 @@ class AES {
   /// ```
   ///
   /// [spec]: https://csrc.nist.gov/pubs/sp/800/38/a/final
-  AESInCFBMode cfb(List<int> iv, [int sbyte = 16]) => AESInCFBMode(
+  AESInCFBMode cfb(
+    List<int> iv, [
+    int sbyte = 16,
+  ]) =>
+      AESInCFBMode(
         key,
         iv: iv,
         sbyte: sbyte,
@@ -239,7 +243,24 @@ class AES {
   /// ```
   ///
   /// [spec]: https://csrc.nist.gov/pubs/sp/800/38/a/final
-  AESInOFBMode ofb(List<int> iv) => AESInOFBMode(key, iv);
+  AESInOFBMode ofb(
+    List<int> iv, [
+    int sbyte = 16,
+  ]) =>
+      AESInOFBMode(
+        key,
+        iv: iv,
+        sbyte: sbyte,
+      );
+
+  /// Variant of [ofb] with s = 8
+  AESInOFBMode ofb8(List<int> iv) => ofb(iv, 1);
+
+  /// Variant of [ofb] with s = 64
+  AESInOFBMode ofb64(List<int> iv) => ofb(iv, 8);
+
+  /// Variant of [ofb] with s = 128
+  AESInOFBMode ofb128(List<int> iv) => ofb(iv, 16);
 
   /// The Propagating Cipher Block Chaining (PCBC) mode is a variant of CBC that
   /// propagates changes to both the plaintext and the ciphertext, making it

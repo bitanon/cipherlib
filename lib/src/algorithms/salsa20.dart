@@ -10,11 +10,11 @@ const int _mask32 = 0xFFFFFFFF;
 
 /// This sink is used by the [Salsa20] algorithm.
 class Salsa20Sink extends CipherSink {
-  Salsa20Sink(this._key, this._nonce, this._counterStart) {
+  Salsa20Sink(this._key, this._iv, this._counterStart) {
     if (_key.length != 16 && _key.length != 32) {
       throw ArgumentError('The key should be either 16 or 32 bytes');
     }
-    if (_nonce.length != 8 && _nonce.length != 16) {
+    if (_iv.length != 8 && _iv.length != 16) {
       throw ArgumentError('The nonce should be either 8 or 16 bytes');
     }
     reset();
@@ -24,12 +24,12 @@ class Salsa20Sink extends CipherSink {
   int _counter = 0;
   bool _closed = false;
   final Uint8List _key;
-  final Uint8List _nonce;
+  final Uint8List _iv;
   final int _counterStart;
   final _state = Uint32List(16);
   late final _state8 = _state.buffer.asUint8List();
   late final _key32 = _key.buffer.asUint32List();
-  late final _iv32 = _nonce.buffer.asUint32List();
+  late final _iv32 = _iv.buffer.asUint32List();
 
   @override
   bool get closed => _closed;

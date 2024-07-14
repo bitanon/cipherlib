@@ -4,13 +4,21 @@
 import "dart:io";
 import 'dart:math';
 
+import 'aes_cbc.dart' as aes_cbc;
+import 'aes_pcbc.dart' as aes_pcbc;
+import 'aes_ecb.dart' as aes_ecb;
+import 'aes_cfb.dart' as aes_cfb;
+import 'aes_ctr.dart' as aes_ctr;
+import 'aes_gcm.dart' as aes_gcm;
+import 'aes_ofb.dart' as aes_ofb;
+import 'aes_xts.dart' as aes_xts;
+import 'aes_keygen.dart' as aes_keygen;
 import 'base.dart';
 import 'chacha20.dart' as chacha20;
 import 'chacha20_poly1305.dart' as chacha20poly1305;
 import 'salsa20.dart' as salsa20;
 import 'salsa20_poly1305.dart' as salsa20poly1305;
 import 'xor.dart' as xor;
-import 'aes128.dart' as aes128;
 
 IOSink sink = stdout;
 RandomAccessFile? raf;
@@ -23,7 +31,7 @@ void dump(message) {
 // ---------------------------------------------------------------------
 // Symmetric Cipher benchmarks
 // ---------------------------------------------------------------------
-void measureSymmetricCiphers() {
+Future<void> measureSymmetricCiphers() async {
   final conditions = [
     [1 << 20, 10],
     [5 << 10, 5000],
@@ -37,9 +45,6 @@ void measureSymmetricCiphers() {
       "XOR": [
         xor.CipherlibBenchmark(size, iter),
       ],
-      "AES-128": [
-        aes128.CipherlibBenchmark(size, iter),
-      ],
       "ChaCha20": [
         chacha20.CipherlibBenchmark(size, iter),
         chacha20.PointyCastleBenchmark(size, iter),
@@ -47,9 +52,7 @@ void measureSymmetricCiphers() {
       "ChaCha20/Poly1305": [
         chacha20poly1305.CipherlibBenchmark(size, iter),
         chacha20poly1305.CryptographyBenchmark(size, iter),
-      ],
-      "ChaCha20/Poly1305(digest)": [
-        chacha20poly1305.CipherlibDigestBenchmark(size, iter),
+        chacha20poly1305.PointyCastleBenchmark(size, iter),
       ],
       "Salsa20": [
         salsa20.CipherlibBenchmark(size, iter),
@@ -58,8 +61,119 @@ void measureSymmetricCiphers() {
       "Salsa20/Poly1305": [
         salsa20poly1305.CipherlibBenchmark(size, iter),
       ],
-      "Salsa20/Poly1305(digest)": [
-        salsa20poly1305.CipherlibDigestBenchmark(size, iter),
+      "AES-128:keygen": [
+        aes_keygen.CipherlibBenchmark(size, iter, 16),
+        aes_keygen.PointyCastleBenchmark(size, iter, 16),
+        aes_keygen.CryptographyBenchmark(size, iter, 16),
+      ],
+      "AES-192:keygen": [
+        aes_keygen.CipherlibBenchmark(size, iter, 24),
+        aes_keygen.PointyCastleBenchmark(size, iter, 24),
+        aes_keygen.CryptographyBenchmark(size, iter, 24),
+      ],
+      "AES-256:keygen": [
+        aes_keygen.CipherlibBenchmark(size, iter, 32),
+        aes_keygen.PointyCastleBenchmark(size, iter, 32),
+        aes_keygen.CryptographyBenchmark(size, iter, 32),
+      ],
+      "AES-128/ECB": [
+        aes_ecb.CipherlibBenchmark(size, iter, 16),
+        aes_ecb.PointyCastleBenchmark(size, iter, 16),
+      ],
+      "AES-192/ECB": [
+        aes_ecb.CipherlibBenchmark(size, iter, 24),
+        aes_ecb.PointyCastleBenchmark(size, iter, 24),
+      ],
+      "AES-256/ECB": [
+        aes_ecb.CipherlibBenchmark(size, iter, 32),
+        aes_ecb.PointyCastleBenchmark(size, iter, 32),
+      ],
+      "AES-128/CBC": [
+        aes_cbc.CipherlibBenchmark(size, iter, 16),
+        aes_cbc.PointyCastleBenchmark(size, iter, 16),
+        aes_cbc.CryptographyBenchmark(size, iter, 16),
+      ],
+      "AES-192/CBC": [
+        aes_cbc.CipherlibBenchmark(size, iter, 24),
+        aes_cbc.PointyCastleBenchmark(size, iter, 24),
+        aes_cbc.CryptographyBenchmark(size, iter, 24),
+      ],
+      "AES-256/CBC": [
+        aes_cbc.CipherlibBenchmark(size, iter, 32),
+        aes_cbc.PointyCastleBenchmark(size, iter, 32),
+        aes_cbc.CryptographyBenchmark(size, iter, 32),
+      ],
+      "AES-128/CTR": [
+        aes_ctr.CipherlibBenchmark(size, iter, 16),
+        aes_ctr.PointyCastleBenchmark(size, iter, 16),
+        aes_ctr.CryptographyBenchmark(size, iter, 16),
+      ],
+      "AES-192/CTR": [
+        aes_ctr.CipherlibBenchmark(size, iter, 24),
+        aes_ctr.PointyCastleBenchmark(size, iter, 24),
+        aes_ctr.CryptographyBenchmark(size, iter, 24),
+      ],
+      "AES-256/CTR": [
+        aes_ctr.CipherlibBenchmark(size, iter, 32),
+        aes_ctr.PointyCastleBenchmark(size, iter, 32),
+        aes_ctr.CryptographyBenchmark(size, iter, 32),
+      ],
+      "AES-128/GCM": [
+        aes_gcm.CipherlibBenchmark(size, iter, 16),
+        aes_gcm.PointyCastleBenchmark(size, iter, 16),
+        aes_gcm.CryptographyBenchmark(size, iter, 16),
+      ],
+      "AES-192/GCM": [
+        aes_gcm.CipherlibBenchmark(size, iter, 24),
+        aes_gcm.PointyCastleBenchmark(size, iter, 24),
+        aes_gcm.CryptographyBenchmark(size, iter, 24),
+      ],
+      "AES-256/GCM": [
+        aes_gcm.CipherlibBenchmark(size, iter, 32),
+        aes_gcm.PointyCastleBenchmark(size, iter, 32),
+        aes_gcm.CryptographyBenchmark(size, iter, 32),
+      ],
+      "AES-128/CFB": [
+        aes_cfb.CipherlibBenchmark(size, iter, 16),
+        aes_cfb.PointyCastleBenchmark(size, iter, 16),
+      ],
+      "AES-192/CFB": [
+        aes_cfb.CipherlibBenchmark(size, iter, 24),
+        aes_cfb.PointyCastleBenchmark(size, iter, 24),
+      ],
+      "AES-256/CFB": [
+        aes_cfb.CipherlibBenchmark(size, iter, 32),
+        aes_cfb.PointyCastleBenchmark(size, iter, 32),
+      ],
+      "AES-128/OFB": [
+        aes_ofb.CipherlibBenchmark(size, iter, 16),
+        aes_ofb.PointyCastleBenchmark(size, iter, 16),
+      ],
+      "AES-192/OFB": [
+        aes_ofb.CipherlibBenchmark(size, iter, 24),
+        aes_ofb.PointyCastleBenchmark(size, iter, 24),
+      ],
+      "AES-256/OFB": [
+        aes_ofb.CipherlibBenchmark(size, iter, 32),
+        aes_ofb.PointyCastleBenchmark(size, iter, 32),
+      ],
+      "AES-128/XTS": [
+        aes_xts.CipherlibBenchmark(size, iter, 16),
+      ],
+      "AES-192/XTS": [
+        aes_xts.CipherlibBenchmark(size, iter, 24),
+      ],
+      "AES-256/XTS": [
+        aes_xts.CipherlibBenchmark(size, iter, 32),
+      ],
+      "AES-128/PCBC": [
+        aes_pcbc.CipherlibBenchmark(size, iter, 16),
+      ],
+      "AES-192/PCBC": [
+        aes_pcbc.CipherlibBenchmark(size, iter, 24),
+      ],
+      "AES-256/PCBC": [
+        aes_pcbc.CipherlibBenchmark(size, iter, 32),
       ],
     };
 
@@ -83,11 +197,20 @@ void measureSymmetricCiphers() {
       var diff = <String, double>{};
       var rate = <String, String>{};
       for (var benchmark in entry.value.reversed) {
-        var runtime = benchmark.measure();
+        double runtime;
+        if (benchmark is AsyncBenchmark) {
+          runtime = await benchmark.measure();
+        } else if (benchmark is Benchmark) {
+          runtime = benchmark.measure();
+        } else {
+          continue;
+        }
         var hashRate = 1e6 * iter * size / runtime;
         diff[benchmark.name] = runtime;
-        rate[benchmark.name] = '${formatSize(hashRate)}/s';
+        rate[benchmark.name] = formatSpeed(hashRate);
       }
+      if (rate.isEmpty) continue;
+
       var me = entry.value.first;
       var mine = diff[me.name]!;
       var best = diff.values.fold(mine, min);
@@ -96,7 +219,7 @@ void measureSymmetricCiphers() {
       for (var name in names) {
         message += " | ";
         if (!diff.containsKey(name)) {
-          message += "    \u2796    ";
+          // message += "    \u2796    ";
           continue;
         }
         var value = diff[name]!;
@@ -105,16 +228,12 @@ void measureSymmetricCiphers() {
         } else {
           message += '${rate[name]}';
         }
-        if (value > mine) {
-          var p = (100 * (value - mine) / mine).round();
-          if (p > 0) {
-            message += ' <br> `$p% slower`';
-          }
-        } else if (value < mine) {
-          var p = (100 * (mine - value) / mine).round();
-          if (p > 0) {
-            message += ' <br> `$p% faster`';
-          }
+        if (mine < value) {
+          var p = formatDecimal(value / mine);
+          message += ' <br> `${p}x slow`';
+        } else if (mine > value) {
+          var p = formatDecimal(mine / value);
+          message += ' <br> `${p}x fast`';
         }
       }
       message += " |";
@@ -147,12 +266,7 @@ void main(List<String> args) async {
   dump("- **Cryptography** : https://pub.dev/packages/cryptography");
   dump('');
 
-  measureSymmetricCiphers();
-
-  var ram = '3200MHz';
-  var processor = 'AMD Ryzen 7 5800X';
-  dump('> All benchmarks are done on _${processor}_ processor '
-      'and _${ram}_ RAM using compiled _exe_');
+  await measureSymmetricCiphers();
 
   raf?.flushSync();
   raf?.closeSync();

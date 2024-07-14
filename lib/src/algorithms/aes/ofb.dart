@@ -15,6 +15,7 @@ class AESInOFBModeSink extends CipherSink {
   AESInOFBModeSink(
     this._key,
     this._iv,
+    this._sbyte,
   ) {
     reset();
   }
@@ -23,9 +24,10 @@ class AESInOFBModeSink extends CipherSink {
   bool _closed = false;
   final Uint8List _key;
   final Uint8List _iv;
-  late final Uint32List _key32 = Uint32List.view(_key.buffer);
+  final int _sbyte;
   final _salt = Uint8List(16);
   final _block = Uint8List(16); // 128-bit
+  late final _key32 = Uint32List.view(_key.buffer);
   late final _block32 = Uint32List.view(_block.buffer);
   late final _xkey32 = AESCore.$expandEncryptionKey(_key32);
 
@@ -55,20 +57,26 @@ class AESInOFBModeSink extends CipherSink {
     end ??= data.length;
 
     int i, j, p;
-    p = 0;
     var output = Uint8List(end - start);
+
+    p = 0;
     for (i = start; i < end; ++i) {
       if (_pos == 0) {
         for (j = 0; j < 16; ++j) {
           _block[j] = _salt[j];
         }
-        AESCore.$encrypt(_block32, _xkey32);
-        for (j = 0; j < 16; ++j) {
-          _salt[j] = _block[j];
+        AESCore.$encryptLE(_block32, _xkey32);
+        for (j = _sbyte; j < 16; ++j) {
+          _salt[j - _sbyte] = _salt[j];
+        }
+        for (j = 0; j < _sbyte; ++j) {
+          _salt[16 - _sbyte + j] = _block[j];
         }
       }
-      output[p++] = _block[_pos] ^ data[i];
-      _pos = (_pos + 1) & 15;
+      output[p++] = _block[_pos++] ^ data[i];
+      if (_pos == _sbyte) {
+        _pos = 0;
+      }
     }
 
     return output;
@@ -83,11 +91,18 @@ class AESInOFBModeCipher extends SaltedCipher {
   /// Key for the cipher
   final Uint8List key;
 
-  const AESInOFBModeCipher(this.key, Uint8List iv) : super(iv);
+  /// Number of bytes to use per block
+  final int sbyte;
+
+  const AESInOFBModeCipher(
+    this.key,
+    Uint8List iv,
+    this.sbyte,
+  ) : super(iv);
 
   @override
   @pragma('vm:prefer-inline')
-  AESInOFBModeSink createSink() => AESInOFBModeSink(key, iv);
+  AESInOFBModeSink createSink() => AESInOFBModeSink(key, iv, sbyte);
 }
 
 /// Provides encryption and decryption for AES cipher in OFB mode.
@@ -111,14 +126,18 @@ class AESInOFBMode extends SaltedCollateCipher {
   /// Parameters:
   /// - [key] The key for encryption and decryption
   /// - [iv] 128-bit random initialization vector or salt
-  factory AESInOFBMode(List<int> key, [List<int>? iv]) {
+  factory AESInOFBMode(
+    List<int> key, {
+    List<int>? iv,
+    int sbyte = 8,
+  }) {
     iv ??= randomBytes(16);
-    var iv8 = iv is Uint8List ? iv : Uint8List.fromList(iv);
-    var key8 = key is Uint8List ? key : Uint8List.fromList(key);
-    var cipher = AESInOFBModeCipher(key8, iv8);
-    if (iv8.lengthInBytes < 16) {
+    if (iv.length < 16) {
       throw StateError('IV must be at least 16-bytes');
     }
+    var iv8 = iv is Uint8List ? iv : Uint8List.fromList(iv);
+    var key8 = key is Uint8List ? key : Uint8List.fromList(key);
+    var cipher = AESInOFBModeCipher(key8, iv8, sbyte);
     return AESInOFBMode._(
       encryptor: cipher,
       decryptor: cipher,
