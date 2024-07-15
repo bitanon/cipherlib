@@ -10,7 +10,7 @@ import 'package:test/test.dart';
 
 void main() {
   test('throws error on invalid input size', () {
-    var aes = AES.noPadding(Uint8List(16)).pcbc(Uint8List(16));
+    var aes = AES.noPadding(Uint8List(16)).ige(Uint8List(32));
     expect(() => aes.encrypt(Uint8List(10)), throwsStateError);
     expect(() => aes.decrypt(Uint8List(10)), throwsStateError);
     expect(() => aes.encrypt(Uint8List(17)), throwsStateError);
@@ -18,9 +18,21 @@ void main() {
   });
   test('throws error on invalid salt size', () {
     var aes = AES(Uint8List(16));
-    expect(() => aes.pcbc(Uint8List(15)).encrypt([0]), throwsStateError);
-    expect(() => aes.pcbc(Uint8List(8)).decrypt([0]), throwsStateError);
-    expect(aes.pcbc(Uint8List(16)).encrypt([]).length, 16);
+    expect(() => aes.ige(Uint8List(0)).decrypt([0]), throwsStateError);
+    expect(() => aes.ige(Uint8List(15)).encrypt([0]), throwsStateError);
+    expect(aes.ige(Uint8List(16)).encrypt([]).length, 16);
+  });
+
+  group('empty message', () {
+    var aes = AES.noPadding(Uint8List(32)).ige(Uint8List(32));
+    test('encrypt', () {
+      var actual = aes.encrypt([]);
+      expect(toHex(actual), equals(toHex([])));
+    });
+    test('decrypt', () {
+      var reverse = aes.decrypt([]);
+      expect(toHex(reverse), equals(toHex([])));
+    });
   });
 
   group('encryption <-> decryption', () {
@@ -28,9 +40,9 @@ void main() {
       var key = randomBytes(16);
       for (int j = 0; j < 100; j++) {
         var inp = randomBytes(j);
-        var iv = randomBytes(16);
-        var cipher = AES(key).pcbc(iv).encrypt(inp);
-        var plain = AES(key).pcbc(iv).decrypt(cipher);
+        var iv = randomBytes(32);
+        var cipher = AES(key).ige(iv).encrypt(inp);
+        var plain = AES(key).ige(iv).decrypt(cipher);
         expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
       }
     });
@@ -38,9 +50,9 @@ void main() {
       var key = randomBytes(24);
       for (int j = 0; j < 100; j++) {
         var inp = randomBytes(j);
-        var iv = randomBytes(16);
-        var cipher = AES(key).pcbc(iv).encrypt(inp);
-        var plain = AES(key).pcbc(iv).decrypt(cipher);
+        var iv = randomBytes(32);
+        var cipher = AES(key).ige(iv).encrypt(inp);
+        var plain = AES(key).ige(iv).decrypt(cipher);
         expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
       }
     });
@@ -48,9 +60,9 @@ void main() {
       var key = randomBytes(32);
       for (int j = 0; j < 100; j++) {
         var inp = randomBytes(j);
-        var iv = randomBytes(16);
-        var cipher = AES(key).pcbc(iv).encrypt(inp);
-        var plain = AES(key).pcbc(iv).decrypt(cipher);
+        var iv = randomBytes(32);
+        var cipher = AES(key).ige(iv).encrypt(inp);
+        var plain = AES(key).ige(iv).decrypt(cipher);
         expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
       }
     });
@@ -60,8 +72,8 @@ void main() {
     test('encryption', () {
       var key = randomBytes(32);
       for (int j = 0; j < 100; j++) {
-        var iv = randomBytes(16);
-        final aes = AES(key).pcbc(iv);
+        var iv = randomBytes(32);
+        final aes = AES(key).ige(iv);
 
         var input = randomBytes(j);
         var cipher = aes.encrypt(input);
@@ -81,8 +93,8 @@ void main() {
     test('decryption', () {
       var key = randomBytes(32);
       for (int j = 0; j < 100; j++) {
-        var iv = randomBytes(16);
-        final aes = AES(key).pcbc(iv);
+        var iv = randomBytes(32);
+        final aes = AES(key).ige(iv);
 
         var input = randomBytes(j);
         var cipher = aes.encrypt(input);
@@ -99,10 +111,10 @@ void main() {
     test('encryption + decryption', () {
       var key = randomBytes(32);
       for (int j = 0; j < 100; j++) {
-        var iv = randomBytes(16);
+        var iv = randomBytes(32);
         var input = randomBytes(j);
 
-        final aes = AES(key).pcbc(iv);
+        final aes = AES(key).ige(iv);
         var enc = aes.encryptor.createSink();
         var dec = aes.decryptor.createSink();
 
@@ -119,9 +131,9 @@ void main() {
   });
 
   test('reset iv', () {
-    var iv = randomBytes(16);
+    var iv = randomBytes(32);
     var key = randomBytes(24);
-    var aes = AES(key).pcbc(iv);
+    var aes = AES(key).ige(iv);
     for (int j = 0; j < 100; j++) {
       aes.resetIV();
       var inp = randomBytes(j);

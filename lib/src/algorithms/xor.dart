@@ -45,7 +45,7 @@ class XORSink extends CipherSink {
       if (_pos == _key.length) {
         _pos = 0;
       }
-      result[i] = data[i] ^ _key[_pos];
+      result[i] = data[i] ^ _key[_pos++];
     }
     return result;
   }
@@ -76,16 +76,4 @@ class XOR extends Cipher {
   @override
   @pragma('vm:prefer-inline')
   XORSink createSink() => XORSink(key);
-
-  @override
-  Uint8List convert(List<int> message) {
-    var result = Uint8List.fromList(message);
-    for (int i = 0, j = 0; i < message.length; ++i) {
-      result[i] ^= key[j++];
-      if (j == key.length) {
-        j = 0;
-      }
-    }
-    return result;
-  }
 }

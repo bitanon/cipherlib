@@ -107,6 +107,8 @@ void main() {
     var aes = AES.noPadding(Uint8List(16)).ecb();
     expect(() => aes.encrypt(Uint8List(10)), throwsStateError);
     expect(() => aes.decrypt(Uint8List(10)), throwsStateError);
+    expect(() => aes.encrypt(Uint8List(17)), throwsStateError);
+    expect(() => aes.decrypt(Uint8List(17)), throwsStateError);
   });
 
   group('empty message', () {

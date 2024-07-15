@@ -6,6 +6,7 @@ import 'package:cipherlib/src/algorithms/aes/cfb.dart';
 import 'package:cipherlib/src/algorithms/aes/ctr.dart';
 import 'package:cipherlib/src/algorithms/aes/ecb.dart';
 import 'package:cipherlib/src/algorithms/aes/gcm.dart';
+import 'package:cipherlib/src/algorithms/aes/ige.dart';
 import 'package:cipherlib/src/algorithms/aes/ofb.dart';
 import 'package:cipherlib/src/algorithms/aes/pcbc.dart';
 import 'package:cipherlib/src/algorithms/aes/xts.dart';
@@ -16,6 +17,7 @@ export 'package:cipherlib/src/algorithms/aes/cfb.dart';
 export 'package:cipherlib/src/algorithms/aes/ctr.dart';
 export 'package:cipherlib/src/algorithms/aes/ecb.dart';
 export 'package:cipherlib/src/algorithms/aes/gcm.dart';
+export 'package:cipherlib/src/algorithms/aes/ige.dart';
 export 'package:cipherlib/src/algorithms/aes/ofb.dart';
 export 'package:cipherlib/src/algorithms/aes/pcbc.dart';
 export 'package:cipherlib/src/algorithms/aes/xts.dart';
@@ -67,20 +69,10 @@ class AES {
   /// Techniques][spec].
   ///
   /// ```
-  ///                     key
-  ///                      |
-  ///                      v
-  /// Plaintext ---> [block cipher] ---> Ciphertext
-  ///
-  ///                     key
-  ///                      |
-  ///                      v
-  /// Plaintext ---> [block cipher] ---> Ciphertext
-  ///
-  ///                     key
-  ///                      |
-  ///                      v
-  /// Plaintext ---> [block cipher] ---> Ciphertext
+  ///         (key)
+  ///           |
+  ///           v
+  /// PT ---> [AES] ---> CT
   /// ```
   ///
   /// [spec]: https://csrc.nist.gov/pubs/sp/800/38/a/final
@@ -100,20 +92,15 @@ class AES {
   /// - [iv] (initialization vector) is the random 16-byte salt.
   ///
   /// ```
-  ///                 IV             Key
-  ///                  |              |
-  ///                  v              v
-  /// Plaintext ---> (XOR) ---> [block cipher] ---> Ciphertext
-  ///                   ________________________________|
-  ///                  |             Key
-  ///                  |              |
-  ///                  v              v
-  /// Plaintext ---> (XOR) ---> [block cipher] ---> Ciphertext
-  ///                   ________________________________|
-  ///                  |             Key
-  ///                  |              |
-  ///                  v              v
-  /// Plaintext ---> (XOR) ---> [block cipher] ---> Ciphertext
+  ///           IV        (Key)
+  ///            |          |
+  ///            v          v
+  /// PT1 ---> (XOR) ---> [AES] ---> CT1
+  ///             ____________________|
+  ///            |        (Key)
+  ///            |          |
+  ///            v          v
+  /// PT2 ---> (XOR) ---> [AES] ---> CT2
   /// ```
   ///
   /// [spec]: https://csrc.nist.gov/pubs/sp/800/38/a/final
@@ -139,20 +126,15 @@ class AES {
   ///   Big-Endian order.
   ///
   /// ```
-  ///                              Key          Plaintext
-  ///                               |               |
-  ///                               v               v
-  /// <Nonce, Counter> -----> [block cipher] ---> (XOR) ---> Ciphertext
+  ///                         (Key)       PT1
+  ///                           |          |
+  ///                           v          v
+  /// <Nonce, Counter> -----> [AES] ---> (XOR) ---> CT1
   ///
-  ///                              Key          Plaintext
-  ///                               |               |
-  ///                               v               v
-  /// <Nonce, Counter+1> ---> [block cipher] ---> (XOR) ---> Ciphertext
-  ///
-  ///                              Key          Plaintext
-  ///                               |               |
-  ///                               v               v
-  /// <Nonce, Counter+1> ---> [block cipher] ---> (XOR) ---> Ciphertext
+  ///                         (Key)       PT2
+  ///                           |          |
+  ///                           v          v
+  /// <Nonce, Counter+1> ---> [AES] ---> (XOR) ---> CT2
   /// ```
   ///
   /// [spec]: https://csrc.nist.gov/pubs/sp/800/38/a/final
@@ -173,24 +155,17 @@ class AES {
   /// - [sbyte] number of bytes to take per block. (Default: 16)
   ///
   /// ```
-  ///              Key                      Plaintext (s-bit)
-  ///               |                            |
-  ///               v                            v
-  /// IV ---> [block cipher] -- [>>(16-s)] --> (XOR) ---> Ciphertext
-  ///     |         _____________________________|        (s-bit)
+  ///          Key                 PT1 (s-bit)
+  ///           |                       |
+  ///           v                       v
+  /// IV ---> [AES] -- [>>(16-s)] --> (XOR) ---> CT1 (s-bit)
+  ///     |         ______________________________|
   ///     |        |
   ///     v        v
-  ///  [<< s] -> (XOR)     Key                    Plaintext (s-bit)
-  ///      ________|        |                          |
-  ///     |        |        v                          v
-  ///     |        -> [block cipher] --[>>(16-s)]--> (XOR) --> (s-bit)
-  ///     |         ___________________________________|
-  ///     |        |
-  ///     v        v
-  ///  [<< s] -> (XOR)     Key                    Plaintext (s-bit)
-  ///              |        |                          |
-  ///              |        v                          v
-  ///              -> [block cipher] --[>>(16-s)]--> (XOR) --> (s-bit)
+  ///  [<< s] -> (XOR)  (Key)              PT2 (s-bit)
+  ///              |      |                     |
+  ///              |      v                     v
+  ///              ---> [AES] --[>>(16-s)]--> (XOR) --> CT2 (s-bit)
   /// ```
   ///
   /// [spec]: https://csrc.nist.gov/pubs/sp/800/38/a/final
@@ -226,20 +201,16 @@ class AES {
   /// - [iv] (initialization vector) is the random 16-byte salt.
   ///
   /// ```
-  ///              Key             Plaintext
-  ///               |                  |
-  ///               v                  v
-  /// IV ---> [block cipher] ------> (XOR) ---> Ciphertext
-  ///     _____________________|
-  ///    |         Key             Plaintext
-  ///    |          |                  |
-  ///    |          v                  v
-  ///    ---> [block cipher] ------> (XOR) ---> Ciphertext
-  ///     _____________________|
-  ///    |         Key             Plaintext
-  ///    |          |                  |
-  ///    |          v                  v
-  ///    ---> [block cipher] ------> (XOR) ---> Ciphertext
+  ///         (Key)          PT1
+  ///           |             |
+  ///           v             v
+  /// IV ---> [AES] ------> (XOR) ---> CT1
+  ///     ____________________|
+  ///    |
+  ///    |    (Key)          PT2
+  ///    |      |             |
+  ///    |      v             v
+  ///    ---> [AES] ------> (XOR) ---> CT2
   /// ```
   ///
   /// [spec]: https://csrc.nist.gov/pubs/sp/800/38/a/final
@@ -271,22 +242,16 @@ class AES {
   /// - [iv] (initialization vector) is the random 16-byte salt.
   ///
   /// ```
-  ///                 IV             Key
-  ///                  |              |
-  ///                  v              v
-  /// Plaintext ---> (XOR) ---> [block cipher] ---> Ciphertext
-  ///            |      _________________________________|
-  ///            |     |
-  ///            --> (XOR)           Key
-  ///                  |              |
-  ///                  v              v
-  /// Plaintext ---> (XOR) ---> [block cipher] ---> Ciphertext
-  ///            |      _________________________________|
-  ///            |     |
-  ///            --> (XOR)           Key
-  ///                  |              |
-  ///                  v              v
-  /// Plaintext ---> (XOR) ---> [block cipher] ---> Ciphertext
+  ///           IV        (Key)
+  ///            |          |
+  ///            v          v
+  /// PT1 ---> (XOR) ---> [AES] ---> CT1
+  ///  |          ____________________|
+  ///  |         |
+  ///  +-----> (XOR)      (Key)
+  ///            |          |
+  ///            v          v
+  /// PT2 ---> (XOR) ---> [AES] ---> CT2
   /// ```
   AESInPCBCMode pcbc(List<int> iv) => AESInPCBCMode(
         key,
@@ -347,4 +312,36 @@ class AES {
   ///
   /// [spec]: https://ieeexplore.ieee.org/document/8637988
   AESInXTSMode xts(List<int> tweak) => AESInXTSMode(key, tweak);
+
+  /// The Infinite Garble Extension (IGE) mode is specifically designed to
+  /// provide error propagation, which is useful in certain cryptographic
+  /// applications.
+  ///
+  /// Error propagation is designed so that a single-bit error in the ciphertext
+  /// affects all subsequent blocks during decryption. It is possible due to the
+  /// usage of unique Initialization Vector (IV) for each pass.
+  ///
+  /// Parameters:
+  /// - [iv] (initialization vector) is the random 16-byte salt.
+  ///
+  /// ```
+  ///  +----------------------------------------------+
+  ///  |        IV1       (Key)       IV2             |
+  ///  |         |          |          |              |
+  ///  |         v          v          V              |
+  /// PT1 ---> (XOR) ---> [AES] ---> (XOR) ---> CT1   |
+  ///             _______________________________|    |
+  ///            |                                    |
+  ///            |        (Key)         ______________|
+  ///            |          |          |
+  ///            v          v          v
+  /// PT2 ---> (XOR) ---> [AES] ---> (XOR) ---> CT2
+  /// ```
+  ///
+  /// [spec]: https://csrc.nist.gov/pubs/sp/800/38/a/final
+  AESInIGEMode ige(List<int> iv) => AESInIGEMode(
+        key,
+        iv: iv,
+        padding: padding,
+      );
 }

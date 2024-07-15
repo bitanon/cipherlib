@@ -168,7 +168,9 @@ class AESInECBModeDecryptSink extends CipherSink {
       if (_pos != 0 || _rpos != 0) {
         throw StateError('Invalid input size');
       }
-      p -= _padding.getPadLength(output);
+      if (p > 0) {
+        p -= _padding.getPadLength(output, p);
+      }
     }
 
     if (n == p) {

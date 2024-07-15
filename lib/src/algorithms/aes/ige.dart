@@ -10,9 +10,9 @@ import 'package:hashlib/hashlib.dart';
 
 import '_core.dart';
 
-/// The sink used for encryption by the [AESInPCBCModeEncrypt] algorithm.
-class AESInPCBCModeEncryptSink extends CipherSink {
-  AESInPCBCModeEncryptSink(
+/// The sink used for encryption by the [AESInIGEModeEncrypt] algorithm.
+class AESInIGEModeEncryptSink extends CipherSink {
+  AESInIGEModeEncryptSink(
     this._key,
     this._iv,
     this._padding,
@@ -22,13 +22,12 @@ class AESInPCBCModeEncryptSink extends CipherSink {
 
   int _pos = 0;
   bool _closed = false;
-  final Uint8List _key;
   final Uint8List _iv;
+  final Uint8List _key;
   final Padding _padding;
-  late final Uint32List _key32 = Uint32List.view(_key.buffer);
-  final _salt = Uint8List(16);
   final _block = Uint8List(16); // 128-bit
-  final _history = Uint8List(16);
+  final _salt = Uint8List(32);
+  late final _key32 = Uint32List.view(_key.buffer);
   late final _block32 = Uint32List.view(_block.buffer);
   late final _xkey32 = AESCore.$expandEncryptionKey(_key32);
 
@@ -40,7 +39,12 @@ class AESInPCBCModeEncryptSink extends CipherSink {
     _pos = 0;
     _closed = false;
     for (int i = 0; i < 16; ++i) {
-      _salt[i] = _iv[i];
+      _block[i] = _iv[i]; // iv1
+      _salt[i] = 0;
+      _salt[i + 16] = 0;
+    }
+    for (int i = 16; i < _iv.length && i < 32; ++i) {
+      _salt[i - 16] = _iv[i]; // iv2
     }
   }
 
@@ -58,34 +62,36 @@ class AESInPCBCModeEncryptSink extends CipherSink {
     end ??= data.length;
 
     int i, j, p, n;
-    p = 0;
+
     n = _pos + end - start;
     if (last) {
       n += 16 - (n & 15);
     }
     var output = Uint8List(n);
+
+    p = 0;
     for (i = start; i < end; ++i) {
-      _block[_pos] = data[i] ^ _salt[_pos];
-      _history[_pos] = data[i];
-      _pos++;
+      _salt[_pos + 16] = data[i];
+      _block[_pos++] ^= data[i];
       if (_pos == 16) {
         AESCore.$encryptLE(_block32, _xkey32);
         for (j = 0; j < 16; ++j) {
+          _block[j] ^= _salt[j];
+          _salt[j] = _salt[j + 16];
           output[p++] = _block[j];
-          _salt[j] = _block[j] ^ _history[j];
         }
         _pos = 0;
       }
     }
 
     if (last) {
-      if (_padding.pad(_block, _pos)) {
-        for (; _pos < 16; ++_pos) {
-          _block[_pos] ^= _salt[_pos];
+      if (_padding.pad(_salt, _pos + 16)) {
+        for (; _pos < 16; _pos++) {
+          _block[_pos] ^= _salt[_pos + 16];
         }
         AESCore.$encryptLE(_block32, _xkey32);
         for (j = 0; j < 16; ++j) {
-          output[p++] = _block[j];
+          output[p++] = _block[j] ^ _salt[j];
         }
         _pos = 0;
       }
@@ -104,9 +110,9 @@ class AESInPCBCModeEncryptSink extends CipherSink {
   }
 }
 
-/// The sink used for decryption by the [AESInPCBCModeDecrypt] algorithm.
-class AESInPCBCModeDecryptSink extends CipherSink {
-  AESInPCBCModeDecryptSink(
+/// The sink used for decryption by the [AESInIGEModeDecrypt] algorithm.
+class AESInIGEModeDecryptSink extends CipherSink {
+  AESInIGEModeDecryptSink(
     this._key,
     this._iv,
     this._padding,
@@ -122,8 +128,7 @@ class AESInPCBCModeDecryptSink extends CipherSink {
   final Padding _padding;
   late final Uint32List _key32 = Uint32List.view(_key.buffer);
   final _block = Uint8List(16); // 128-bit
-  final _salt = Uint8List(16);
-  final _nextIV = Uint8List(16);
+  final _salt = Uint8List(32);
   final _residue = Uint8List(16);
   late final _block32 = Uint32List.view(_block.buffer);
   late final _xkey32 = AESCore.$expandDecryptionKey(_key32);
@@ -137,7 +142,12 @@ class AESInPCBCModeDecryptSink extends CipherSink {
     _rpos = 0;
     _closed = false;
     for (int i = 0; i < 16; ++i) {
-      _salt[i] = _iv[i];
+      _block[i] = 0;
+      _salt[i] = _iv[i]; // iv1
+      _salt[i + 16] = 0;
+    }
+    for (int i = 16; i < _iv.length && i < 32; ++i) {
+      _block[i - 16] = _iv[i]; //iv2
     }
   }
 
@@ -155,13 +165,14 @@ class AESInPCBCModeDecryptSink extends CipherSink {
     end ??= data.length;
 
     int i, j, k, p, n;
-    p = 0;
+
     n = _rpos + end - start;
     var output = Uint8List(n);
+
+    p = 0;
     for (i = start; i < end; ++i) {
-      _block[_pos] = data[i];
-      _nextIV[_pos] = data[i];
-      _pos++;
+      _salt[_pos + 16] = data[i];
+      _block[_pos++] ^= data[i];
       if (_pos == 16) {
         AESCore.$decryptLE(_block32, _xkey32);
         for (j = 0; j < 16; ++j) {
@@ -171,9 +182,9 @@ class AESInPCBCModeDecryptSink extends CipherSink {
             }
             _rpos = 0;
           }
-          _residue[_rpos] = _block[j] ^ _salt[j];
-          _salt[j] = _nextIV[j] ^ _residue[_rpos];
-          _rpos++;
+          _block[j] ^= _salt[j];
+          _salt[j] = _salt[j + 16];
+          _residue[_rpos++] = _block[j];
         }
         _pos = 0;
       }
@@ -204,10 +215,10 @@ class AESInPCBCModeDecryptSink extends CipherSink {
   }
 }
 
-/// Provides encryption for AES cipher in PCBC mode.
-class AESInPCBCModeEncrypt extends SaltedCipher {
+/// Provides encryption for AES cipher in IGE mode.
+class AESInIGEModeEncrypt extends SaltedCipher {
   @override
-  String get name => "AES#encrypt/PCBC/${padding.name}";
+  String get name => "AES#encrypt/IGE/${padding.name}";
 
   /// Key for the cipher
   final Uint8List key;
@@ -215,7 +226,7 @@ class AESInPCBCModeEncrypt extends SaltedCipher {
   /// Padding scheme for the input message
   final Padding padding;
 
-  const AESInPCBCModeEncrypt(
+  const AESInIGEModeEncrypt(
     this.key,
     Uint8List iv, [
     this.padding = Padding.pkcs7,
@@ -223,14 +234,14 @@ class AESInPCBCModeEncrypt extends SaltedCipher {
 
   @override
   @pragma('vm:prefer-inline')
-  AESInPCBCModeEncryptSink createSink() =>
-      AESInPCBCModeEncryptSink(key, iv, padding);
+  AESInIGEModeEncryptSink createSink() =>
+      AESInIGEModeEncryptSink(key, iv, padding);
 }
 
-/// Provides decryption for AES cipher in PCBC mode.
-class AESInPCBCModeDecrypt extends SaltedCipher {
+/// Provides decryption for AES cipher in IGE mode.
+class AESInIGEModeDecrypt extends SaltedCipher {
   @override
-  String get name => "AES#decrypt/PCBC/${padding.name}";
+  String get name => "AES#decrypt/IGE/${padding.name}";
 
   /// Key for the cipher
   final Uint8List key;
@@ -238,7 +249,7 @@ class AESInPCBCModeDecrypt extends SaltedCipher {
   /// Padding scheme for the output message
   final Padding padding;
 
-  const AESInPCBCModeDecrypt(
+  const AESInIGEModeDecrypt(
     this.key,
     Uint8List iv, [
     this.padding = Padding.pkcs7,
@@ -246,46 +257,46 @@ class AESInPCBCModeDecrypt extends SaltedCipher {
 
   @override
   @pragma('vm:prefer-inline')
-  AESInPCBCModeDecryptSink createSink() =>
-      AESInPCBCModeDecryptSink(key, iv, padding);
+  AESInIGEModeDecryptSink createSink() =>
+      AESInIGEModeDecryptSink(key, iv, padding);
 }
 
-/// Provides encryption and decryption for AES cipher in PCBC mode.
-class AESInPCBCMode extends SaltedCollateCipher {
+/// Provides encryption and decryption for AES cipher in IGE mode.
+class AESInIGEMode extends SaltedCollateCipher {
   @override
-  String get name => "AES/PCBC/${padding.name}";
+  String get name => "AES/IGE/${padding.name}";
 
   @override
-  final AESInPCBCModeEncrypt encryptor;
+  final AESInIGEModeEncrypt encryptor;
 
   @override
-  final AESInPCBCModeDecrypt decryptor;
+  final AESInIGEModeDecrypt decryptor;
 
-  const AESInPCBCMode._({
+  const AESInIGEMode._({
     required this.encryptor,
     required this.decryptor,
   });
 
-  /// Creates AES cipher in PCBC mode.
+  /// Creates AES cipher in IGE mode.
   ///
   /// Parameters:
   /// - [key] The key for encryption and decryption
   /// - [iv] 128-bit random initialization vector or salt
   /// - [padding] The padding scheme for the messages
-  factory AESInPCBCMode(
+  factory AESInIGEMode(
     List<int> key, {
     List<int>? iv,
     Padding padding = Padding.pkcs7,
   }) {
-    iv ??= randomBytes(16);
+    iv ??= randomBytes(32);
     if (iv.length < 16) {
       throw StateError('IV must be at least 16-bytes');
     }
     var iv8 = iv is Uint8List ? iv : Uint8List.fromList(iv);
     var key8 = key is Uint8List ? key : Uint8List.fromList(key);
-    return AESInPCBCMode._(
-      encryptor: AESInPCBCModeEncrypt(key8, iv8, padding),
-      decryptor: AESInPCBCModeDecrypt(key8, iv8, padding),
+    return AESInIGEMode._(
+      encryptor: AESInIGEModeEncrypt(key8, iv8, padding),
+      decryptor: AESInIGEModeDecrypt(key8, iv8, padding),
     );
   }
 

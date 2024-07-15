@@ -4,19 +4,29 @@
 import 'dart:typed_data';
 
 import 'package:cipherlib/cipherlib.dart';
+import 'package:hashlib_codecs/hashlib_codecs.dart';
 import 'package:test/test.dart';
 
 import 'utils.dart';
 
 void main() {
   test('empty key with empty message', () {
-    expect(xor([], []), equals([]));
+    expect(() => xor([], []), throwsArgumentError);
   });
   test('empty key with some message', () {
     expect(() => xor([1], []), throwsArgumentError);
   });
   test('empty message', () {
     expect(xor([], [1]), equals([]));
+  });
+  test('known message', () {
+    var key = 'key'.codeUnits;
+    var plain = 'plaintext'.codeUnits;
+    var cipher = fromHex('1b0918020b0d0e1d0d');
+    var out = xor(plain, key);
+    expect(toHex(out), equals(toHex(cipher)));
+    var rev = xor(cipher, key);
+    expect(toHex(rev), equals(toHex(plain)));
   });
   test('encryption <-> decryption (convert)', () {
     for (int i = 1; i < 100; i += 10) {

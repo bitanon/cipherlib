@@ -11,8 +11,8 @@ import 'aes_cfb.dart' as aes_cfb;
 import 'aes_ctr.dart' as aes_ctr;
 import 'aes_gcm.dart' as aes_gcm;
 import 'aes_ofb.dart' as aes_ofb;
+import 'aes_ige.dart' as aes_ige;
 import 'aes_xts.dart' as aes_xts;
-import 'aes_keygen.dart' as aes_keygen;
 import 'base.dart';
 import 'chacha20.dart' as chacha20;
 import 'chacha20_poly1305.dart' as chacha20poly1305;
@@ -60,21 +60,6 @@ Future<void> measureSymmetricCiphers() async {
       ],
       "Salsa20/Poly1305": [
         salsa20poly1305.CipherlibBenchmark(size, iter),
-      ],
-      "AES-128:keygen": [
-        aes_keygen.CipherlibBenchmark(size, iter, 16),
-        aes_keygen.PointyCastleBenchmark(size, iter, 16),
-        aes_keygen.CryptographyBenchmark(size, iter, 16),
-      ],
-      "AES-192:keygen": [
-        aes_keygen.CipherlibBenchmark(size, iter, 24),
-        aes_keygen.PointyCastleBenchmark(size, iter, 24),
-        aes_keygen.CryptographyBenchmark(size, iter, 24),
-      ],
-      "AES-256:keygen": [
-        aes_keygen.CipherlibBenchmark(size, iter, 32),
-        aes_keygen.PointyCastleBenchmark(size, iter, 32),
-        aes_keygen.CryptographyBenchmark(size, iter, 32),
       ],
       "AES-128/ECB": [
         aes_ecb.CipherlibBenchmark(size, iter, 16),
@@ -165,6 +150,18 @@ Future<void> measureSymmetricCiphers() async {
       ],
       "AES-256/XTS": [
         aes_xts.CipherlibBenchmark(size, iter, 32),
+      ],
+      "AES-128/IGE": [
+        aes_ige.CipherlibBenchmark(size, iter, 16),
+        aes_ige.PointyCastleBenchmark(size, iter, 16),
+      ],
+      "AES-192/IGE": [
+        aes_ige.CipherlibBenchmark(size, iter, 24),
+        aes_ige.PointyCastleBenchmark(size, iter, 24),
+      ],
+      "AES-256/IGE": [
+        aes_ige.CipherlibBenchmark(size, iter, 32),
+        aes_ige.PointyCastleBenchmark(size, iter, 32),
       ],
       "AES-128/PCBC": [
         aes_pcbc.CipherlibBenchmark(size, iter, 16),

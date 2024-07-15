@@ -17,6 +17,7 @@ void main() {
     print('  CFB: ${toHex(AES(key).cfb(iv).encryptString(plain))}');
     print('  OFB: ${toHex(AES(key).ofb(iv).encryptString(plain))}');
     print('  XTS: ${toHex(AES(key).xts(iv).encryptString(plain))}');
+    print('  IGE: ${toHex(AES(key).ige(iv).encryptString(plain))}');
     print(' PCBC: ${toHex(AES(key).pcbc(iv).encryptString(plain))}');
   }
   print('');

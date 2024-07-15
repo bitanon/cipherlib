@@ -15,7 +15,7 @@ class CipherlibBenchmark extends Benchmark {
   final Uint8List key;
 
   CipherlibBenchmark(int size, int iter)
-      : key = Uint8List.fromList(List.filled(1000, 0x9f)),
+      : key = Uint8List.fromList(List.filled(100, 0x9f)),
         super('cipherlib', size, iter);
 
   @override
@@ -28,7 +28,7 @@ class CipherlibStreamBenchmark extends AsyncBenchmark {
   final Uint8List key;
 
   CipherlibStreamBenchmark(int size, int iter)
-      : key = Uint8List.fromList(List.filled(1000, 0x9f)),
+      : key = Uint8List.fromList(List.filled(100, 0x9f)),
         super('cipherlib', size, iter);
 
   @override

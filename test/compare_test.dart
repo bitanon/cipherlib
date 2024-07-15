@@ -185,6 +185,54 @@ void main() {
     });
   });
 
+  group('AES/IGE', () {
+    test('pointycastle: encryption with 128-bit key', () {
+      var key = randomBytes(16);
+      for (int j = 16; j < 300; j += 16) {
+        var text = randomBytes(j);
+        var iv = randomBytes(32);
+        var result = my.AES.noPadding(key).ige(iv).encrypt(text);
+        var instance = pc.BlockCipher('AES/IGE');
+        instance.init(true, pc.ParametersWithIV(pc.KeyParameter(key), iv));
+        var out = Uint8List(j);
+        for (int i = 0; i < j; i += 16) {
+          instance.processBlock(text, i, out, i);
+        }
+        expect(toHex(out), equals(toHex(result)), reason: '[size: $j]');
+      }
+    });
+    test('pointycastle: encryption with 192-bit key', () {
+      var key = randomBytes(24);
+      for (int j = 16; j < 300; j += 16) {
+        var text = randomBytes(j);
+        var iv = randomBytes(32);
+        var result = my.AES.noPadding(key).ige(iv).encrypt(text);
+        var instance = pc.BlockCipher('AES/IGE');
+        instance.init(true, pc.ParametersWithIV(pc.KeyParameter(key), iv));
+        var out = Uint8List(j);
+        for (int i = 0; i < j; i += 16) {
+          instance.processBlock(text, i, out, i);
+        }
+        expect(toHex(out), equals(toHex(result)), reason: '[size: $j]');
+      }
+    });
+    test('pointycastle: encryption with 256-bit key', () {
+      var key = randomBytes(32);
+      for (int j = 16; j < 300; j += 16) {
+        var text = randomBytes(j);
+        var iv = randomBytes(32);
+        var result = my.AES.noPadding(key).ige(iv).encrypt(text);
+        var instance = pc.BlockCipher('AES/IGE');
+        instance.init(true, pc.ParametersWithIV(pc.KeyParameter(key), iv));
+        var out = Uint8List(j);
+        for (int i = 0; i < j; i += 16) {
+          instance.processBlock(text, i, out, i);
+        }
+        expect(toHex(out), equals(toHex(result)), reason: '[size: $j]');
+      }
+    });
+  });
+
   group('AES/CFB-64', () {
     test('pointycastle: encryption with 128-bit key', () {
       var key = randomBytes(16);

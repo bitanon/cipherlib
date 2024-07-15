@@ -95,11 +95,14 @@ void main() {
     var aes = AES.noPadding(Uint8List(16)).cbc(Uint8List(16));
     expect(() => aes.encrypt(Uint8List(10)), throwsStateError);
     expect(() => aes.decrypt(Uint8List(10)), throwsStateError);
+    expect(() => aes.encrypt(Uint8List(17)), throwsStateError);
+    expect(() => aes.decrypt(Uint8List(17)), throwsStateError);
   });
   test('throws error on invalid salt size', () {
     var aes = AES(Uint8List(16));
     expect(() => aes.cbc(Uint8List(15)).encrypt([0]), throwsStateError);
     expect(() => aes.cbc(Uint8List(8)).decrypt([0]), throwsStateError);
+    expect(aes.cbc(Uint8List(16)).encrypt([]).length, 16);
   });
 
   group('empty message', () {
