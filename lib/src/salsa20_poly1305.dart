@@ -26,7 +26,7 @@ class Salsa20Poly1305 extends AEADCipher<Salsa20, Poly1305> {
 
   @override
   @pragma('vm:prefer-inline')
-  AEADResult convert(List<int> message) {
+  AEADResultWithIV convert(List<int> message) {
     return super.convert(message).withIV(cipher.iv);
   }
 }
@@ -54,7 +54,7 @@ extension Salsa20ExtentionForPoly1305 on Salsa20 {
 ///
 /// Both the encryption and decryption can be done using this same method.
 @pragma('vm:prefer-inline')
-AEADResult salsa20poly1305(
+AEADResultWithIV salsa20poly1305(
   List<int> message,
   List<int> key, {
   List<int>? mac,

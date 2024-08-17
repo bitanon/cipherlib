@@ -5,27 +5,34 @@ import 'dart:typed_data';
 
 import 'package:cipherlib/src/core/cipher_sink.dart';
 import 'package:cipherlib/src/core/salted_cipher.dart';
+import 'package:cipherlib/src/utils/nonce.dart';
+import 'package:hashlib/hashlib.dart' show randomBytes;
 
 const int _mask32 = 0xFFFFFFFF;
 
 /// This sink is used by the [ChaCha20] algorithm.
 class ChaCha20Sink extends CipherSink {
-  ChaCha20Sink(this._key, this._iv, this._counterStart) {
+  ChaCha20Sink(this._key, this._nonce, this._counter) {
     if (_key.length != 16 && _key.length != 32) {
       throw ArgumentError('The key should be either 16 or 32 bytes');
     }
-    if (_iv.length != 8 && _iv.length != 12) {
+    if (_nonce.length != 8 && _nonce.length != 12) {
       throw ArgumentError('The nonce should be either 8 or 12 bytes');
     }
+    if (_counter.length != 4 && _counter.length != 8) {
+      throw ArgumentError('The counter should be either 4 or 8 bytes');
+    }
+    _counterSize = _nonce.length == 8 ? 8 : 4;
     reset();
   }
 
   int _pos = 0;
-  int _counter = 0;
   bool _closed = false;
   final Uint8List _key;
-  final Uint8List _iv;
-  final int _counterStart;
+  final Uint8List _nonce;
+  final Uint8List _counter;
+  late final int _counterSize;
+  final _iv = Uint8List(16);
   final _state = Uint32List(16);
   late final _state8 = _state.buffer.asUint8List();
   late final _key32 = _key.buffer.asUint32List();
@@ -38,8 +45,14 @@ class ChaCha20Sink extends CipherSink {
   void reset() {
     _pos = 0;
     _closed = false;
-    _counter = _counterStart;
-    _block(_state, _key32, _iv32, _counter++);
+    for (int i = 0; i < _counterSize; ++i) {
+      _iv[i] = _counter[i];
+    }
+    for (int i = _counterSize; i < 16; ++i) {
+      _iv[i] = _nonce[i - _counterSize];
+    }
+    _block(_state, _key32, _iv32);
+    _increment();
   }
 
   @override
@@ -58,7 +71,8 @@ class ChaCha20Sink extends CipherSink {
     var result = Uint8List(end - start);
     for (int i = start; i < end; i++) {
       if (_pos == 64) {
-        _block(_state, _key32, _iv32, _counter++);
+        _block(_state, _key32, _iv32);
+        _increment();
         _pos = 0;
       }
       result[i] = data[i] ^ _state8[_pos++];
@@ -66,11 +80,17 @@ class ChaCha20Sink extends CipherSink {
     return result;
   }
 
+  void _increment() {
+    for (int i = 0; i < _counterSize; ++i) {
+      if ((++_iv[i]) != 0) return;
+    }
+  }
+
   @pragma('vm:prefer-inline')
   static int _rotl32(int x, int n) =>
       (((x << n) & _mask32) ^ ((x & _mask32) >>> (32 - n)));
 
-  static void _block(Uint32List B, Uint32List K, Uint32List N, int counter) {
+  static void _block(Uint32List B, Uint32List K, Uint32List N) {
     int i, s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15;
 
     // init state
@@ -83,10 +103,10 @@ class ChaCha20Sink extends CipherSink {
       s5 = B[5] = K[1];
       s6 = B[6] = K[2];
       s7 = B[7] = K[3];
-      s8 = B[8] = K[4];
-      s9 = B[9] = K[5];
-      s10 = B[10] = K[6];
-      s11 = B[11] = K[7];
+      s8 = B[8] = K[0];
+      s9 = B[9] = K[1];
+      s10 = B[10] = K[2];
+      s11 = B[11] = K[3];
     } else {
       s0 = B[0] = 0x61707865; // 'expa'
       s1 = B[1] = 0x3320646e; // 'nd 3'
@@ -101,16 +121,10 @@ class ChaCha20Sink extends CipherSink {
       s10 = B[10] = K[6];
       s11 = B[11] = K[7];
     }
-    s12 = B[12] = counter;
-    if (N.lengthInBytes == 8) {
-      s13 = B[13] = counter >>> 32;
-      s14 = B[14] = N[0];
-      s15 = B[15] = N[1];
-    } else {
-      s13 = B[13] = N[0];
-      s14 = B[14] = N[1];
-      s15 = B[15] = N[2];
-    }
+    s12 = B[12] = N[0];
+    s13 = B[13] = N[1];
+    s14 = B[14] = N[2];
+    s15 = B[15] = N[3];
 
     // 10 diagonal(column) rounds
     for (i = 0; i < 10; ++i) {
@@ -225,27 +239,28 @@ class ChaCha20 extends SaltedCipher {
   final Uint8List key;
 
   /// The initial block id
-  final int counter;
+  final Uint8List counter;
 
   const ChaCha20(
     this.key,
-    Uint8List nonce, [
-    this.counter = 1,
-  ]) : super(nonce);
+    Uint8List nonce,
+    this.counter,
+  ) : super(nonce);
 
   /// Creates a [ChaCha20] with List<int> [key], and [nonce].
   ///
   /// Every elements of the both list is transformed to unsigned 8-bit numbers.
   factory ChaCha20.fromList(
-    List<int> key,
-    List<int> nonce, [
-    int counter = 1,
-  ]) =>
-      ChaCha20(
-        key is Uint8List ? key : Uint8List.fromList(key),
-        nonce is Uint8List ? nonce : Uint8List.fromList(nonce),
-        counter,
-      );
+    List<int> key, {
+    List<int>? nonce,
+    Nonce64? counter,
+  }) {
+    nonce ??= randomBytes(8);
+    counter ??= Nonce64.int64(1);
+    var key8 = key is Uint8List ? key : Uint8List.fromList(key);
+    var nonce8 = nonce is Uint8List ? nonce : Uint8List.fromList(nonce);
+    return ChaCha20(key8, nonce8, counter.bytes);
+  }
 
   @override
   @pragma('vm:prefer-inline')

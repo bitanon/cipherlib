@@ -64,7 +64,7 @@ class AES {
   ///
   /// **Not Recommended: It is vulnerable to pattern analysis.**
   ///
-  /// This implementation follows the specification from [NIST SP 800-38A -
+  /// This implementation follows the specification from [(NIST SP 800-38A) -
   /// Recommendation for Block Cipher Modes of Operation: Methods and
   /// Techniques][spec].
   ///
@@ -84,7 +84,7 @@ class AES {
   /// encryption. CBC mode provides better security than ECB but requires
   /// sequential processing.
   ///
-  /// This implementation follows the specification from [NIST SP 800-38A -
+  /// This implementation follows the specification from [(NIST SP 800-38A) -
   /// Recommendation for Block Cipher Modes of Operation: Methods and
   /// Techniques][spec].
   ///
@@ -116,7 +116,7 @@ class AES {
   /// encryption and decryption, making it efficient for high-performance
   /// applications.
   ///
-  /// This implementation follows the specification from [NIST SP 800-38A -
+  /// This implementation follows the specification from [(NIST SP 800-38A) -
   /// Recommendation for Block Cipher Modes of Operation: Methods and
   /// Techniques][spec].
   ///
@@ -146,7 +146,7 @@ class AES {
   /// the plaintext to produce ciphertext. CFB does not require a padding to the
   /// plaintext and can be used for error recovery.
   ///
-  /// This implementation follows the specification from [NIST SP 800-38A -
+  /// This implementation follows the specification from [(NIST SP 800-38A) -
   /// Recommendation for Block Cipher Modes of Operation: Methods and
   /// Techniques][spec].
   ///
@@ -193,7 +193,7 @@ class AES {
   /// immune to transmission errors but requires careful management of the IV to
   /// avoid security issues.
   ///
-  /// This implementation follows the specification from [NIST SP 800-38A -
+  /// This implementation follows the specification from [(NIST SP 800-38A) -
   /// Recommendation for Block Cipher Modes of Operation: Methods and
   /// Techniques][spec].
   ///
@@ -264,7 +264,7 @@ class AES {
   /// multiplication for authentication. GCM provides both data confidentiality
   /// and authenticity, making it a widely used and highly secure mode.
   ///
-  /// This implementation follows the specification from [NIST SP 800-38D -
+  /// This implementation follows the specification from [(NIST SP 800-38D) -
   /// Recommendation for Block Cipher Modes of Operation: Galois/Counter Mode
   /// (GCM) and GMAC][spec].
   ///

@@ -6,7 +6,7 @@ import 'dart:typed_data';
 import 'package:cipherlib/src/core/cipher_sink.dart';
 import 'package:cipherlib/src/core/salted_cipher.dart';
 import 'package:cipherlib/src/utils/nonce.dart';
-import 'package:hashlib/hashlib.dart';
+import 'package:hashlib/hashlib.dart' show randomBytes;
 
 import '_core.dart';
 
@@ -420,9 +420,10 @@ class AESInXTSMode extends SaltedCollateCipher {
   ///   packet number or frame number. The initial tweak value is calculated
   ///   this value.
   factory AESInXTSMode.fromSector(List<int> key, Nonce64 sector) {
+    var sector8 = sector.bytes;
     var tweak = Uint8List(16);
     for (int i = 0; i < 8; ++i) {
-      tweak[i] = sector.bytes[7 - i];
+      tweak[i] = sector8[i];
     }
     return AESInXTSMode(key, tweak);
   }

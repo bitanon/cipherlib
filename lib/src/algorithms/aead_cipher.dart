@@ -6,21 +6,17 @@ import 'dart:typed_data';
 
 import 'package:cipherlib/src/core/cipher.dart';
 import 'package:cipherlib/src/core/cipher_sink.dart';
-import 'package:hashlib/hashlib.dart' show HashDigest, MACSinkBase, MACHashBase;
+import 'package:hashlib/hashlib.dart' show HashDigest, MACHashBase, MACSinkBase;
 
 /// The result fromo AEAD ciphers
 class AEADResult {
-  /// The IV, available if and only if cipher does supports it.
-  final Uint8List? iv;
-
   /// The output message
   final Uint8List data;
 
   /// The message authentication code
   final HashDigest tag;
 
-  const AEADResult({
-    this.iv,
+  const AEADResult._({
     required this.tag,
     required this.data,
   });
@@ -30,7 +26,19 @@ class AEADResult {
   bool verify(List<int>? digest) => tag.isEqual(digest);
 
   /// Creates a new instance of AEADResult with IV parameter
-  AEADResult withIV(Uint8List iv) => AEADResult(tag: tag, data: data, iv: iv);
+  AEADResultWithIV withIV(Uint8List iv) =>
+      AEADResultWithIV._(tag: tag, data: data, iv: iv);
+}
+
+class AEADResultWithIV extends AEADResult {
+  /// The IV, available if and only if cipher does supports it.
+  final Uint8List iv;
+
+  const AEADResultWithIV._({
+    required this.iv,
+    required HashDigest tag,
+    required Uint8List data,
+  }) : super._(tag: tag, data: data);
 }
 
 /// Extends the base [AEADCipherSink] to generate message digest for cipher
@@ -178,7 +186,7 @@ abstract class AEADCipher<C extends Cipher, M extends MACHashBase>
     var sink = createSink();
     var cipher = sink.add(message, 0, null, true);
     var digest = sink.digest();
-    return AEADResult(
+    return AEADResult._(
       tag: digest,
       data: cipher,
     );

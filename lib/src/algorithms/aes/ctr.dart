@@ -7,7 +7,7 @@ import 'package:cipherlib/src/algorithms/padding.dart';
 import 'package:cipherlib/src/core/cipher_sink.dart';
 import 'package:cipherlib/src/core/salted_cipher.dart';
 import 'package:cipherlib/src/utils/nonce.dart';
-import 'package:hashlib/hashlib.dart';
+import 'package:hashlib/hashlib.dart' show randomBytes;
 
 import '_core.dart';
 
@@ -157,8 +157,8 @@ class AESInCTRMode extends SaltedCollateCipher {
     Nonce64? nonce,
     Nonce64? counter,
   }) {
-    var nonce8 = (nonce ?? Nonce64.random()).bytes;
-    var counter8 = (counter ?? Nonce64.random()).bytes;
+    var nonce8 = (nonce?.reverse() ?? Nonce64.random()).bytes;
+    var counter8 = (counter?.reverse() ?? Nonce64.random()).bytes;
     var iv = Uint8List.fromList([...nonce8, ...counter8]);
     return AESInCTRMode(key, iv);
   }

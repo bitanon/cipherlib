@@ -140,7 +140,7 @@ void main() {
         '27182818284590452353602874713526'
         '31415926535897932384626433832795',
       );
-      var sector = Nonce64.from64(0x01);
+      var sector = Nonce64.int32(0x01);
       var plain = fromHex(
         '27a7479befa1d476489f308cd4cfa6e2a96e4bbe3208ff25287dd3819616e89c'
         'c78cf7f5e543445f8333d8fa7f56000005279fa5d8b5e4ad40e736ddb4d35412'
@@ -192,7 +192,7 @@ void main() {
         '27182818284590452353602874713526'
         '31415926535897932384626433832795',
       );
-      var sector = Nonce64.from64(0x02);
+      var sector = Nonce64.int32(0x02);
       var plain = fromHex(
         '264d3ca8512194fec312c8c9891f279fefdd608d0c027b60483a3fa811d65ee5'
         '9d52d9e40ec5672d81532b38b6b089ce951f0f9c35590b8b978d175213f329bb'
@@ -244,7 +244,7 @@ void main() {
         '27182818284590452353602874713526'
         '31415926535897932384626433832795',
       );
-      var sector = Nonce64.from64(0xfd);
+      var sector = Nonce64.int32(0xfd);
       var plain = fromHex(
         '8e41b78c390b5af9d758bb214a67e9f6bf7727b09ac6124084c37611398fa45d'
         'aad94868600ed391fb1acd4857a95b466e62ef9f4b377244d1c152e7b30d731a'
@@ -296,7 +296,7 @@ void main() {
         '27182818284590452353602874713526'
         '31415926535897932384626433832795',
       );
-      var sector = Nonce64.from64(0xfe);
+      var sector = Nonce64.int32(0xfe);
       var plain = fromHex(
         'd55f684f81f4426e9fde92a5ff02df2ac896af63962888a97910c1379e20b0a3'
         'b1db613fb7fe2e07004329ea5c22bfd33e3dbe4cf58cc608c2c26c19a2e2fe22'
@@ -348,7 +348,7 @@ void main() {
         '27182818284590452353602874713526'
         '31415926535897932384626433832795',
       );
-      var sector = Nonce64.from64(0xff);
+      var sector = Nonce64.int32(0xff);
       var plain = fromHex(
         '72efc1ebfe1ee25975a6eb3aa8589dda2b261f1c85bdab442a9e5b2dd1d7c395'
         '7a16fc08e526d4b1223f1b1232a11af274c3d70dac57f83e0983c498f1a6f1ae'
@@ -400,7 +400,7 @@ void main() {
         '2718281828459045235360287471352662497757247093699959574966967627'
         '3141592653589793238462643383279502884197169399375105820974944592',
       );
-      var sector = Nonce64.from64(0xff);
+      var sector = Nonce64.int32(0xff);
       var plain = fromHex(
         '000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f'
         '202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f'
@@ -452,7 +452,7 @@ void main() {
         '2718281828459045235360287471352662497757247093699959574966967627'
         '3141592653589793238462643383279502884197169399375105820974944592',
       );
-      var sector = Nonce64.from64(0xffff);
+      var sector = Nonce64.int32(0xffff);
       var plain = fromHex(
         '000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f'
         '202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f'
@@ -661,22 +661,19 @@ void main() {
   group('Python Cryptography output', () {
     // Following test cases are from
     // https://crossbowerbt.github.io/docs/crypto/pdf00086.pdf
-    // and outputs are generated using python's cryptography package
     group('Vector 15', () {
       var key = fromHex(
         'fffefdfcfbfaf9f8f7f6f5f4f3f2f1f0'
         'bfbebdbcbbbab9b8b7b6b5b4b3b2b1b0',
       );
-
       var sector = Nonce64.hex(
-        // 123456789a0000000000000000000000
         '9a78563412',
       );
       var plain = fromHex(
         '000102030405060708090a0b0c0d0e0f10',
       );
       var cipher = fromHex(
-        '641610679dcbf92e505c41333fb06c2a95',
+        '6c1625db4671522d3d7599601de7ca09ed',
       );
       var aes = AESInXTSMode.fromSector(key, sector);
       test('encrypt', () {
@@ -693,12 +690,14 @@ void main() {
         'fffefdfcfbfaf9f8f7f6f5f4f3f2f1f0'
         'bfbebdbcbbbab9b8b7b6b5b4b3b2b1b0',
       );
-      var sector = Nonce64.hex('9a78563412');
+      var sector = Nonce64.hex(
+        '9a78563412',
+      );
       var plain = fromHex(
         '000102030405060708090a0b0c0d0e0f1011',
       );
       var cipher = fromHex(
-        '223a725cbcd4dc647b9a9826d54c99c895c8',
+        'd069444b7a7e0cab09e24447d24deb1fedbf',
       );
       var aes = AESInXTSMode.fromSector(key, sector);
       test('encrypt', () {
@@ -715,12 +714,14 @@ void main() {
         'fffefdfcfbfaf9f8f7f6f5f4f3f2f1f0'
         'bfbebdbcbbbab9b8b7b6b5b4b3b2b1b0',
       );
-      var sector = Nonce64.hex('9a78563412');
+      var sector = Nonce64.hex(
+        '9a78563412',
+      );
       var plain = fromHex(
         '000102030405060708090a0b0c0d0e0f101112',
       );
       var cipher = fromHex(
-        '0d39809a65c1d55501960b671d4b8b6b95c871',
+        'e5df1351c0544ba1350b3363cd8ef4beedbf9d',
       );
       var aes = AESInXTSMode.fromSector(key, sector);
       test('encrypt', () {
@@ -761,7 +762,9 @@ void main() {
         'e0e1e2e3e4e5e6e7e8e9eaebecedeeef'
         'c0c1c2c3c4c5c6c7c8c9cacbcccdcecf',
       );
-      var sector = Nonce64.hex('21436587a9');
+      var sector = Nonce64.hex(
+        '21436587a9',
+      );
       var plain = fromHex(
         '000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f'
         '202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f'
@@ -781,22 +784,22 @@ void main() {
         'e0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff',
       );
       var cipher = fromHex(
-        'c4e60104e27aed4deff63b72b054ac82cc0175a5b8aeeeaa017ec12249aa641b'
-        '36438dab0589e8903bf23327127c12362e7d6864522c44538e4e979d97393ba6'
-        '7eab768517e2c70b98035fc1bbebfed48a9ff017eb3e04dc8e19aad6be04c23a'
-        '6675726a4388c8a297fef753bf71e9ea07dd354d42dc2393888a401188554a53'
-        '315eb9a0624ae44e5b674b3607b73ee0e5feb44f5be7178ef54cbd460b1d6a2e'
-        '93923f6b63210b06d74367bbb02884639af3b958cacc041618a7940a983f8438'
-        '123348f3d87f254377152302d821ece64588f8bb1af85cf934bd49c703186e48'
-        '624772c9802228484249e887ebfd7440514130d8d38c2b1219241a42630bdfbd'
-        '4135fac6bec92462d3ea9beb95c797d23a8c04799e3ea2ba733c5e00718649e7'
-        'af0fdd6eaa5bfd5df7f3fa9953a3b5266806709d17ddd0a0f5b7535bc9f986c1'
-        '09a848ef8c3a45f9033056817ce08de8019ea103e28836b82d08c5d1fdeec254'
-        'e508bf253f6b90963fe43d7d8b8d66d30419c4733a32da1505de5dfd7a976e78'
-        '52455dd454327ee8a1cb71d40f392a89eee266a8f42772bb519f4044902d939e'
-        '9716734f622f46e3c48f31d09e7859a14b54693f9eeb14fc021dc5b66589ca3f'
-        'e16b7bc7166a3686cc869730656ae76285a518b290745e852c6ac626eb0da25d'
-        'ff404b83f001d6d23a65d91f3f38a097da03a59b275b4f5a5480c9608e12f93b',
+        '38b45812ef43a05bd957e545907e223b954ab4aaf088303ad910eadf14b42be6'
+        '8b2461149d8c8ba85f992be970bc621f1b06573f63e867bf5875acafa04e42cc'
+        'bd7bd3c2a0fb1fff791ec5ec36c66ae4ac1e806d81fbf709dbe29e471fad3854'
+        '9c8e66f5345d7c1eb94f405d1ec785cc6f6a68f6254dd8339f9d84057e01a177'
+        '41990482999516b5611a38f41bb6478e6f173f320805dd71b1932fc333cb9ee3'
+        '9936beea9ad96fa10fb4112b901734ddad40bc1878995f8e11aee7d141a2f5d4'
+        '8b7a4e1e7f0b2c04830e69a4fd1378411c2f287edf48c6c4e5c247a19680f7fe'
+        '41cefbd49b582106e3616cbbe4dfb2344b2ae9519391f3e0fb4922254b1d6d2d'
+        '19c6d4d537b3a26f3bcc51588b32f3eca0829b6a5ac72578fb814fb43cf80d64'
+        'a233e3f997a3f02683342f2b33d25b492536b93becb2f5e1a8b82f5b88334272'
+        '9e8ae09d16938841a21a97fb543eea3bbff59f13c1a18449e398701c1ad51648'
+        '346cbc04c27bb2da3b93a1372ccae548fb53bee476f9e9c91773b1bb19828394'
+        'd55d3e1a20ed69113a860b6829ffa847224604435070221b257e8dff783615d2'
+        'cae4803a93aa4334ab482a0afac9c0aeda70b45a481df5dec5df8cc0f423c77a'
+        '5fd46cd312021d4b438862419a791be03bb4d97c0e59578542531ba466a83baf'
+        '92cefc151b5cc1611a167893819b63fb8a6b18e86de60290fa72b797b0ce59f3',
       );
       var aes = AESInXTSMode.fromSector(key, sector);
       test('encrypt', () {
@@ -816,7 +819,7 @@ void main() {
       var key = fromHex(
         'a3e40d5bd4b6bbedb2d18c700ad2db2210c81190646d673cbca53f133eab373c',
       );
-      var sector = Nonce64.from64(141);
+      var sector = Nonce64.int32(141);
       var plain = fromHex(
         '20e0719405993f09a66ae5bb500e562c',
       );
@@ -837,7 +840,7 @@ void main() {
       var key = fromHex(
         '5f14eee6952c8a4c2d55fb694a5b70a4b6ad43cfe603dec092a9696d5c24863e',
       );
-      var sector = Nonce64.from64(250);
+      var sector = Nonce64.int32(250);
       var plain = fromHex(
         '8d88813f3a975a64d4db6f024417e3e7',
       );
@@ -858,7 +861,7 @@ void main() {
       var key = fromHex(
         '69438582e0a61b5e7a023adf2f419630ed537ccf9a4b2e09010eaf7b66bcf818',
       );
-      var sector = Nonce64.from64(232);
+      var sector = Nonce64.int32(232);
       var plain = fromHex(
         '05c2c05e812bc4295f3ef64c8bc468ee946176449edc481785e6c6d9fbdd6b8f',
       );
@@ -879,7 +882,7 @@ void main() {
       var key = fromHex(
         'd4b06bbbb1b088a0699e3cc9f05c859317980660c54002d0308adb5d012eb4d9',
       );
-      var sector = Nonce64.from64(75);
+      var sector = Nonce64.int32(75);
       var plain = fromHex(
         'af6e3c9bea494cfc633f631b73119f00cab9a98ddc2197ee69d61d38df25619c',
       );
@@ -900,7 +903,7 @@ void main() {
       var key = fromHex(
         'fb46fb3cab7f67ad5207bc232c50dcbb24dbd1564590855d4cb777b3ba6431c3',
       );
-      var sector = Nonce64.from64(117);
+      var sector = Nonce64.int32(117);
       var plain = fromHex(
         '46409f7426eb4e3d33480534b80fe6e09fed6583907eb83c84',
       );
@@ -921,7 +924,7 @@ void main() {
       var key = fromHex(
         '546923c3625a11451aec09a8cdf874ecb88c776dd19e715ea5d187ebb648627c',
       );
-      var sector = Nonce64.from64(2);
+      var sector = Nonce64.int32(2);
       var plain = fromHex(
         'b2a5efdf30c4a376d1f699d6a1ca59b8f49913693ee604f4cd',
       );
@@ -942,7 +945,7 @@ void main() {
       var key = fromHex(
         'dd9f8a86307bd905f90c676c46f13c42843587b54df3d74d4f3d07382e1bbdd3',
       );
-      var sector = Nonce64.from64(244);
+      var sector = Nonce64.int32(244);
       var plain = fromHex(
         'e3526fca52a747dc7487b6a6c399e8b8b4cb29e941ec37f3ea',
       );
@@ -963,7 +966,7 @@ void main() {
       var key = fromHex(
         '0b38e36b4df66300aa217a0278874f60ada795fcfb444b17eb0a93beeee92df6',
       );
-      var sector = Nonce64.from64(60);
+      var sector = Nonce64.int32(60);
       var plain = fromHex(
         'b66118af7cede3318ed763045db7451fc7d337bba7d280f53c38bf3084d348a4',
       );
@@ -984,7 +987,7 @@ void main() {
       var key = fromHex(
         'ed407618358c48f225a8fab5f62fa3857b996d5c6dd909d062f9c15cbdb09c0a',
       );
-      var sector = Nonce64.from64(128);
+      var sector = Nonce64.int32(128);
       var plain = fromHex(
         '417ff7b4f6df391682006f6a48c11658e57450782e00fd6f5565e61a5263d50e',
       );

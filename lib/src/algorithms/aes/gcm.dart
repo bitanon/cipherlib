@@ -6,7 +6,7 @@ import 'dart:typed_data';
 import 'package:cipherlib/src/algorithms/padding.dart';
 import 'package:cipherlib/src/core/cipher_sink.dart';
 import 'package:cipherlib/src/core/salted_cipher.dart';
-import 'package:hashlib/hashlib.dart';
+import 'package:hashlib/hashlib.dart' show randomBytes;
 
 import '_core.dart';
 

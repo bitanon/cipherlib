@@ -1,11 +1,12 @@
 // Copyright (c) 2024, Sudipto Chandra
 // All rights reserved. Check LICENSE file for details.
 
-@Tags(['skip-js'])
+@Tags(['vm-only'])
 
-import 'dart:typed_data';
+import 'dart:typed_data' show Uint8List;
 
 import 'package:cipherlib/cipherlib.dart' as my;
+import 'package:cipherlib/src/cipherlib_base.dart';
 import 'package:cryptography/cryptography.dart' as crypto;
 import 'package:hashlib_codecs/hashlib_codecs.dart';
 import 'package:pointycastle/pointycastle.dart' as pc;
@@ -14,6 +15,69 @@ import 'package:test/test.dart';
 import 'utils.dart';
 
 void main() {
+  group('ChaCha20', () {
+    test('pointycastle: ChaCha20/20', () {
+      var key = randomBytes(32);
+      var nonce = randomBytes(8);
+      for (int j = 0; j < 100; ++j) {
+        var text = randomBytes(j);
+        var result = my.chacha20(
+          text,
+          key,
+          nonce: nonce,
+          counter: Nonce64.zero(),
+        );
+        var instance = pc.StreamCipher('ChaCha20/20');
+        instance.init(
+          true,
+          pc.ParametersWithIV(pc.KeyParameter(key), nonce),
+        );
+        var out = instance.process(text);
+        expect(out, equals(result), reason: '[text: $j]');
+      }
+    });
+    test('pointycastle: ChaCha7539/20', () {
+      var key = randomBytes(32);
+      var nonce = randomBytes(12);
+      for (int j = 0; j < 100; ++j) {
+        var text = randomBytes(j);
+        var result = my.chacha20(
+          text,
+          key,
+          nonce: nonce,
+          counter: Nonce64.zero(),
+        );
+        var instance = pc.StreamCipher('ChaCha7539/20');
+        instance.init(
+          true,
+          pc.ParametersWithIV(pc.KeyParameter(key), nonce),
+        );
+        var out = instance.process(text);
+        expect(out, equals(result), reason: '[text: $j]');
+      }
+    });
+    test('pointycastle: ChaCha20/20: 16-byte key', () {
+      var key = randomBytes(16);
+      var nonce = randomBytes(8);
+      for (int j = 0; j < 100; ++j) {
+        var text = randomBytes(j);
+        var result = my.chacha20(
+          text,
+          key,
+          nonce: nonce,
+          counter: Nonce64.zero(),
+        );
+        var instance = pc.StreamCipher('ChaCha20/20');
+        instance.init(
+          true,
+          pc.ParametersWithIV(pc.KeyParameter(key), nonce),
+        );
+        var out = instance.process(text);
+        expect(out, equals(result), reason: '[text: $j]');
+      }
+    });
+  });
+
   group('ChaCha20/Poly1305', () {
     test('cryptography: encryption + tag', () async {
       var key = randomBytes(32);
@@ -37,39 +101,6 @@ void main() {
             reason: '[text: $j, aad: ${key[0]}]');
         expect(out.mac.bytes, equals(result.tag.bytes),
             reason: '[text: $j, aad: ${key[0]}]]');
-      }
-    });
-  });
-
-  group('ChaCha20', () {
-    test('pointycastle: ChaCha20/20', () {
-      var key = randomBytes(32);
-      var nonce = randomBytes(8);
-      for (int j = 0; j < 100; ++j) {
-        var text = randomBytes(j);
-        var result = my.chacha20(text, key, nonce: nonce, counter: 0);
-        var instance = pc.StreamCipher('ChaCha20/20');
-        instance.init(
-          true,
-          pc.ParametersWithIV(pc.KeyParameter(key), nonce),
-        );
-        var out = instance.process(text);
-        expect(out, equals(result), reason: '[text: $j]');
-      }
-    });
-    test('pointycastle: ChaCha7539/20', () {
-      var key = randomBytes(32);
-      var nonce = randomBytes(12);
-      for (int j = 0; j < 100; ++j) {
-        var text = randomBytes(j);
-        var result = my.chacha20(text, key, nonce: nonce, counter: 0);
-        var instance = pc.StreamCipher('ChaCha7539/20');
-        instance.init(
-          true,
-          pc.ParametersWithIV(pc.KeyParameter(key), nonce),
-        );
-        var out = instance.process(text);
-        expect(out, equals(result), reason: '[text: $j]');
       }
     });
   });

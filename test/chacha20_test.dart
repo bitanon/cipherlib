@@ -24,9 +24,7 @@ void main() {
   test('nonce is null', () {
     var key = randomNumbers(32);
     var text = randomBytes(100);
-    var cipher = chacha20(text, key);
-    var plain = chacha20(cipher, key);
-    expect(text, equals(plain));
+    chacha20(text, key);
   });
   test('nonce length is not 12 bytes', () {
     var key = Uint8List(32);
@@ -35,8 +33,12 @@ void main() {
   });
   test('RFC 8439 example-1', () {
     var key = fromHex(
-        "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f");
-    var nonce = fromHex("000000000000004a00000000");
+      "000102030405060708090a0b0c0d0e0f"
+      "101112131415161718191a1b1c1d1e1f",
+    );
+    var nonce = fromHex(
+      "000000000000004a00000000",
+    );
     var sample = "Ladies and Gentlemen of the class of '99: "
         "If I could offer you only one tip for the future, "
         "sunscreen would be it.";
@@ -58,7 +60,9 @@ void main() {
       "808182838485868788898a8b8c8d8e8f"
       "909192939495969798999a9b9c9d9e9f",
     );
-    var nonce = fromHex("070000004041424344454647");
+    var nonce = fromHex(
+      "070000004041424344454647",
+    );
     var sample = "Ladies and Gentlemen of the class of '99: "
         "If I could offer you only one tip for the future, "
         "sunscreen would be it.";
@@ -87,7 +91,7 @@ void main() {
     }
   });
   test('encryption <-> decryption (stream)', () async {
-    var key = randomNumbers(32);
+    var key = randomNumbers(16);
     var nonce = randomBytes(12);
     for (int j = 0; j < 100; ++j) {
       var text = randomNumbers(j);
