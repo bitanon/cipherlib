@@ -67,4 +67,24 @@ void main() {
       }
     }
   });
+
+  test('sink test (no add after close)', () {
+    var key = Uint8List.fromList(
+      List.generate(16, (i) => i),
+    );
+    var sample = Uint8List(64);
+    var output = List.generate(64, (i) => i % 16);
+    var sink = XOR(key).createSink();
+    int step = 8;
+    for (int i = 0; i < sample.length; i += step) {
+      var inp = sample.skip(i).take(step).toList();
+      var out = output.skip(i).take(step).toList();
+      expect(sink.add(inp), equals(out));
+    }
+    expect(sink.close(), equals([]));
+    expect(sink.closed, true);
+    expect(() => sink.add([1]), throwsStateError);
+    sink.reset();
+    expect(sink.add(sample), equals(output));
+  });
 }

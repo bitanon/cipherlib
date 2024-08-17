@@ -398,7 +398,7 @@ class AESInGCMModeDecryptSink extends _AESInGCMModeSinkBase {
 /// Provides AES cipher in GCM mode for encryption.
 class AESInGCMModeEncrypt extends SaltedCipher {
   @override
-  final String name = "AES#encrypt/GCM";
+  String get name => "AES#encrypt/GCM/${Padding.none.name}";
 
   /// Key for the cipher
   final Uint8List key;
@@ -425,7 +425,7 @@ class AESInGCMModeEncrypt extends SaltedCipher {
 /// Provides AES cipher in GCM mode for decryption.
 class AESInGCMModeDecrypt extends SaltedCipher {
   @override
-  final String name = "AES#decrypt/GCM";
+  String get name => "AES#decrypt/GCM/${Padding.none.name}";
 
   /// Key for the cipher
   final Uint8List key;

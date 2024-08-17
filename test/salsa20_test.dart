@@ -23,14 +23,25 @@ void main() {
   test('nonce is null', () {
     var key = randomNumbers(32);
     var text = randomBytes(100);
-    var cipher = salsa20(text, key);
-    var plain = salsa20(cipher, key);
-    expect(text, equals(plain));
+    salsa20(text, key);
   });
   test('nonce length is not 12 bytes', () {
     var key = Uint8List(32);
     var text = Uint8List(100);
     expect(() => salsa20(text, key, nonce: [1]), throwsArgumentError);
+  });
+  test('counter length is not 8 bytes when nonce is 8 bytes', () {
+    var key = Uint8List(32);
+    var iv8 = Uint8List(8);
+    var iv16 = Uint8List(16);
+    for (int i = 0; i < 8; ++i) {
+      Salsa20Sink(key, iv16, Uint8List(i));
+      expect(() => Salsa20Sink(key, iv8, Uint8List(i)), throwsArgumentError);
+    }
+    for (int i = 8; i < 16; ++i) {
+      Salsa20Sink(key, iv8, Uint8List(i));
+      Salsa20Sink(key, iv16, Uint8List(i));
+    }
   });
   test('Specification example (32-bytes key)', () {
     var key = [
@@ -97,5 +108,35 @@ void main() {
       var backwards = salsa20(cipher, key, nonce: nonce);
       expect(plain, equals(backwards), reason: '[text: $j]');
     }
+  });
+
+  test('sink test (no add after close)', () {
+    var key = Uint8List.fromList(
+      List.generate(16, (i) => i + 1),
+    );
+    var nonce = Uint8List.fromList(
+      List.generate(16, (i) => i + 101),
+    );
+    var sample = Uint8List(64);
+    var output = [
+      39, 173, 46, 248, 30, 200, 82, 17, 48, 67, 254, 239, 37, 18, 13, //
+      247, 241, 200, 61, 144, 10, 55, 50, 185, 6, 47, 246, 253, 143, 86, 187,
+      225, 134, 85, 110, 246, 161, 163, 43, 235, 231, 94, 171, 51, 145, 214,
+      112, 29, 14, 232, 5, 16, 151, 140, 183, 141, 171, 9, 122, 181, 104, 182,
+      177, 193
+    ];
+    var counter = Nonce64.zero().bytes;
+    var sink = Salsa20Sink(key, nonce, counter);
+    int step = 8;
+    for (int i = 0; i < sample.length; i += step) {
+      var inp = sample.skip(i).take(step).toList();
+      var out = output.skip(i).take(step).toList();
+      expect(sink.add(inp), equals(out));
+    }
+    expect(sink.close(), equals([]));
+    expect(sink.closed, true);
+    expect(() => sink.add([1]), throwsStateError);
+    sink.reset();
+    expect(sink.add(sample), equals(output));
   });
 }

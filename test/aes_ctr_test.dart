@@ -9,6 +9,55 @@ import 'package:hashlib_codecs/hashlib_codecs.dart';
 import 'package:test/test.dart';
 
 void main() {
+  group("functionality tests", () {
+    final key = Uint8List(32);
+    final iv = Uint8List(16);
+    final input = Uint8List(64);
+    test("name is correct", () {
+      expect(AES(key).ctr(iv).name, "AES/CTR/NoPadding");
+    });
+    test("accepts null IV", () {
+      AESInCTRMode(key).encrypt(input);
+    });
+    test("encryptor and decryptor is the same", () {
+      var aes = AES(key).ctr(iv);
+      expect(aes.encryptor, aes.decryptor);
+    });
+    test("encryptor name is correct", () {
+      expect(AES(key).ctr(iv).encryptor.name, "AES#cipher/CTR/NoPadding");
+    });
+    test("decryptor name is correct", () {
+      expect(AES(key).ctr(iv).decryptor.name, "AES#cipher/CTR/NoPadding");
+    });
+    test('sink test (no add after close)', () {
+      final aes = AES(key).ctr(iv);
+      var sink = aes.encryptor.createSink();
+      int step = 8;
+      var output = [];
+      for (int i = 0; i < input.length; i += step) {
+        output.addAll(sink.add(input.skip(i).take(step).toList()));
+      }
+      output.addAll(sink.close());
+      expect(sink.closed, true);
+      expect(output, equals(aes.encrypt(input)));
+      expect(() => sink.add(Uint8List(16)), throwsStateError);
+      sink.reset();
+      expect([...sink.add(input), ...sink.close()], equals(output));
+    });
+    test('reset iv', () {
+      var iv = randomBytes(16);
+      var key = randomBytes(24);
+      var aes = AES(key).ctr(iv);
+      for (int j = 0; j < 100; j++) {
+        aes.resetIV();
+        var inp = randomBytes(j);
+        var cipher = aes.encrypt(inp);
+        var plain = aes.decrypt(cipher);
+        expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
+      }
+    });
+  });
+
   // https://csrc.nist.gov/pubs/sp/800/38/a/final
   group('NIST SP 800-38A', () {
     group('F5.1 CTR-AES128.Encrypt', () {
@@ -126,6 +175,56 @@ void main() {
     test('decrypt', () {
       var reverse = aes.decrypt(cipher);
       expect(toHex(reverse), equals(toHex(plain)));
+    });
+  });
+
+  group('treats counter as 64-bit number', () {
+    test('increment from maximum 32-bit integer', () {
+      var key = fromHex('2b7e151628aed2a6abf7158809cf4f3c');
+      var plain1 = randomBytes(16);
+      var plain2 = randomBytes(16);
+      var plain3 = randomBytes(16);
+
+      var iv1 = fromHex('000102030405060708090a00ffffffff');
+      var sink1 = AESInCTRModeSink(key, iv1);
+      sink1.add(plain1);
+      var out1 = sink1.add(plain2);
+      var out3 = sink1.add(plain3);
+
+      var iv2 = fromHex('000102030405060708090a0100000000');
+      var sink2 = AESInCTRModeSink(key, iv2);
+      var out2 = sink2.add(plain2);
+
+      var iv3 = fromHex('000102030405060708090a0100000001');
+      var sink3 = AESInCTRModeSink(key, iv3);
+      var out4 = sink3.add(plain3);
+
+      expect(toHex(out1), equals(toHex(out2)));
+      expect(toHex(out3), equals(toHex(out4)));
+    });
+
+    test('increment from maximum 64-bit integer', () {
+      var key = fromHex('2b7e151628aed2a6abf7158809cf4f3c');
+      var plain1 = randomBytes(16);
+      var plain2 = randomBytes(16);
+      var plain3 = randomBytes(16);
+
+      var iv1 = fromHex('0001020304050607ffffffffffffffff');
+      var sink1 = AESInCTRModeSink(key, iv1);
+      sink1.add(plain1);
+      var out1 = sink1.add(plain2);
+      var out3 = sink1.add(plain3);
+
+      var iv2 = fromHex('00010203040506070000000000000000');
+      var sink2 = AESInCTRModeSink(key, iv2);
+      var out2 = sink2.add(plain2);
+
+      var iv3 = fromHex('00010203040506070000000000000001');
+      var sink3 = AESInCTRModeSink(key, iv3);
+      var out4 = sink3.add(plain3);
+
+      expect(toHex(out1), equals(toHex(out2)));
+      expect(toHex(out3), equals(toHex(out4)));
     });
   });
 
@@ -284,18 +383,5 @@ void main() {
         expect(toHex(output), equals(toHex(input)), reason: '[size: $j]');
       }
     });
-  });
-
-  test('reset iv', () {
-    var iv = randomBytes(16);
-    var key = randomBytes(24);
-    var aes = AES(key).ctr(iv);
-    for (int j = 0; j < 100; j++) {
-      aes.resetIV();
-      var inp = randomBytes(j);
-      var cipher = aes.encrypt(inp);
-      var plain = aes.decrypt(cipher);
-      expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
-    }
   });
 }

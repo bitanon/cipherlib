@@ -19,8 +19,11 @@ class ChaCha20Sink extends CipherSink {
     if (_nonce.length != 8 && _nonce.length != 12) {
       throw ArgumentError('The nonce should be either 8 or 12 bytes');
     }
-    if (_counter.length != 4 && _counter.length != 8) {
-      throw ArgumentError('The counter should be either 4 or 8 bytes');
+    if (_nonce.length == 8 && _counter.length < 8) {
+      throw ArgumentError('The counter should be 8 bytes');
+    }
+    if (_nonce.length == 12 && _counter.length < 4) {
+      throw ArgumentError('The counter should be 4 bytes');
     }
     _counterSize = _nonce.length == 8 ? 8 : 4;
     reset();
@@ -257,9 +260,10 @@ class ChaCha20 extends SaltedCipher {
   }) {
     nonce ??= randomBytes(8);
     counter ??= Nonce64.int64(1);
+    var counter8 = counter.bytes;
     var key8 = key is Uint8List ? key : Uint8List.fromList(key);
     var nonce8 = nonce is Uint8List ? nonce : Uint8List.fromList(nonce);
-    return ChaCha20(key8, nonce8, counter.bytes);
+    return ChaCha20(key8, nonce8, counter8);
   }
 
   @override

@@ -37,6 +37,23 @@ void main() {
         }
       }
     });
+
+    test('can pad without the size parameter', () {
+      var block = [-1, -1, -1];
+      expect(Padding.zero.pad(block, 2), true);
+      expect(block, equals([-1, -1, 0]));
+    });
+
+    test('can get pad length without size parameter', () {
+      var block = [-1, -1, 0, 0, 0];
+      expect(Padding.zero.getPadLength(block), 3);
+    });
+
+    test('can unpad without the size parameter', () {
+      var block = [-1, -1, 0, 0, 0];
+      expect(Padding.zero.unpad(block), equals([-1, -1]));
+      expect(block, equals([-1, -1, 0, 0, 0]));
+    });
   });
 
   group('PaddingScheme.byte', () {
@@ -63,6 +80,33 @@ void main() {
               reason: 'unpad | pos: $i, size: $s');
         }
       }
+    });
+
+    test('can pad without the size parameter', () {
+      var block = [-1, -1, -1];
+      expect(Padding.byte.pad(block, 2), true);
+      expect(block, equals([-1, -1, 0x80]));
+    });
+
+    test('can get pad length without size parameter', () {
+      var block = [-1, -1, 0x80, 0, 0];
+      expect(Padding.byte.getPadLength(block), 3);
+    });
+
+    test('can unpad without the size parameter', () {
+      var block = [-1, -1, 0x80, 0, 0];
+      expect(Padding.byte.unpad(block), equals([-1, -1]));
+      expect(block, equals([-1, -1, 0x80, 0, 0]));
+    });
+
+    test('throws when it contains invalid byte', () {
+      var block = [-1, -1, 0x80, 1, 0];
+      expect(() => Padding.byte.getPadLength(block), throwsStateError);
+    });
+
+    test('throws when no sign byte is present', () {
+      var block = [0, 0, 0, 0];
+      expect(() => Padding.byte.getPadLength(block), throwsStateError);
     });
   });
 
@@ -92,6 +136,43 @@ void main() {
         }
       }
     });
+
+    test('can pad without the size parameter', () {
+      var block = [-1, -1, -1, -1];
+      expect(Padding.ansi.pad(block, 2), true);
+      expect(block, equals([-1, -1, 0, 2]));
+    });
+
+    test('can get pad length without size parameter', () {
+      var block = [-1, -1, 0, 0, 3];
+      expect(Padding.ansi.getPadLength(block), 3);
+    });
+
+    test('can unpad without the size parameter', () {
+      var block = [-1, -1, 0, 0, 3];
+      expect(Padding.ansi.unpad(block), equals([-1, -1]));
+      expect(block, equals([-1, -1, 0, 0, 3]));
+    });
+
+    test('throws when padding count is invalid', () {
+      var block = [-1, -1, 0, 0, 10];
+      expect(() => Padding.ansi.getPadLength(block), throwsStateError);
+    });
+
+    test('throws when padding bytes are not valid', () {
+      var block = [-1, -1, -1, 0, 3];
+      expect(() => Padding.ansi.getPadLength(block), throwsStateError);
+    });
+
+    test('max padding size limit is 255', () {
+      var block = Uint8List(260);
+      expect(() => Padding.ansi.pad(block, 0), throwsStateError);
+      expect(() => Padding.ansi.pad(block, 1), throwsStateError);
+      expect(() => Padding.ansi.pad(block, 2), throwsStateError);
+      expect(() => Padding.ansi.pad(block, 3), throwsStateError);
+      expect(() => Padding.ansi.pad(block, 4), throwsStateError);
+      Padding.ansi.pad(block, 5);
+    });
   });
 
   group('PaddingScheme.pkcs7', () {
@@ -116,6 +197,43 @@ void main() {
               reason: 'unpad | pos: $i, size: $s');
         }
       }
+    });
+
+    test('can pad without the size parameter', () {
+      var block = [-1, -1, -1, -1];
+      expect(Padding.pkcs7.pad(block, 2), true);
+      expect(block, equals([-1, -1, 2, 2]));
+    });
+
+    test('can get pad length without size parameter', () {
+      var block = [-1, -1, 3, 3, 3];
+      expect(Padding.pkcs7.getPadLength(block), 3);
+    });
+
+    test('can unpad without the size parameter', () {
+      var block = [-1, -1, 3, 3, 3];
+      expect(Padding.pkcs7.unpad(block), equals([-1, -1]));
+      expect(block, equals([-1, -1, 3, 3, 3]));
+    });
+
+    test('max padding size limit is 255', () {
+      var block = Uint8List(260);
+      expect(() => Padding.pkcs7.pad(block, 0), throwsStateError);
+      expect(() => Padding.pkcs7.pad(block, 1), throwsStateError);
+      expect(() => Padding.pkcs7.pad(block, 2), throwsStateError);
+      expect(() => Padding.pkcs7.pad(block, 3), throwsStateError);
+      expect(() => Padding.pkcs7.pad(block, 4), throwsStateError);
+      Padding.pkcs7.pad(block, 5);
+    });
+
+    test('throws when sign byte is not valid', () {
+      var block = [-1, -1, 10, 10, 10];
+      expect(() => Padding.pkcs7.getPadLength(block), throwsStateError);
+    });
+
+    test('throws when sign byte is not sequential', () {
+      var block = [-1, -1, 0, 3, 3];
+      expect(() => Padding.pkcs7.getPadLength(block), throwsStateError);
     });
   });
 

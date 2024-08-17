@@ -3,6 +3,7 @@
 
 import 'dart:typed_data';
 
+import 'package:cipherlib/src/algorithms/padding.dart';
 import 'package:cipherlib/src/core/cipher_sink.dart';
 import 'package:cipherlib/src/core/salted_cipher.dart';
 import 'package:cipherlib/src/utils/nonce.dart';
@@ -38,8 +39,8 @@ class AESInXTSModeEncryptSink extends CipherSink {
 
   int _pos = 0;
   int _rpos = 0;
-  int _msgLength = 0;
   bool _closed = false;
+  bool _firstBlockAvailable = false;
   final Uint8List _ekey;
   final Uint8List _tkey;
   final Uint8List _iv;
@@ -60,8 +61,8 @@ class AESInXTSModeEncryptSink extends CipherSink {
   void reset() {
     _pos = 0;
     _rpos = 0;
-    _msgLength = 0;
     _closed = false;
+    _firstBlockAvailable = false;
     for (int i = 0; i < 16; ++i) {
       _tweak[i] = _iv[i];
     }
@@ -85,14 +86,14 @@ class AESInXTSModeEncryptSink extends CipherSink {
 
     n = _pos + end - start;
     if (!last) n -= 16;
-    n += _msgLength < 16 ? _rpos : 16;
+    n += _firstBlockAvailable ? 16 : _rpos;
     if (!last) n -= (n & 15);
     if (n < 0) n = 0;
     var output = Uint8List(n);
 
     p = 0;
     for (i = start; i < end; ++i) {
-      if (_msgLength >= 16) {
+      if (_firstBlockAvailable) {
         _block[_pos] = _residue[_rpos];
         _pos++;
         if (_pos == 16) {
@@ -108,16 +109,15 @@ class AESInXTSModeEncryptSink extends CipherSink {
         }
       }
       _residue[_rpos++] = data[i];
-      _rpos &= 15;
-      _msgLength++;
+      if (_rpos == 16) {
+        _firstBlockAvailable = true;
+        _rpos = 0;
+      }
     }
 
     if (last) {
-      if (_msgLength < 16) {
+      if (!_firstBlockAvailable) {
         throw StateError('The message length must be at least 16-bytes');
-      }
-      if (_pos != _rpos) {
-        throw StateError('Invalid residue length');
       }
       n = _pos;
       for (j = n; j < 16; j++) {
@@ -165,8 +165,6 @@ class AESInXTSModeEncryptSink extends CipherSink {
 
     if (n == p) {
       return output;
-    } else if (p == 0) {
-      return Uint8List(0);
     } else {
       return output.sublist(0, p);
     }
@@ -188,8 +186,8 @@ class AESInXTSModeDecryptSink extends CipherSink {
 
   int _pos = 0;
   int _rpos = 0;
-  int _msgLength = 0;
   bool _closed = false;
+  bool _firstBlockAvailable = false;
   final Uint8List _dkey;
   final Uint8List _tkey;
   final Uint8List _iv;
@@ -211,8 +209,8 @@ class AESInXTSModeDecryptSink extends CipherSink {
   void reset() {
     _pos = 0;
     _rpos = 0;
-    _msgLength = 0;
     _closed = false;
+    _firstBlockAvailable = false;
     for (int i = 0; i < 16; ++i) {
       _tweak[i] = _iv[i];
     }
@@ -236,14 +234,14 @@ class AESInXTSModeDecryptSink extends CipherSink {
 
     n = _pos + end - start;
     if (!last) n -= 16;
-    n += _msgLength < 16 ? _rpos : 16;
+    n += _firstBlockAvailable ? 16 : _rpos;
     if (!last) n -= (n & 15);
     if (n < 0) n = 0;
     var output = Uint8List(n);
 
     p = 0;
     for (i = start; i < end; ++i) {
-      if (_msgLength >= 16) {
+      if (_firstBlockAvailable) {
         _block[_pos] = _residue[_rpos];
         _pos++;
         if (_pos == 16) {
@@ -259,16 +257,15 @@ class AESInXTSModeDecryptSink extends CipherSink {
         }
       }
       _residue[_rpos++] = data[i];
-      _rpos &= 15;
-      _msgLength++;
+      if (_rpos == 16) {
+        _firstBlockAvailable = true;
+        _rpos = 0;
+      }
     }
 
     if (last) {
-      if (_msgLength < 16) {
+      if (!_firstBlockAvailable) {
         throw StateError('The message length must be at least 16-bytes');
-      }
-      if (_pos != _rpos) {
-        throw StateError('Invalid residue length');
       }
       n = _pos;
       for (j = n; j < 16; j++) {
@@ -316,8 +313,6 @@ class AESInXTSModeDecryptSink extends CipherSink {
 
     if (n == p) {
       return output;
-    } else if (p == 0) {
-      return Uint8List(0);
     } else {
       return output.sublist(0, p);
     }
@@ -327,7 +322,7 @@ class AESInXTSModeDecryptSink extends CipherSink {
 /// Provides encryption for AES cipher in XTS mode.
 class AESInXTSModeEncrypt extends SaltedCipher {
   @override
-  String get name => "AES#encrypt/XTS";
+  String get name => "AES#encrypt/XTS/${Padding.none.name}";
 
   /// Key for the plaintext encryption
   final Uint8List ekey;
@@ -350,7 +345,7 @@ class AESInXTSModeEncrypt extends SaltedCipher {
 /// Provides decryption for AES cipher in XTS mode.
 class AESInXTSModeDecrypt extends SaltedCipher {
   @override
-  String get name => "AES#decrypt/XTS";
+  String get name => "AES#decrypt/XTS/${Padding.none.name}";
 
   /// Key for the ciphertext decryption
   final Uint8List ekey;
@@ -373,7 +368,7 @@ class AESInXTSModeDecrypt extends SaltedCipher {
 /// Provides encryption and decryption for AES cipher in XTS mode.
 class AESInXTSMode extends SaltedCollateCipher {
   @override
-  String get name => "AES/XTS";
+  String get name => "AES/XTS/${Padding.none.name}";
 
   @override
   final AESInXTSModeEncrypt encryptor;

@@ -9,6 +9,93 @@ import 'package:hashlib_codecs/hashlib_codecs.dart';
 import 'package:test/test.dart';
 
 void main() {
+  group("functionality tests", () {
+    final key = Uint8List(32);
+    final iv = Uint8List(16);
+    final input = Uint8List(64);
+    test("name is correct", () {
+      expect(AES(key).xts(iv).name, "AES/XTS/NoPadding");
+    });
+    test("accepts null IV", () {
+      AESInXTSMode(key).encrypt(input);
+    });
+    test("encryptor name is correct", () {
+      expect(AES(key).xts(iv).encryptor.name, "AES#encrypt/XTS/NoPadding");
+    });
+    test("decryptor name is correct", () {
+      expect(AES(key).xts(iv).decryptor.name, "AES#decrypt/XTS/NoPadding");
+    });
+    test("iv must be 16 bytes", () {
+      for (int i = 0; i < 20; ++i) {
+        if (i == 16) {
+          AESInXTSMode(key, Uint8List(i));
+        } else {
+          expect(() => AESInXTSMode(key, Uint8List(i)), throwsStateError);
+        }
+      }
+    });
+    test('encryptor sink test (no add after close)', () {
+      final aes = AES(key).xts(iv);
+      var sink = aes.encryptor.createSink();
+      int step = 8;
+      var output = [];
+      for (int i = 0; i < input.length; i += step) {
+        output.addAll(sink.add(input.skip(i).take(step).toList()));
+      }
+      output.addAll(sink.close());
+      expect(sink.closed, true);
+      expect(output, equals(aes.encrypt(input)));
+      expect(() => sink.add(Uint8List(16)), throwsStateError);
+      sink.reset();
+      expect([...sink.add(input), ...sink.close()], equals(output));
+    });
+    test('decryptor sink test (no add after close)', () {
+      final aes = AES(key).xts(iv);
+      var ciphertext = aes.encrypt(input);
+      var sink = aes.decryptor.createSink();
+      int step = 8;
+      var output = [];
+      for (int i = 0; i < ciphertext.length; i += step) {
+        output.addAll(sink.add(ciphertext.skip(i).take(step).toList()));
+      }
+      output.addAll(sink.close());
+      expect(sink.closed, true);
+      expect(output, equals(input));
+      expect(() => sink.add(Uint8List(16)), throwsStateError);
+      sink.reset();
+      expect([...sink.add(ciphertext), ...sink.close()], equals(output));
+    });
+    test('reset iv', () {
+      var key = randomBytes(32);
+      var iv = randomBytes(16);
+      var aes = AES(key).xts(iv);
+      for (int j = 16; j < 100; j++) {
+        aes.resetIV();
+        var inp = randomBytes(j);
+        var cipher = aes.encrypt(inp);
+        var plain = aes.decrypt(cipher);
+        expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
+      }
+    });
+    test('does not allow message size < 16 bytes', () {
+      var key = randomBytes(32);
+      var iv = randomBytes(16);
+      var aes = AES(key).xts(iv);
+      for (int j = 0; j < 16; j++) {
+        var inp = Uint8List(j);
+        expect(() => aes.encrypt(inp), throwsStateError, reason: '[size: $j]');
+        expect(() => aes.decrypt(inp), throwsStateError, reason: '[size: $j]');
+      }
+    });
+    test('does not allow invalid key sizes', () {
+      for (int x in [16, 24, 33, 49, 65]) {
+        var key = Uint8List(x);
+        var iv = Uint8List(16);
+        expect(() => AES(key).xts(iv), throwsStateError, reason: '[size: $x]');
+      }
+    });
+  });
+
   // https://csrc.nist.gov/pubs/sp/800/38/a/finals
   group('IEEE Standard 1619-2007', () {
     group('Vector 1', () {
@@ -1449,37 +1536,5 @@ void main() {
         expect(toHex(output), equals(toHex(input)), reason: '[size: $j]');
       }
     });
-  });
-
-  test('reset iv', () {
-    var key = randomBytes(32);
-    var iv = randomBytes(16);
-    var aes = AES(key).xts(iv);
-    for (int j = 16; j < 100; j++) {
-      aes.resetIV();
-      var inp = randomBytes(j);
-      var cipher = aes.encrypt(inp);
-      var plain = aes.decrypt(cipher);
-      expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
-    }
-  });
-
-  test('does not allow message size < 16 bytes', () {
-    var key = randomBytes(32);
-    var iv = randomBytes(16);
-    var aes = AES(key).xts(iv);
-    for (int j = 0; j < 16; j++) {
-      var inp = Uint8List(j);
-      expect(() => aes.encrypt(inp), throwsStateError, reason: '[size: $j]');
-      expect(() => aes.decrypt(inp), throwsStateError, reason: '[size: $j]');
-    }
-  });
-
-  test('does not allow invalid key sizes', () {
-    for (int x in [16, 24, 33, 49, 65]) {
-      var key = Uint8List(x);
-      var iv = Uint8List(16);
-      expect(() => AES(key).xts(iv), throwsStateError, reason: '[size: $x]');
-    }
   });
 }

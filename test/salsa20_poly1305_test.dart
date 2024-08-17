@@ -1,6 +1,8 @@
 // Copyright (c) 2024, Sudipto Chandra
 // All rights reserved. Check LICENSE file for details.
 
+import 'dart:typed_data';
+
 import 'package:cipherlib/cipherlib.dart';
 import 'package:test/test.dart';
 
@@ -25,5 +27,28 @@ void main() {
       );
       expect(verified.data, equals(text), reason: '[text size: $j]');
     }
+  });
+
+  test('decrypt with invalid mac', () {
+    var key = Uint8List(32);
+    var nonce = Uint8List(16);
+    var sample = Uint8List(150);
+    var aad = Uint8List(16);
+    var res = salsa20poly1305(
+      sample,
+      key,
+      nonce: nonce,
+      aad: aad,
+    );
+    expect(
+      () => salsa20poly1305(
+        res.data,
+        key,
+        mac: Uint8List(16),
+        nonce: nonce,
+        aad: aad,
+      ),
+      throwsA((e) => e is AssertionError),
+    );
   });
 }

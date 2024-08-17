@@ -5,28 +5,35 @@ import 'dart:typed_data';
 
 import 'package:cipherlib/src/core/cipher_sink.dart';
 import 'package:cipherlib/src/core/salted_cipher.dart';
+import 'package:cipherlib/src/utils/nonce.dart';
+import 'package:hashlib/hashlib.dart' show randomBytes;
 
 const int _mask32 = 0xFFFFFFFF;
 
 /// This sink is used by the [Salsa20] algorithm.
 class Salsa20Sink extends CipherSink {
-  Salsa20Sink(this._key, this._iv, this._counterStart) {
+  Salsa20Sink(this._key, this._nonce, this._counter) {
     if (_key.length != 16 && _key.length != 32) {
       throw ArgumentError('The key should be either 16 or 32 bytes');
     }
-    if (_iv.length != 8 && _iv.length != 16) {
+    if (_nonce.length != 8 && _nonce.length != 16) {
       throw ArgumentError('The nonce should be either 8 or 16 bytes');
+    }
+    _needCounter = _nonce.length == 8;
+    if (_needCounter && _counter.length < 8) {
+      throw ArgumentError('The counter should be 8 bytes');
     }
     reset();
   }
 
   int _pos = 0;
-  int _counter = 0;
   bool _closed = false;
   final Uint8List _key;
-  final Uint8List _iv;
-  final int _counterStart;
+  final Uint8List _nonce;
+  final Uint8List _counter;
+  final _iv = Uint8List(16);
   final _state = Uint32List(16);
+  late final bool _needCounter;
   late final _state8 = _state.buffer.asUint8List();
   late final _key32 = _key.buffer.asUint32List();
   late final _iv32 = _iv.buffer.asUint32List();
@@ -38,8 +45,16 @@ class Salsa20Sink extends CipherSink {
   void reset() {
     _pos = 0;
     _closed = false;
-    _counter = _counterStart;
-    _block(_state, _key32, _iv32, _counter++);
+    for (int i = 0; i < _nonce.length; ++i) {
+      _iv[i] = _nonce[i];
+    }
+    if (_needCounter) {
+      for (int i = 8; i < 16; ++i) {
+        _iv[i] = _counter[i - 8];
+      }
+    }
+    _block(_state, _key32, _iv32);
+    _increment();
   }
 
   @override
@@ -58,7 +73,8 @@ class Salsa20Sink extends CipherSink {
     var result = Uint8List(end - start);
     for (int i = start; i < end; i++) {
       if (_pos == 64) {
-        _block(_state, _key32, _iv32, _counter++);
+        _block(_state, _key32, _iv32);
+        _increment();
         _pos = 0;
       }
       result[i] = data[i] ^ _state8[_pos++];
@@ -66,11 +82,19 @@ class Salsa20Sink extends CipherSink {
     return result;
   }
 
+  void _increment() {
+    if (_needCounter) {
+      for (int i = 8; i < 16; ++i) {
+        if ((++_iv[i]) != 0) return;
+      }
+    }
+  }
+
   @pragma('vm:prefer-inline')
   static int _rotl32(int x, int n) =>
       (((x << n) & _mask32) ^ ((x & _mask32) >>> (32 - n)));
 
-  static void _block(Uint32List B, Uint32List K, Uint32List N, int counter) {
+  static void _block(Uint32List B, Uint32List K, Uint32List N) {
     int i, s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15;
 
     // init state
@@ -81,7 +105,6 @@ class Salsa20Sink extends CipherSink {
       s3 = B[3] = K[2];
       s4 = B[4] = K[3];
       s5 = B[5] = 0x3120646e; // 'nd 1'
-      // 6..9 : nonce
       s10 = B[10] = 0x79622d36; // '6-by'
       s11 = B[11] = K[0];
       s12 = B[12] = K[1];
@@ -95,7 +118,6 @@ class Salsa20Sink extends CipherSink {
       s3 = B[3] = K[2];
       s4 = B[4] = K[3];
       s5 = B[5] = 0x3320646e; // 'nd 3'
-      // 6..9 : nonce
       s10 = B[10] = 0x79622d32; // '2-by'
       s11 = B[11] = K[4];
       s12 = B[12] = K[5];
@@ -103,18 +125,10 @@ class Salsa20Sink extends CipherSink {
       s14 = B[14] = K[7];
       s15 = B[15] = 0x6b206574; // 'te k'
     }
-    // 6..9 : nonce
-    if (N.lengthInBytes == 8) {
-      s6 = B[6] = N[0];
-      s7 = B[7] = N[1];
-      s8 = B[8] = counter;
-      s9 = B[9] = counter >>> 32;
-    } else {
-      s6 = B[6] = N[0];
-      s7 = B[7] = N[1];
-      s8 = B[8] = N[2];
-      s9 = B[9] = N[3];
-    }
+    s6 = B[6] = N[0];
+    s7 = B[7] = N[1];
+    s8 = B[8] = N[2];
+    s9 = B[9] = N[3];
 
     // 10 row(column) rounds
     for (i = 0; i < 10; i++) {
@@ -197,27 +211,29 @@ class Salsa20 extends SaltedCipher {
   final Uint8List key;
 
   /// The initial block id
-  final int counter;
+  final Uint8List counter;
 
   const Salsa20(
     this.key,
-    Uint8List iv, [
-    this.counter = 0,
-  ]) : super(iv);
+    Uint8List nonce,
+    this.counter,
+  ) : super(nonce);
 
   /// Creates a [Salsa20] with List<int> [key], and [nonce].
   ///
   /// Every elements of the both list is transformed to unsigned 8-bit numbers.
   factory Salsa20.fromList(
-    List<int> key,
-    List<int> nonce, [
-    int counter = 0,
-  ]) =>
-      Salsa20(
-        key is Uint8List ? key : Uint8List.fromList(key),
-        nonce is Uint8List ? nonce : Uint8List.fromList(nonce),
-        counter,
-      );
+    List<int> key, {
+    List<int>? nonce,
+    Nonce64? counter,
+  }) {
+    nonce ??= randomBytes(16);
+    counter ??= Nonce64.zero();
+    var counter8 = counter.bytes;
+    var key8 = key is Uint8List ? key : Uint8List.fromList(key);
+    var nonce8 = nonce is Uint8List ? nonce : Uint8List.fromList(nonce);
+    return Salsa20(key8, nonce8, counter8);
+  }
 
   @override
   @pragma('vm:prefer-inline')

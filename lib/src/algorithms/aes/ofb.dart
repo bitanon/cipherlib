@@ -86,7 +86,7 @@ class AESInOFBModeSink extends CipherSink {
 /// Provides encryption for AES cipher in OFB mode.
 class AESInOFBModeCipher extends SaltedCipher {
   @override
-  final String name = "AES#cipher/OFB";
+  String get name => "AES#cipher/OFB/${Padding.none.name}";
 
   /// Key for the cipher
   final Uint8List key;

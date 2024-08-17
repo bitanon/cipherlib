@@ -97,7 +97,7 @@ class AESInCTRModeSink extends CipherSink {
 /// Provides AES cipher in CTR mode.
 class AESInCTRModeCipher extends SaltedCipher {
   @override
-  final String name = "AES/CTR";
+  String get name => "AES#cipher/CTR/${Padding.none.name}";
 
   /// Key for the cipher
   final Uint8List key;
@@ -140,9 +140,10 @@ class AESInCTRMode extends SaltedCollateCipher {
     }
     var iv8 = iv is Uint8List ? iv : Uint8List.fromList(iv);
     var key8 = key is Uint8List ? key : Uint8List.fromList(key);
+    var cipher = AESInCTRModeCipher(key8, iv8);
     return AESInCTRMode._(
-      encryptor: AESInCTRModeCipher(key8, iv8),
-      decryptor: AESInCTRModeCipher(key8, iv8),
+      encryptor: cipher,
+      decryptor: cipher,
     );
   }
 

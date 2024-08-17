@@ -9,6 +9,71 @@ import 'package:hashlib_codecs/hashlib_codecs.dart';
 import 'package:test/test.dart';
 
 void main() {
+  group("functionality tests", () {
+    final key = Uint8List(32);
+    final input = Uint8List(64);
+    test("name is correct", () {
+      expect(AES.noPadding(key).ecb().name, "AES/ECB/NoPadding");
+      expect(AES.ansi(key).ecb().name, "AES/ECB/ANSI");
+      expect(AES.byte(key).ecb().name, "AES/ECB/Byte");
+      expect(AES.pkcs7(key).ecb().name, "AES/ECB/PKCS7");
+    });
+    test("padding is correct", () {
+      expect(AES.noPadding(key).ecb().padding, Padding.none);
+      expect(AES.ansi(key).ecb().padding, Padding.ansi);
+      expect(AES.byte(key).ecb().padding, Padding.byte);
+      expect(AES.pkcs7(key).ecb().padding, Padding.pkcs7);
+    });
+    test("accepts null IV", () {
+      AESInECBMode(key).encrypt(input);
+    });
+    test("encryptor name is correct", () {
+      expect(
+          AES.noPadding(key).ecb().encryptor.name, "AES#encrypt/ECB/NoPadding");
+      expect(AES.ansi(key).ecb().encryptor.name, "AES#encrypt/ECB/ANSI");
+      expect(AES.byte(key).ecb().encryptor.name, "AES#encrypt/ECB/Byte");
+      expect(AES.pkcs7(key).ecb().encryptor.name, "AES#encrypt/ECB/PKCS7");
+    });
+    test("decryptor name is correct", () {
+      expect(
+          AES.noPadding(key).ecb().decryptor.name, "AES#decrypt/ECB/NoPadding");
+      expect(AES.ansi(key).ecb().decryptor.name, "AES#decrypt/ECB/ANSI");
+      expect(AES.byte(key).ecb().decryptor.name, "AES#decrypt/ECB/Byte");
+      expect(AES.pkcs7(key).ecb().decryptor.name, "AES#decrypt/ECB/PKCS7");
+    });
+    test('encryptor sink test (no add after close)', () {
+      final aes = AES.noPadding(key).ecb();
+      var sink = aes.encryptor.createSink();
+      int step = 8;
+      var output = [];
+      for (int i = 0; i < input.length; i += step) {
+        output.addAll(sink.add(input.skip(i).take(step).toList()));
+      }
+      output.addAll(sink.close());
+      expect(sink.closed, true);
+      expect(output, equals(aes.encrypt(input)));
+      expect(() => sink.add(Uint8List(16)), throwsStateError);
+      sink.reset();
+      expect([...sink.add(input), ...sink.close()], equals(output));
+    });
+    test('decryptor sink test (no add after close)', () {
+      final aes = AES.noPadding(key).ecb();
+      var ciphertext = aes.encrypt(input);
+      var sink = aes.decryptor.createSink();
+      int step = 8;
+      var output = [];
+      for (int i = 0; i < ciphertext.length; i += step) {
+        output.addAll(sink.add(ciphertext.skip(i).take(step).toList()));
+      }
+      output.addAll(sink.close());
+      expect(sink.closed, true);
+      expect(output, equals(input));
+      expect(() => sink.add(Uint8List(16)), throwsStateError);
+      sink.reset();
+      expect([...sink.add(ciphertext), ...sink.close()], equals(output));
+    });
+  });
+
   // https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.197-upd1.pdf
   group("NIST.FIPS.197-upd1 AES128", () {
     var key = fromHex('2b7e151628aed2a6abf7158809cf4f3c');

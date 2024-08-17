@@ -9,6 +9,72 @@ import 'package:hashlib_codecs/hashlib_codecs.dart';
 import 'package:test/test.dart';
 
 void main() {
+  group("functionality tests", () {
+    final key = Uint8List(32);
+    final iv = Uint8List(16);
+    final input = Uint8List(64);
+    test("name is correct", () {
+      expect(AES.noPadding(key).cbc(iv).name, "AES/CBC/NoPadding");
+      expect(AES.ansi(key).cbc(iv).name, "AES/CBC/ANSI");
+      expect(AES.byte(key).cbc(iv).name, "AES/CBC/Byte");
+      expect(AES.pkcs7(key).cbc(iv).name, "AES/CBC/PKCS7");
+    });
+    test("padding is correct", () {
+      expect(AES.noPadding(key).cbc(iv).padding, Padding.none);
+      expect(AES.ansi(key).cbc(iv).padding, Padding.ansi);
+      expect(AES.byte(key).cbc(iv).padding, Padding.byte);
+      expect(AES.pkcs7(key).cbc(iv).padding, Padding.pkcs7);
+    });
+    test("accepts null IV", () {
+      AESInCBCMode(key).encrypt(input);
+    });
+    test("encryptor name is correct", () {
+      expect(AES.noPadding(key).cbc(iv).encryptor.name,
+          "AES#encrypt/CBC/NoPadding");
+      expect(AES.ansi(key).cbc(iv).encryptor.name, "AES#encrypt/CBC/ANSI");
+      expect(AES.byte(key).cbc(iv).encryptor.name, "AES#encrypt/CBC/Byte");
+      expect(AES.pkcs7(key).cbc(iv).encryptor.name, "AES#encrypt/CBC/PKCS7");
+    });
+    test("decryptor name is correct", () {
+      expect(AES.noPadding(key).cbc(iv).decryptor.name,
+          "AES#decrypt/CBC/NoPadding");
+      expect(AES.ansi(key).cbc(iv).decryptor.name, "AES#decrypt/CBC/ANSI");
+      expect(AES.byte(key).cbc(iv).decryptor.name, "AES#decrypt/CBC/Byte");
+      expect(AES.pkcs7(key).cbc(iv).decryptor.name, "AES#decrypt/CBC/PKCS7");
+    });
+    test('encryptor sink test (no add after close)', () {
+      final aes = AES.noPadding(key).cbc(iv);
+      var sink = aes.encryptor.createSink();
+      int step = 8;
+      var output = [];
+      for (int i = 0; i < input.length; i += step) {
+        output.addAll(sink.add(input.skip(i).take(step).toList()));
+      }
+      output.addAll(sink.close());
+      expect(sink.closed, true);
+      expect(output, equals(aes.encrypt(input)));
+      expect(() => sink.add(Uint8List(16)), throwsStateError);
+      sink.reset();
+      expect([...sink.add(input), ...sink.close()], equals(output));
+    });
+    test('decryptor sink test (no add after close)', () {
+      final aes = AES.noPadding(key).cbc(iv);
+      var ciphertext = aes.encrypt(input);
+      var sink = aes.decryptor.createSink();
+      int step = 8;
+      var output = [];
+      for (int i = 0; i < ciphertext.length; i += step) {
+        output.addAll(sink.add(ciphertext.skip(i).take(step).toList()));
+      }
+      output.addAll(sink.close());
+      expect(sink.closed, true);
+      expect(output, equals(input));
+      expect(() => sink.add(Uint8List(16)), throwsStateError);
+      sink.reset();
+      expect([...sink.add(ciphertext), ...sink.close()], equals(output));
+    });
+  });
+
   group('NIST SP 800-38A', () {
     // https://csrc.nist.gov/pubs/sp/800/38/a/final
     group('F2.1 CBC-AES128', () {

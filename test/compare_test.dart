@@ -118,7 +118,7 @@ void main() {
           pc.ParametersWithIV(pc.KeyParameter(key), nonce),
         );
         var out = instance.process(text);
-        expect(out, equals(result), reason: '[text: $j]');
+        expect(toHex(out), equals(toHex(result)), reason: '[text: $j]');
       }
     });
   });

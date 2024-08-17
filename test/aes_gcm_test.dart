@@ -1,12 +1,80 @@
 // Copyright (c) 2024, Sudipto Chandra
 // All rights reserved. Check LICENSE file for details.
 
+import 'dart:typed_data';
+
 import 'package:cipherlib/cipherlib.dart';
 import 'package:hashlib/hashlib.dart';
 import 'package:hashlib_codecs/hashlib_codecs.dart';
 import 'package:test/test.dart';
 
 void main() {
+  group("functionality tests", () {
+    final key = Uint8List(32);
+    final iv = Uint8List(16);
+    final input = Uint8List(64);
+    test("name is correct", () {
+      expect(AES(key).gcm(iv).name, "AES/GCM/NoPadding");
+    });
+    test("accepts null IV", () {
+      AESInGCMMode(key).encrypt(input);
+    });
+    test("encryptor name is correct", () {
+      expect(AES(key).gcm(iv).encryptor.name, "AES#encrypt/GCM/NoPadding");
+    });
+    test("decryptor name is correct", () {
+      expect(AES(key).gcm(iv).decryptor.name, "AES#decrypt/GCM/NoPadding");
+    });
+    test("tagSize must be between 1 and 16", () {
+      for (int i = -10; i < 20; ++i) {
+        if (i >= 1 && i <= 16) {
+          AESInGCMModeEncryptSink(key, iv, null, i);
+          AESInGCMModeDecryptSink(key, iv, null, i);
+        } else {
+          expect(
+            () => AESInGCMModeEncryptSink(key, iv, null, i),
+            throwsStateError,
+          );
+          expect(
+            () => AESInGCMModeDecryptSink(key, iv, null, i),
+            throwsStateError,
+          );
+        }
+      }
+    });
+    test('encryptor sink test (no add after close)', () {
+      final aes = AES(key).gcm(iv);
+      var sink = aes.encryptor.createSink();
+      int step = 8;
+      var output = [];
+      for (int i = 0; i < input.length; i += step) {
+        output.addAll(sink.add(input.skip(i).take(step).toList()));
+      }
+      output.addAll(sink.close());
+      expect(sink.closed, true);
+      expect(output, equals(aes.encrypt(input)));
+      expect(() => sink.add(Uint8List(16)), throwsStateError);
+      sink.reset();
+      expect([...sink.add(input), ...sink.close()], equals(output));
+    });
+    test('decryptor sink test (no add after close)', () {
+      final aes = AES(key).gcm(iv);
+      var ciphertext = aes.encrypt(input);
+      var sink = aes.decryptor.createSink();
+      int step = 8;
+      var output = [];
+      for (int i = 0; i < ciphertext.length; i += step) {
+        output.addAll(sink.add(ciphertext.skip(i).take(step).toList()));
+      }
+      output.addAll(sink.close());
+      expect(sink.closed, true);
+      expect(output, equals(input));
+      expect(() => sink.add(Uint8List(16)), throwsStateError);
+      sink.reset();
+      expect([...sink.add(ciphertext), ...sink.close()], equals(output));
+    });
+  });
+
   // https://csrc.nist.rip/groups/ST/toolkit/BCM/documents/proposedmodes/gcm/gcm-spec.pdf
   group("NIST examples", () {
     group('AES-128/GCM', () {

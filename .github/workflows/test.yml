@@ -24,6 +24,12 @@ jobs:
         with:
           sdk: ${{ matrix.sdk }}
 
+      - name: 'Install global packages'
+        run: |
+          dart pub global activate coverage
+          dart pub global activate cobertura
+          dart pub global activate junitreport
+
       - name: Run tests with coverage
         run: bash ./scripts/coverage.sh
 
@@ -31,9 +37,16 @@ jobs:
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./coverage/cobertura.xml
+
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./coverage/junit.xml
 
   test-on-stable:
-    if: github.repository == 'bitanon/cipherlib'
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
@@ -59,10 +72,9 @@ jobs:
         run: dart test
 
   test-on-legacy:
-    if: github.repository == 'bitanon/cipherlib'
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest]
         sdk: ['2.14.0']
     runs-on: ${{ matrix.os }}
     steps:
@@ -76,7 +88,6 @@ jobs:
         run: dart test
 
   test-on-beta:
-    if: github.repository == 'bitanon/cipherlib'
     strategy:
       matrix:
         os: [ubuntu-latest]

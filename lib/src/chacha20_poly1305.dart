@@ -6,7 +6,7 @@ import 'dart:typed_data';
 import 'package:cipherlib/src/algorithms/aead_cipher.dart';
 import 'package:cipherlib/src/algorithms/chacha20.dart';
 import 'package:cipherlib/src/utils/nonce.dart';
-import 'package:hashlib/hashlib.dart' show Poly1305, randomBytes;
+import 'package:hashlib/hashlib.dart' show Poly1305;
 
 /// ChaCha20-Poly1305 is a cryptographic algorithm combining [ChaCha20]
 /// stream cipher for encryption and [Poly1305] for generating message
@@ -33,7 +33,7 @@ class ChaCha20Poly1305 extends AEADCipher<ChaCha20, Poly1305> {
   /// - [counter] : Initial block number.
   factory ChaCha20Poly1305({
     required List<int> key,
-    required List<int> nonce,
+    List<int>? nonce,
     Nonce64? counter,
     List<int>? aad,
   }) =>
@@ -73,7 +73,6 @@ extension ChaCha20ExtentionForPoly1305 on ChaCha20 {
 /// Throws: [AssertionError] on [mac] verification failure.
 ///
 /// Both the encryption and decryption can be done using this same method.
-@pragma('vm:prefer-inline')
 AEADResultWithIV chacha20poly1305(
   List<int> message,
   List<int> key, {
@@ -84,7 +83,8 @@ AEADResultWithIV chacha20poly1305(
 }) {
   var algo = ChaCha20Poly1305(
     key: key,
-    nonce: nonce ?? randomBytes(12),
+    nonce: nonce,
+    counter: counter,
     aad: aad,
   );
   if (mac != null && !algo.verify(message, mac)) {

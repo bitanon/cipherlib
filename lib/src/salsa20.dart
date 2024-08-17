@@ -4,6 +4,7 @@
 import 'dart:typed_data';
 
 import 'package:cipherlib/src/algorithms/salsa20.dart';
+import 'package:cipherlib/src/utils/nonce.dart';
 
 export 'algorithms/salsa20.dart' show Salsa20, Salsa20Sink;
 
@@ -20,12 +21,12 @@ Uint8List salsa20(
   List<int> message,
   List<int> key, {
   List<int>? nonce,
-  int counter = 0,
+  Nonce64? counter,
 }) =>
     Salsa20.fromList(
       key,
-      nonce ?? Uint8List(16),
-      counter,
+      nonce: nonce,
+      counter: counter,
     ).convert(message);
 
 /// Apply [Salsa20] cipher with the follwing parameters:
@@ -41,10 +42,10 @@ Stream<int> salsa20Stream(
   Stream<int> stream,
   List<int> key, {
   List<int>? nonce,
-  int counter = 0,
+  Nonce64? counter,
 }) =>
     Salsa20.fromList(
       key,
-      nonce ?? Uint8List(16),
-      counter,
+      nonce: nonce,
+      counter: counter,
     ).stream(stream);

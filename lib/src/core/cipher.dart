@@ -27,8 +27,9 @@ abstract class StreamCipherBase
   Stream<Uint8List> bind(Stream<List<int>> stream);
 
   @override
-  StreamTransformer<RS, RT> cast<RS, RT>() =>
-      StreamTransformer.castFrom<List<int>, Uint8List, RS, RT>(this);
+  StreamTransformer<RS, RT> cast<RS, RT>() {
+    throw UnsupportedError('StreamCipherBase does not allow casting');
+  }
 }
 
 /// Template for Cipher algorithm that uses the same logic for

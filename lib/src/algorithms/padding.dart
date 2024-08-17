@@ -209,7 +209,7 @@ class _BytePadding extends Padding {
 
 class _ANSIPadding extends Padding {
   @override
-  final String name = "ANSI-X9.23";
+  final String name = "ANSI";
 
   const _ANSIPadding();
 
@@ -248,7 +248,7 @@ class _ANSIPadding extends Padding {
 
 class _PKCS7Padding extends Padding {
   @override
-  final String name = "PKCS#7";
+  String get name => "PKCS7";
 
   const _PKCS7Padding();
 
@@ -284,9 +284,9 @@ class _PKCS7Padding extends Padding {
   }
 }
 
-class _PKCS5Padding extends Padding {
+class _PKCS5Padding extends _PKCS7Padding {
   @override
-  final String name = "PKCS#5";
+  final String name = "PKCS5";
 
   const _PKCS5Padding();
 
@@ -304,20 +304,5 @@ class _PKCS5Padding extends Padding {
       block[pos] = n;
     }
     return true;
-  }
-
-  @override
-  int getPadLength(List<int> block, [int? size]) {
-    size ??= block.length;
-    int n = block[size - 1];
-    if (size < n) {
-      throw StateError('Invalid padding');
-    }
-    for (int p = size - n; p < size; p++) {
-      if (block[p] != n) {
-        throw StateError('Invalid padding');
-      }
-    }
-    return n;
   }
 }

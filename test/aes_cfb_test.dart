@@ -9,6 +9,64 @@ import 'package:hashlib_codecs/hashlib_codecs.dart';
 import 'package:test/test.dart';
 
 void main() {
+  group("functionality tests", () {
+    final key = Uint8List(32);
+    final iv = Uint8List(16);
+    final input = Uint8List(64);
+    test("name is correct", () {
+      expect(AES(key).cfb(iv).name, "AES/CFB/NoPadding");
+    });
+    test("sbyte must be between 1 and 16", () {
+      for (int i = -10; i < 20; ++i) {
+        if (i >= 1 && i <= 16) {
+          AES(key).cfb(iv, i);
+        } else {
+          expect(() => AES(key).cfb(iv, i), throwsStateError);
+        }
+      }
+    });
+    test("accepts null IV", () {
+      AESInCFBMode(key).encrypt(input);
+    });
+    test("encryptor name is correct", () {
+      expect(AES(key).cfb(iv).encryptor.name, "AES#encrypt/CFB/NoPadding");
+    });
+    test("decryptor name is correct", () {
+      expect(AES(key).cfb(iv).decryptor.name, "AES#decrypt/CFB/NoPadding");
+    });
+    test('encryptor sink test (no add after close)', () {
+      final aes = AES(key).cfb(iv);
+      var sink = aes.encryptor.createSink();
+      int step = 8;
+      var output = [];
+      for (int i = 0; i < input.length; i += step) {
+        output.addAll(sink.add(input.skip(i).take(step).toList()));
+      }
+      output.addAll(sink.close());
+      expect(sink.closed, true);
+      expect(output, equals(aes.encrypt(input)));
+      expect(() => sink.add(Uint8List(16)), throwsStateError);
+      sink.reset();
+      expect([...sink.add(input), ...sink.close()], equals(output));
+    });
+    test('decryptor sink test (no add after close)', () {
+      final aes = AES(key).cfb(iv);
+      var ciphertext = aes.encrypt(input);
+      var sink = aes.decryptor.createSink();
+      int step = 8;
+      var output = [];
+      for (int i = 0; i < ciphertext.length; i += step) {
+        output.addAll(sink.add(ciphertext.skip(i).take(step).toList()));
+      }
+      output.addAll(sink.close());
+      expect(sink.closed, true);
+      expect(output, equals(input));
+      expect(() => sink.add(Uint8List(16)), throwsStateError);
+      sink.reset();
+      expect([...sink.add(ciphertext), ...sink.close()], equals(output));
+    });
+  });
+
   group('NIST SP 800-38A', () {
     // https://csrc.nist.gov/pubs/sp/800/38/a/final
     group('F3.7 CFB8-AES128.Encrypt', () {

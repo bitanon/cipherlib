@@ -41,6 +41,7 @@ void main() {
     test('Nonce.zero should create a nonce with all zeros', () {
       var nonce = Nonce.zero(4);
       expect(nonce.size, equals(4));
+      expect(nonce.sizeInBits, equals(32));
       expect(nonce.bytes, equals(Uint8List.fromList([0, 0, 0, 0])));
     });
 

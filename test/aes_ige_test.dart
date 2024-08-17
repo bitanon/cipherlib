@@ -9,18 +9,83 @@ import 'package:hashlib_codecs/hashlib_codecs.dart';
 import 'package:test/test.dart';
 
 void main() {
-  test('throws error on invalid input size', () {
-    var aes = AES.noPadding(Uint8List(16)).ige(Uint8List(32));
-    expect(() => aes.encrypt(Uint8List(10)), throwsStateError);
-    expect(() => aes.decrypt(Uint8List(10)), throwsStateError);
-    expect(() => aes.encrypt(Uint8List(17)), throwsStateError);
-    expect(() => aes.decrypt(Uint8List(17)), throwsStateError);
-  });
-  test('throws error on invalid salt size', () {
-    var aes = AES(Uint8List(16));
-    expect(() => aes.ige(Uint8List(0)).decrypt([0]), throwsStateError);
-    expect(() => aes.ige(Uint8List(15)).encrypt([0]), throwsStateError);
-    expect(aes.ige(Uint8List(16)).encrypt([]).length, 16);
+  group("functionality tests", () {
+    final key = Uint8List(32);
+    final iv = Uint8List(16);
+    final input = Uint8List(64);
+    test("name is correct", () {
+      expect(AES.noPadding(key).ige(iv).name, "AES/IGE/NoPadding");
+      expect(AES.ansi(key).ige(iv).name, "AES/IGE/ANSI");
+      expect(AES.byte(key).ige(iv).name, "AES/IGE/Byte");
+      expect(AES.pkcs7(key).ige(iv).name, "AES/IGE/PKCS7");
+    });
+    test("padding is correct", () {
+      expect(AES.noPadding(key).ige(iv).padding, Padding.none);
+      expect(AES.ansi(key).ige(iv).padding, Padding.ansi);
+      expect(AES.byte(key).ige(iv).padding, Padding.byte);
+      expect(AES.pkcs7(key).ige(iv).padding, Padding.pkcs7);
+    });
+    test("accepts null IV", () {
+      AESInIGEMode(key).encrypt(input);
+    });
+    test("encryptor name is correct", () {
+      expect(AES.noPadding(key).ige(iv).encryptor.name,
+          "AES#encrypt/IGE/NoPadding");
+      expect(AES.ansi(key).ige(iv).encryptor.name, "AES#encrypt/IGE/ANSI");
+      expect(AES.byte(key).ige(iv).encryptor.name, "AES#encrypt/IGE/Byte");
+      expect(AES.pkcs7(key).ige(iv).encryptor.name, "AES#encrypt/IGE/PKCS7");
+    });
+    test("decryptor name is correct", () {
+      expect(AES.noPadding(key).ige(iv).decryptor.name,
+          "AES#decrypt/IGE/NoPadding");
+      expect(AES.ansi(key).ige(iv).decryptor.name, "AES#decrypt/IGE/ANSI");
+      expect(AES.byte(key).ige(iv).decryptor.name, "AES#decrypt/IGE/Byte");
+      expect(AES.pkcs7(key).ige(iv).decryptor.name, "AES#decrypt/IGE/PKCS7");
+    });
+    test('encryptor sink test (no add after close)', () {
+      final aes = AES.noPadding(key).ige(iv);
+      var sink = aes.encryptor.createSink();
+      int step = 8;
+      var output = [];
+      for (int i = 0; i < input.length; i += step) {
+        output.addAll(sink.add(input.skip(i).take(step).toList()));
+      }
+      output.addAll(sink.close());
+      expect(sink.closed, true);
+      expect(output, equals(aes.encrypt(input)));
+      expect(() => sink.add(Uint8List(16)), throwsStateError);
+      sink.reset();
+      expect([...sink.add(input), ...sink.close()], equals(output));
+    });
+    test('decryptor sink test (no add after close)', () {
+      final aes = AES.noPadding(key).ige(iv);
+      var ciphertext = aes.encrypt(input);
+      var sink = aes.decryptor.createSink();
+      int step = 8;
+      var output = [];
+      for (int i = 0; i < ciphertext.length; i += step) {
+        output.addAll(sink.add(ciphertext.skip(i).take(step).toList()));
+      }
+      output.addAll(sink.close());
+      expect(sink.closed, true);
+      expect(output, equals(input));
+      expect(() => sink.add(Uint8List(16)), throwsStateError);
+      sink.reset();
+      expect([...sink.add(ciphertext), ...sink.close()], equals(output));
+    });
+    test('throws error on invalid input size', () {
+      var aes = AES.noPadding(Uint8List(16)).ige(Uint8List(32));
+      expect(() => aes.encrypt(Uint8List(10)), throwsStateError);
+      expect(() => aes.decrypt(Uint8List(10)), throwsStateError);
+      expect(() => aes.encrypt(Uint8List(17)), throwsStateError);
+      expect(() => aes.decrypt(Uint8List(17)), throwsStateError);
+    });
+    test('throws error on invalid salt size', () {
+      var aes = AES(Uint8List(16));
+      expect(() => aes.ige(Uint8List(0)).decrypt([0]), throwsStateError);
+      expect(() => aes.ige(Uint8List(15)).encrypt([0]), throwsStateError);
+      expect(aes.ige(Uint8List(16)).encrypt([]).length, 16);
+    });
   });
 
   group('empty message', () {

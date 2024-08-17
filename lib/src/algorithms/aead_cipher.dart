@@ -89,9 +89,6 @@ class AEADCipherSink implements CipherSink, MACSinkBase {
 
   @override
   void init([List<int>? keypair]) {
-    if (keypair != null) {
-      _hasher.init(keypair);
-    }
     if (_aad != null) {
       _hasher.add(_aad!);
       // pad with zero

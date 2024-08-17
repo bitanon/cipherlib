@@ -9,6 +9,43 @@ import 'package:hashlib_codecs/hashlib_codecs.dart';
 import 'package:test/test.dart';
 
 void main() {
+  group("functionality tests", () {
+    final key = Uint8List(32);
+    final iv = Uint8List(16);
+    final input = Uint8List(64);
+    test("name is correct", () {
+      expect(AES(key).ofb(iv).name, "AES/OFB/NoPadding");
+    });
+    test("accepts null IV", () {
+      AESInOFBMode(key).encrypt(input);
+    });
+    test("encryptor and decryptor is the same", () {
+      var aes = AES(key).ofb(iv);
+      expect(aes.encryptor, aes.decryptor);
+    });
+    test("encryptor name is correct", () {
+      expect(AES(key).ofb(iv).encryptor.name, "AES#cipher/OFB/NoPadding");
+    });
+    test("decryptor name is correct", () {
+      expect(AES(key).ofb(iv).decryptor.name, "AES#cipher/OFB/NoPadding");
+    });
+    test('sink test (no add after close)', () {
+      final aes = AES(key).ofb(iv);
+      var sink = aes.encryptor.createSink();
+      int step = 8;
+      var output = [];
+      for (int i = 0; i < input.length; i += step) {
+        output.addAll(sink.add(input.skip(i).take(step).toList()));
+      }
+      output.addAll(sink.close());
+      expect(sink.closed, true);
+      expect(output, equals(aes.encrypt(input)));
+      expect(() => sink.add(Uint8List(16)), throwsStateError);
+      sink.reset();
+      expect([...sink.add(input), ...sink.close()], equals(output));
+    });
+  });
+
   group('NIST SP 800-38A', () {
     // https://csrc.nist.gov/pubs/sp/800/38/a/final
     group('F4.1 CBC-AES128.Encrypt', () {

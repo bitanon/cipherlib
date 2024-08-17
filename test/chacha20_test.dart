@@ -31,6 +31,23 @@ void main() {
     var text = Uint8List(100);
     expect(() => chacha20(text, key, nonce: [1]), throwsArgumentError);
   });
+  test('counter length is not 8 or 4 bytes', () {
+    var key = Uint8List(32);
+    var iv8 = Uint8List(8);
+    var iv12 = Uint8List(12);
+    for (int i = 0; i < 4; ++i) {
+      expect(() => ChaCha20Sink(key, iv8, Uint8List(i)), throwsArgumentError);
+      expect(() => ChaCha20Sink(key, iv12, Uint8List(i)), throwsArgumentError);
+    }
+    for (int i = 4; i < 8; ++i) {
+      ChaCha20Sink(key, iv12, Uint8List(i));
+      expect(() => ChaCha20Sink(key, iv8, Uint8List(i)), throwsArgumentError);
+    }
+    for (int i = 8; i < 16; ++i) {
+      ChaCha20Sink(key, iv8, Uint8List(i));
+      ChaCha20Sink(key, iv12, Uint8List(i));
+    }
+  });
   test('RFC 8439 example-1', () {
     var key = fromHex(
       "000102030405060708090a0b0c0d0e0f"
@@ -113,5 +130,42 @@ void main() {
       var plain = chacha20(cipher, key, nonce: nonce);
       expect(bytes, equals(plain), reason: '[text: $j]');
     }
+  });
+
+  test('sink test (no add after close)', () {
+    var key = fromHex(
+      "000102030405060708090a0b0c0d0e0f"
+      "101112131415161718191a1b1c1d1e1f",
+    );
+    var nonce = fromHex(
+      "000000000000004a00000000",
+    );
+    var sample = ("Ladies and Gentlemen of the class of '99: "
+            "If I could offer you only one tip for the future, "
+            "sunscreen would be it.")
+        .codeUnits;
+    var output = fromHex(
+      "6e2e359a2568f98041ba0728dd0d6981"
+      "e97e7aec1d4360c20a27afccfd9fae0b"
+      "f91b65c5524733ab8f593dabcd62b357"
+      "1639d624e65152ab8f530c359f0861d8"
+      "07ca0dbf500d6a6156a38e088a22b65e"
+      "52bc514d16ccf806818ce91ab7793736"
+      "5af90bbf74a35be6b40b8eedf2785e42"
+      "874d",
+    );
+    var counter = Nonce64.int32(1).bytes;
+    var sink = ChaCha20Sink(key, nonce, counter);
+    int step = 19;
+    for (int i = 0; i < sample.length; i += step) {
+      var inp = sample.skip(i).take(step).toList();
+      var out = output.skip(i).take(step).toList();
+      expect(sink.add(inp), equals(out));
+    }
+    expect(sink.close(), equals([]));
+    expect(sink.closed, true);
+    expect(() => sink.add([1]), throwsStateError);
+    sink.reset();
+    expect(sink.add(sample), equals(output));
   });
 }

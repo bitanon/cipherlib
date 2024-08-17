@@ -158,7 +158,7 @@ class AESInCFBModeDecryptSink extends CipherSink {
 /// Provides encryption for AES cipher in CFB mode.
 class AESInCFBModeEncrypt extends SaltedCipher {
   @override
-  String get name => "AES#encrypt/CFB";
+  String get name => "AES#encrypt/CFB/${Padding.none.name}";
 
   /// Key for the cipher
   final Uint8List key;
@@ -181,7 +181,7 @@ class AESInCFBModeEncrypt extends SaltedCipher {
 /// Provides decryption for AES cipher in CFB mode.
 class AESInCFBModeDecrypt extends SaltedCipher {
   @override
-  String get name => "AES#decrypt/CFB";
+  String get name => "AES#decrypt/CFB/${Padding.none.name}";
 
   /// Key for the cipher
   final Uint8List key;
