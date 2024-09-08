@@ -1,8 +1,6 @@
 // Copyright (c) 2024, Sudipto Chandra
 // All rights reserved. Check LICENSE file for details.
 
-import 'dart:typed_data';
-
 import 'package:test/test.dart';
 import 'package:cipherlib/cipherlib.dart';
 

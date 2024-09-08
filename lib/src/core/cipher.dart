@@ -34,11 +34,11 @@ abstract class StreamCipherBase
 
 /// Template for Cipher algorithm that uses the same logic for
 /// both encryption and decryption.
-abstract class Cipher extends StreamCipherBase {
+abstract class Cipher<S extends CipherSink> extends StreamCipherBase {
   const Cipher();
 
   /// Creates a sink for the algorithm
-  CipherSink createSink();
+  S createSink();
 
   /// Transforms the [message].
   @pragma('vm:prefer-inline')

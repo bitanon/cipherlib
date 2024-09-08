@@ -244,7 +244,7 @@ class ChaCha20 extends SaltedCipher {
   /// The initial block id
   final Uint8List counter;
 
-  const ChaCha20(
+  const ChaCha20._(
     this.key,
     Uint8List nonce,
     this.counter,
@@ -253,7 +253,7 @@ class ChaCha20 extends SaltedCipher {
   /// Creates a [ChaCha20] with List<int> [key], and [nonce].
   ///
   /// Every elements of the both list is transformed to unsigned 8-bit numbers.
-  factory ChaCha20.fromList(
+  factory ChaCha20(
     List<int> key, {
     List<int>? nonce,
     Nonce64? counter,
@@ -263,7 +263,7 @@ class ChaCha20 extends SaltedCipher {
     var counter8 = counter.bytes;
     var key8 = key is Uint8List ? key : Uint8List.fromList(key);
     var nonce8 = nonce is Uint8List ? nonce : Uint8List.fromList(nonce);
-    return ChaCha20(key8, nonce8, counter8);
+    return ChaCha20._(key8, nonce8, counter8);
   }
 
   @override

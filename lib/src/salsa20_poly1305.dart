@@ -31,7 +31,7 @@ class Salsa20Poly1305 extends AEADCipher<Salsa20, Poly1305> {
     Nonce64? counter,
     List<int>? aad,
   }) =>
-      Salsa20.fromList(
+      Salsa20(
         key,
         nonce: nonce,
         counter: counter,

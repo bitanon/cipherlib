@@ -23,7 +23,7 @@ Uint8List salsa20(
   List<int>? nonce,
   Nonce64? counter,
 }) =>
-    Salsa20.fromList(
+    Salsa20(
       key,
       nonce: nonce,
       counter: counter,
@@ -44,7 +44,7 @@ Stream<int> salsa20Stream(
   List<int>? nonce,
   Nonce64? counter,
 }) =>
-    Salsa20.fromList(
+    Salsa20(
       key,
       nonce: nonce,
       counter: counter,

@@ -6,7 +6,8 @@ import 'dart:typed_data';
 
 import 'package:cipherlib/src/core/cipher.dart';
 import 'package:cipherlib/src/core/cipher_sink.dart';
-import 'package:hashlib/hashlib.dart' show HashDigest, MACHashBase, MACSinkBase;
+import 'package:hashlib/hashlib.dart'
+    show HashDigest, HashDigestSink, MACHashBase;
 
 /// The result fromo AEAD ciphers
 class AEADResult {
@@ -43,61 +44,52 @@ class AEADResultWithIV extends AEADResult {
 
 /// Extends the base [AEADCipherSink] to generate message digest for cipher
 /// algorithms.
-class AEADCipherSink implements CipherSink, MACSinkBase {
+class AEADCipherSink<C extends CipherSink, H extends HashDigestSink>
+    extends CipherSink {
+  final H _sink;
+  final C _cipher;
+  final List<int>? _aad;
+  int _dataLength = 0;
+  bool _verifyMode;
+
   AEADCipherSink(
     this._cipher,
-    this._hasher, [
+    this._sink, [
     this._aad,
     this._verifyMode = false,
   ]) {
-    _hasher.reset();
     _cipher.reset();
-  }
-
-  bool _verifyMode;
-  int _dataLength = 0;
-  final List<int>? _aad;
-  final CipherSink _cipher;
-  final MACSinkBase _hasher;
-
-  @override
-  int get hashLength => _hasher.hashLength;
-
-  @override
-  int get derivedKeyLength => _hasher.derivedKeyLength;
-
-  @override
-  bool get closed => _hasher.closed || _cipher.closed;
-
-  @override
-  void reset([bool asVerifyMode = false]) {
-    _hasher.reset();
-    _cipher.reset();
-    _verifyMode = asVerifyMode;
-  }
-
-  @override
-  Uint8List close() {
-    return add([], 0, null, true);
-  }
-
-  @override
-  HashDigest digest() {
-    if (!closed) close();
-    return _hasher.digest();
-  }
-
-  @override
-  void init([List<int>? keypair]) {
     if (_aad != null) {
-      _hasher.add(_aad!);
+      _sink.add(_aad!);
       // pad with zero
       int n = _aad!.length;
       if (n & 15 != 0) {
-        _hasher.add(Uint8List(16 - (n & 15)));
+        _sink.add(Uint8List(16 - (n & 15)));
       }
     }
-    _dataLength = 0;
+  }
+
+  /// The length of generated hash in bytes
+  int get macLength => _sink.hashLength;
+
+  @override
+  bool get closed => _sink.closed || _cipher.closed;
+
+  @override
+  void reset([bool forVerification = false]) {
+    _sink.reset();
+    _cipher.reset();
+    _verifyMode = forVerification;
+  }
+
+  /// Finalizes the message-digest and returns a [HashDigest].
+  ///
+  /// Throws [StateError] if this sink is not closed before generating digest.
+  HashDigest digest() {
+    if (!closed) {
+      close();
+    }
+    return _sink.digest();
   }
 
   @override
@@ -111,18 +103,18 @@ class AEADCipherSink implements CipherSink, MACSinkBase {
     var cipher = _cipher.add(data, start, end, last);
     if (_verifyMode) {
       _dataLength += end - start;
-      _hasher.add(data, start, end);
+      _sink.add(data, start, end);
     } else {
       _dataLength += cipher.length;
-      _hasher.add(cipher);
+      _sink.add(cipher);
     }
     if (last) {
       // pad with zero
       if (_dataLength & 15 != 0) {
-        _hasher.add(Uint8List(16 - (_dataLength & 15)));
+        _sink.add(Uint8List(16 - (_dataLength & 15)));
       }
       int n = _aad?.length ?? 0;
-      _hasher.add([
+      _sink.add([
         n,
         n >>> 8,
         n >>> 16,
@@ -146,24 +138,24 @@ class AEADCipherSink implements CipherSink, MACSinkBase {
 }
 
 /// Provides support for AEAD (Authenticated Encryption with Associated Data) to
-/// the any [Cipher] with any [MACHashBase] algorithm.
+/// the any [Cipher] with any MAC algorithm.
 abstract class AEADCipher<C extends Cipher, M extends MACHashBase>
     extends StreamCipherBase {
+  /// The MAC generator used by this AEAD construction
+  final M mac;
+
   /// The cipher used by this AEAD construction
   final C cipher;
-
-  /// The MAC generator used by this AEAD construction
-  final M hasher;
 
   /// Additional authenticated data (optional)
   final List<int>? aad;
 
   @override
-  String get name => '${cipher.name}/${hasher.name}';
+  String get name => '${cipher.name}/${mac.name}';
 
   const AEADCipher(
     this.cipher,
-    this.hasher, [
+    this.mac, [
     this.aad,
   ]);
 
@@ -172,10 +164,10 @@ abstract class AEADCipher<C extends Cipher, M extends MACHashBase>
   ]) =>
       AEADCipherSink(
         cipher.createSink(),
-        hasher.createSink(),
+        mac.createSink(),
         aad,
         verifyMode,
-      )..init();
+      );
 
   /// Transforms the [message] with an authentication tag.
   @pragma('vm:prefer-inline')

@@ -5,6 +5,7 @@ import 'dart:typed_data';
 
 import 'package:cipherlib/src/algorithms/aead_cipher.dart';
 import 'package:cipherlib/src/algorithms/chacha20.dart';
+import 'package:cipherlib/src/chacha20.dart';
 import 'package:cipherlib/src/utils/nonce.dart';
 import 'package:hashlib/hashlib.dart' show Poly1305;
 
@@ -37,7 +38,7 @@ class ChaCha20Poly1305 extends AEADCipher<ChaCha20, Poly1305> {
     Nonce64? counter,
     List<int>? aad,
   }) =>
-      ChaCha20.fromList(
+      ChaCha20(
         key,
         nonce: nonce,
         counter: counter,

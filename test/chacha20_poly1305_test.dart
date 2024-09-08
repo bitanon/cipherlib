@@ -39,6 +39,7 @@ void main() {
         nonce: nonce,
         aad: aad,
       );
+      expect(res.data, equals(cipher));
       expect(res.tag.bytes, equals(tag));
       expect(res.verify(tag), true);
     });
@@ -203,8 +204,7 @@ void main() {
     });
     test('sink test (no call after close)', () {
       var sink = algo.createSink();
-      expect(sink.hashLength, 16);
-      expect(sink.derivedKeyLength, 16);
+      expect(sink.macLength, 16);
 
       int step = 19;
       for (int i = 0; i < sample.length; i += step) {

@@ -1,4 +1,4 @@
-## 0.0.12
+## 0.0.13
 
 - `XOR` cipher.
 - `Salsa20` cipher with `Poly1305` tag.

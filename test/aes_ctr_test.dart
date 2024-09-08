@@ -29,6 +29,11 @@ void main() {
     test("decryptor name is correct", () {
       expect(AES(key).ctr(iv).decryptor.name, "AES#cipher/CTR/NoPadding");
     });
+    test('throws error on invalid salt size', () {
+      var aes = AES(Uint8List(16));
+      expect(() => aes.ctr(Uint8List(15)).encrypt([0]), throwsStateError);
+      expect(() => aes.ctr(Uint8List(8)).decrypt([0]), throwsStateError);
+    });
     test('sink test (no add after close)', () {
       final aes = AES(key).ctr(iv);
       var sink = aes.encryptor.createSink();
@@ -55,6 +60,22 @@ void main() {
         var plain = aes.decrypt(cipher);
         expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
       }
+    });
+  });
+
+  group('empty message', () {
+    var key = fromHex('2b7e151628aed2a6abf7158809cf4f3c');
+    var iv = fromHex('000102030405060708090a0b0c0d0e0f');
+    var plain = Uint8List(0);
+    var cipher = Uint8List(0);
+    var aes = AES(key).ctr(iv);
+    test('encrypt', () {
+      var actual = aes.encrypt(plain);
+      expect(toHex(actual), equals(toHex(cipher)));
+    });
+    test('decrypt', () {
+      var reverse = aes.decrypt(cipher);
+      expect(toHex(reverse), equals(toHex(plain)));
     });
   });
 
@@ -137,28 +158,6 @@ void main() {
         var reverse = aes.decrypt(cipher);
         expect(toHex(reverse), equals(toHex(plain)));
       });
-    });
-  });
-
-  test('throws error on invalid salt size', () {
-    var aes = AES(Uint8List(16));
-    expect(() => aes.ctr(Uint8List(15)).encrypt([0]), throwsStateError);
-    expect(() => aes.ctr(Uint8List(8)).decrypt([0]), throwsStateError);
-  });
-
-  group('empty message', () {
-    var key = fromHex('2b7e151628aed2a6abf7158809cf4f3c');
-    var iv = fromHex('000102030405060708090a0b0c0d0e0f');
-    var plain = Uint8List(0);
-    var cipher = Uint8List(0);
-    var aes = AES(key).ctr(iv);
-    test('encrypt', () {
-      var actual = aes.encrypt(plain);
-      expect(toHex(actual), equals(toHex(cipher)));
-    });
-    test('decrypt', () {
-      var reverse = aes.decrypt(cipher);
-      expect(toHex(reverse), equals(toHex(plain)));
     });
   });
 

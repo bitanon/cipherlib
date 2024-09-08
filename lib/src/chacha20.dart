@@ -24,7 +24,7 @@ Uint8List chacha20(
   List<int>? nonce,
   Nonce64? counter,
 }) =>
-    ChaCha20.fromList(
+    ChaCha20(
       key,
       nonce: nonce,
       counter: counter,
@@ -46,7 +46,7 @@ Stream<int> chacha20Stream(
   List<int>? nonce,
   Nonce64? counter,
 }) =>
-    ChaCha20.fromList(
+    ChaCha20(
       key,
       nonce: nonce,
       counter: counter,

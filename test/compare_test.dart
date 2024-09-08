@@ -1,6 +1,8 @@
 // Copyright (c) 2024, Sudipto Chandra
 // All rights reserved. Check LICENSE file for details.
 
+// ignore_for_file: library_annotations
+
 @Tags(['vm-only'])
 
 import 'dart:typed_data' show Uint8List;

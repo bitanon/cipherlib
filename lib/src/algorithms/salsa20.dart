@@ -213,7 +213,7 @@ class Salsa20 extends SaltedCipher {
   /// The initial block id
   final Uint8List counter;
 
-  const Salsa20(
+  const Salsa20._(
     this.key,
     Uint8List nonce,
     this.counter,
@@ -222,7 +222,7 @@ class Salsa20 extends SaltedCipher {
   /// Creates a [Salsa20] with List<int> [key], and [nonce].
   ///
   /// Every elements of the both list is transformed to unsigned 8-bit numbers.
-  factory Salsa20.fromList(
+  factory Salsa20(
     List<int> key, {
     List<int>? nonce,
     Nonce64? counter,
@@ -232,7 +232,7 @@ class Salsa20 extends SaltedCipher {
     var counter8 = counter.bytes;
     var key8 = key is Uint8List ? key : Uint8List.fromList(key);
     var nonce8 = nonce is Uint8List ? nonce : Uint8List.fromList(nonce);
-    return Salsa20(key8, nonce8, counter8);
+    return Salsa20._(key8, nonce8, counter8);
   }
 
   @override
