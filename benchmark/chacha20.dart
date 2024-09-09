@@ -33,12 +33,12 @@ class PointyCastleBenchmark extends Benchmark {
 
   PointyCastleBenchmark(int size, int iter)
       : key = Uint8List.fromList(List.filled(32, 0x9f)),
-        nonce = Uint8List.fromList(List.filled(8, 0x2f)),
+        nonce = Uint8List.fromList(List.filled(12, 0x2f)),
         super('PointyCastle', size, iter);
 
   @override
   void run() {
-    var instance = pc.StreamCipher('ChaCha20/20');
+    var instance = pc.StreamCipher('ChaCha7539/20');
     instance.init(
       true,
       pc.ParametersWithIV(pc.KeyParameter(key), nonce),

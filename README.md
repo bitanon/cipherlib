@@ -19,14 +19,18 @@ There are only 2 dependencies used by this package:
 
 ## Features
 
-| Ciphers           | Public class and methods                                         |    Source     |
-| ----------------- | ---------------------------------------------------------------- | :-----------: |
-| AES               | `AES`,                                                           | NIST.FIPS.197 |
-| XOR               | `XOR`, `xor`, `xorStream`                                        |   Wikipedia   |
-| ChaCha20          | `ChaCha20`, `chacha20`, `chacha20Stream`                         |   RFC-8439    |
-| ChaCha20/Poly1305 | `ChaCha20Poly1305`, `chacha20poly1305`, `chacha20poly1305Stream` |   RFC-8439    |
-| Salsa20           | `Salsa20`, `salsa20`, `salsa20Stream`                            | Snuffle-2005  |
-| Salsa20/Poly1305  | `Salsa20Poly1305`, `salsa20poly1305`, `salsa20poly1305Stream`    | Snuffle-2005  |
+| Ciphers            | Public class and methods                    |    Source     |
+| ------------------ | ------------------------------------------- | :-----------: |
+| AES                | `AES`,                                      | NIST.FIPS.197 |
+| XOR                | `XOR`, `xor`, `xorStream`                   |   Wikipedia   |
+| ChaCha20           | `ChaCha20`, `chacha20`, `chacha20Stream`    |   RFC-8439    |
+| ChaCha20/Poly1305  | `ChaCha20Poly1305`, `chacha20poly1305`      |   RFC-8439    |
+| XChaCha20          | `XChaCha20`, `xchacha20`, `xchacha20Stream` |   libsodium   |
+| XChaCha20/Poly1305 | `XChaCha20Poly1305`, `xchacha20poly1305`    |   libsodium   |
+| Salsa20            | `Salsa20`, `salsa20`, `salsa20Stream`       | Snuffle-2005  |
+| Salsa20/Poly1305   | `Salsa20Poly1305`, `salsa20poly1305`        | Snuffle-2005  |
+| XSalsa20           | `XSalsa20`, `xsalsa20`, `xsalsa20Stream`    |   libsodium   |
+| XSalsa20/Poly1305  | `XSalsa20Poly1305`, `xsalsa20poly1305`      |   libsodium   |
 
 Available modes for AES:
 

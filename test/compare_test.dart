@@ -86,6 +86,7 @@ void main() {
       for (int j = 0; j < 300; ++j) {
         var nonce = randomBytes(12);
         var text = randomBytes(j);
+
         var aad = randomBytes(key[0]);
         var result = my.chacha20poly1305(
           text,
@@ -93,12 +94,14 @@ void main() {
           nonce: nonce,
           aad: aad,
         );
+
         var out = await crypto.Chacha20.poly1305Aead().encrypt(
           text,
           secretKey: crypto.SecretKey(key),
           nonce: nonce,
           aad: aad,
         );
+
         expect(out.cipherText, equals(result.data),
             reason: '[text: $j, aad: ${key[0]}]');
         expect(out.mac.bytes, equals(result.tag.bytes),

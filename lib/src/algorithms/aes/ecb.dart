@@ -11,7 +11,7 @@ import 'package:cipherlib/src/core/collate_cipher.dart';
 import '_core.dart';
 
 /// The sink used for encryption by the [AESInECBModeEncrypt] algorithm.
-class AESInECBModeEncryptSink extends CipherSink {
+class AESInECBModeEncryptSink implements CipherSink {
   AESInECBModeEncryptSink(
     this._key,
     this._padding,
@@ -40,9 +40,9 @@ class AESInECBModeEncryptSink extends CipherSink {
   @override
   Uint8List add(
     List<int> data, [
+    bool last = false,
     int start = 0,
     int? end,
-    bool last = false,
   ]) {
     if (_closed) {
       throw StateError('The sink is closed');
@@ -91,10 +91,14 @@ class AESInECBModeEncryptSink extends CipherSink {
       return output.sublist(0, p);
     }
   }
+
+  @override
+  @pragma('vm:prefer-inline')
+  Uint8List close() => add([], true);
 }
 
 /// The sink used for decryption by the [AESInECBModeDecrypt] algorithm.
-class AESInECBModeDecryptSink extends CipherSink {
+class AESInECBModeDecryptSink implements CipherSink {
   AESInECBModeDecryptSink(
     this._key,
     this._padding,
@@ -126,9 +130,9 @@ class AESInECBModeDecryptSink extends CipherSink {
   @override
   Uint8List add(
     List<int> data, [
+    bool last = false,
     int start = 0,
     int? end,
-    bool last = false,
   ]) {
     if (_closed) {
       throw StateError('The sink is closed');
@@ -181,6 +185,10 @@ class AESInECBModeDecryptSink extends CipherSink {
       return output.sublist(0, p);
     }
   }
+
+  @override
+  @pragma('vm:prefer-inline')
+  Uint8List close() => add([], true);
 }
 
 /// Provides encryption for AES cipher in ECB mode.

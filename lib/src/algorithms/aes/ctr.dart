@@ -22,7 +22,7 @@ int _swap32(int x) =>
 
 /// The sink used for both encryption and decryption by the
 /// [AESInCTRModeCipher] algorithm.
-class AESInCTRModeSink extends CipherSink {
+class AESInCTRModeSink implements CipherSink {
   AESInCTRModeSink(
     this._key,
     this._iv,
@@ -56,9 +56,9 @@ class AESInCTRModeSink extends CipherSink {
   @override
   Uint8List add(
     List<int> data, [
+    bool last = false,
     int start = 0,
     int? end,
-    bool last = false,
   ]) {
     if (_closed) {
       throw StateError('The sink is closed');
@@ -92,6 +92,10 @@ class AESInCTRModeSink extends CipherSink {
 
     return output;
   }
+
+  @override
+  @pragma('vm:prefer-inline')
+  Uint8List close() => add([], true);
 }
 
 /// Provides AES cipher in CTR mode.

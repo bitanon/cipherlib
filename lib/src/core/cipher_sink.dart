@@ -20,15 +20,14 @@ abstract class CipherSink implements Sink<List<int>> {
   @override
   Uint8List add(
     List<int> data, [
+    bool last = false,
     int start,
     int? end,
-    bool last = false,
   ]);
 
   /// Closes the sink and returns the last converted result.
   ///
   /// Same as calling `add([], true)`.
   @override
-  @pragma('vm:prefer-inline')
-  Uint8List close() => add([], 0, 0, true);
+  Uint8List close();
 }

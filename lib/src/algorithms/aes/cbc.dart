@@ -11,7 +11,7 @@ import 'package:hashlib/hashlib.dart' show randomBytes;
 import '_core.dart';
 
 /// The sink used for encryption by the [AESInCBCModeEncrypt] algorithm.
-class AESInCBCModeEncryptSink extends CipherSink {
+class AESInCBCModeEncryptSink implements CipherSink {
   AESInCBCModeEncryptSink(
     this._key,
     this._iv,
@@ -46,9 +46,9 @@ class AESInCBCModeEncryptSink extends CipherSink {
   @override
   Uint8List add(
     List<int> data, [
+    bool last = false,
     int start = 0,
     int? end,
-    bool last = false,
   ]) {
     if (_closed) {
       throw StateError('The sink is closed');
@@ -104,10 +104,14 @@ class AESInCBCModeEncryptSink extends CipherSink {
       return output.sublist(0, p);
     }
   }
+
+  @override
+  @pragma('vm:prefer-inline')
+  Uint8List close() => add([], true);
 }
 
 /// The sink used for decryption by the [AESInCBCModeDecrypt] algorithm.
-class AESInCBCModeDecryptSink extends CipherSink {
+class AESInCBCModeDecryptSink implements CipherSink {
   AESInCBCModeDecryptSink(
     this._key,
     this._iv,
@@ -145,9 +149,9 @@ class AESInCBCModeDecryptSink extends CipherSink {
   @override
   Uint8List add(
     List<int> data, [
+    bool last = false,
     int start = 0,
     int? end,
-    bool last = false,
   ]) {
     if (_closed) {
       throw StateError('The sink is closed');
@@ -204,6 +208,10 @@ class AESInCBCModeDecryptSink extends CipherSink {
       return output.sublist(0, p);
     }
   }
+
+  @override
+  @pragma('vm:prefer-inline')
+  Uint8List close() => add([], true);
 }
 
 /// Provides encryption for AES cipher in CBC mode.

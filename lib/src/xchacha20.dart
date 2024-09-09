@@ -3,43 +3,43 @@
 
 import 'dart:typed_data';
 
-import 'package:cipherlib/src/algorithms/salsa20.dart';
+import 'package:cipherlib/src/algorithms/chacha20.dart';
 import 'package:cipherlib/src/utils/nonce.dart';
 
-export 'algorithms/salsa20.dart' show Salsa20, Salsa20Sink;
+export 'algorithms/chacha20.dart' show XChaCha20;
 
-/// Apply [Salsa20] cipher with the follwing parameters:
+/// Apply [XChaCha20] cipher with the follwing parameters:
 ///
 /// Parameters:
 /// - [message] : arbitrary length plain-text.
-/// - [key] : Either 16 or 32 bytes key.
-/// - [nonce] : Either 8 or 16 bytes nonce. (Default: random)
-/// - [counter] : 64-bit counter. (Default: 0)
+/// - [key] : 32 bytes key.
+/// - [nonce] : 24 bytes nonce. (Default: random)
+/// - [counter] : 64-bit counter. (Default: 1)
 ///
 /// Both the encryption and decryption can be done using this same method.
 @pragma('vm:prefer-inline')
-Uint8List salsa20(
+Uint8List xchacha20(
   List<int> message,
   List<int> key, {
   List<int>? nonce,
   Nonce64? counter,
 }) =>
-    Salsa20(key, nonce, counter).convert(message);
+    XChaCha20(key, nonce, counter).convert(message);
 
-/// Apply [Salsa20] cipher with the follwing parameters:
+/// Apply [XChaCha20] cipher with the follwing parameters:
 ///
 /// Parameters:
 /// - [stream] : arbitrary length plain-text.
-/// - [key] : Either 16 or 32 bytes key.
-/// - [nonce] : Either 8 or 16 bytes nonce. (Default: random)
-/// - [counter] : 64-bit counter. (Default: 0)
+/// - [key] : 32 bytes key.
+/// - [nonce] : 24 bytes nonce. (Default: random)
+/// - [counter] : 64-bit counter. (Default: 1)
 ///
 /// Both the encryption and decryption can be done using this same method.
 @pragma('vm:prefer-inline')
-Stream<int> salsa20Stream(
+Stream<int> xchacha20Stream(
   Stream<int> stream,
   List<int> key, {
   List<int>? nonce,
   Nonce64? counter,
 }) =>
-    Salsa20(key, nonce, counter).stream(stream);
+    XChaCha20(key, nonce, counter).stream(stream);

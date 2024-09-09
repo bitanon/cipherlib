@@ -13,4 +13,8 @@ export 'core/salted_cipher.dart';
 export 'salsa20.dart';
 export 'salsa20_poly1305.dart';
 export 'utils/nonce.dart';
+export 'xchacha20.dart';
+export 'xchacha20_poly1305.dart';
 export 'xor.dart';
+export 'xsalsa20.dart';
+export 'xsalsa20_poly1305.dart';

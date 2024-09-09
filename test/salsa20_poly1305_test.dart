@@ -29,6 +29,18 @@ void main() {
     }
   });
 
+  test('sign and verify', () {
+    for (int i = 0; i < 100; ++i) {
+      final key = randomBytes(32);
+      final iv = randomBytes(16);
+      final aad = randomBytes(key[0]);
+      final message = randomBytes(i);
+      final instance = Salsa20Poly1305(key: key, nonce: iv, aad: aad);
+      final res = instance.sign(message);
+      expect(instance.verify(res.data, res.tag.bytes), isTrue);
+    }
+  });
+
   test('decrypt with invalid mac', () {
     var key = Uint8List(32);
     var nonce = Uint8List(16);

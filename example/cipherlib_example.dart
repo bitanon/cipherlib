@@ -22,19 +22,6 @@ void main() {
   }
   print('');
 
-  print('----- XOR -----');
-  {
-    var key = [0x54];
-    var inp = [0x03, 0xF1];
-    var cipher = xor(inp, key);
-    var plain = xor(cipher, key);
-    print('  Text: ${toBinary(inp)}');
-    print('   Key: ${toBinary(key)}');
-    print('   XOR: ${toBinary(cipher)}');
-    print(' Plain: ${toBinary(plain)}');
-  }
-  print('');
-
   print('----- ChaCha20 -----');
   {
     var text = "Hide me!";
@@ -66,5 +53,18 @@ void main() {
     print('Cipher: ${toHex(res.data)}');
     print('   Tag: ${res.tag.hex()}');
     print(' Plain: ${fromUtf8(plain)}');
+
+    print('----- XOR -----');
+    {
+      var key = [0x54];
+      var inp = [0x03, 0xF1];
+      var cipher = xor(inp, key);
+      var plain = xor(cipher, key);
+      print('  Text: ${toBinary(inp)}');
+      print('   Key: ${toBinary(key)}');
+      print('   XOR: ${toBinary(cipher)}');
+      print(' Plain: ${toBinary(plain)}');
+    }
+    print('');
   }
 }

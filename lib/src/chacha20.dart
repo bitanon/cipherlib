@@ -13,7 +13,7 @@ export 'algorithms/chacha20.dart' show ChaCha20, ChaCha20Sink;
 /// Parameters:
 /// - [message] : arbitrary length plain-text.
 /// - [key] : 16 or 32 bytes key.
-/// - [nonce] : 8 or 12 bytes nonce.
+/// - [nonce] : 8 or 12 bytes nonce. (Default: random)
 /// - [counter] : 64-bit counter. (Default: 1)
 ///
 /// Both the encryption and decryption can be done using this same method.
@@ -24,18 +24,14 @@ Uint8List chacha20(
   List<int>? nonce,
   Nonce64? counter,
 }) =>
-    ChaCha20(
-      key,
-      nonce: nonce,
-      counter: counter,
-    ).convert(message);
+    ChaCha20(key, nonce, counter).convert(message);
 
 /// Apply [ChaCha20] cipher with the follwing parameters:
 ///
 /// Parameters:
 /// - [stream] : arbitrary length plain-text.
 /// - [key] : 16 or 32 bytes key.
-/// - [nonce] : 8 or 12 bytes nonce.
+/// - [nonce] : 8 or 12 bytes nonce. (Default: random)
 /// - [counter] : 64-bit counter. (Default: 1)
 ///
 /// Both the encryption and decryption can be done using this same method.
@@ -46,8 +42,4 @@ Stream<int> chacha20Stream(
   List<int>? nonce,
   Nonce64? counter,
 }) =>
-    ChaCha20(
-      key,
-      nonce: nonce,
-      counter: counter,
-    ).stream(stream);
+    ChaCha20(key, nonce, counter).stream(stream);

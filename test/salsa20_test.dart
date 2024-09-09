@@ -9,40 +9,58 @@ import 'package:test/test.dart';
 import 'utils.dart';
 
 void main() {
-  test('empty message', () {
-    var key = randomNumbers(32);
-    var nonce = randomBytes(16);
-    expect(salsa20([], key, nonce: nonce), equals([]));
+  group('Functionality test', () {
+    test('accepts empty message', () {
+      var key = randomNumbers(32);
+      var nonce = randomBytes(16);
+      expect(salsa20([], key, nonce: nonce), equals([]));
+    });
+    test('The key should be either 16 or 32 bytes', () {
+      for (int i = 0; i < 100; ++i) {
+        void cb() => Salsa20(Uint8List(i));
+        if (i == 16 || i == 32) {
+          cb();
+        } else {
+          expect(cb, throwsArgumentError, reason: 'length: $i');
+        }
+      }
+    });
+    test('The nonce should be either 8, or 16 bytes', () {
+      var key = Uint8List(32);
+      for (int i = 0; i < 100; ++i) {
+        void cb() => Salsa20(key, Uint8List(i));
+        if (i == 8 || i == 16) {
+          cb();
+        } else {
+          expect(cb, throwsArgumentError, reason: 'length: $i');
+        }
+      }
+    });
+    test('Counter is not expected with 16-byte nonce', () {
+      final key = Uint8List(32);
+      final c = Nonce64.zero();
+      expect(() => Salsa20(key, Uint8List(16), c), throwsArgumentError);
+    });
+    test('If counter is not provided, default counter is used', () {
+      final key = Uint8List(32);
+      final nonce = [1, 1, 1, 1, 1, 1, 1, 1];
+      final algo = Salsa20(key, nonce);
+      expect(algo.iv, equals([1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0]));
+    });
+    test('Counter is set correctly when provided with 8-byte nonce', () {
+      final key = Uint8List(32);
+      final nonce = [1, 1, 1, 1, 1, 1, 1, 1];
+      final counter = Nonce64.bytes([2, 2, 2, 2, 2, 2, 2, 2]);
+      final algo = Salsa20(key, nonce, counter);
+      expect(algo.iv, equals([1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2]));
+    });
+    test('random nonce is used if nonce is null, ', () {
+      var key = randomNumbers(32);
+      var text = randomBytes(100);
+      chacha20(text, key);
+    });
   });
-  test('key length is not 32 bytes', () {
-    var text = randomNumbers(32);
-    expect(() => salsa20(text, []), throwsArgumentError);
-    expect(() => salsa20(text, Uint8List(33)), throwsArgumentError);
-    expect(() => salsa20(text, Uint8List(31)), throwsArgumentError);
-  });
-  test('nonce is null', () {
-    var key = randomNumbers(32);
-    var text = randomBytes(100);
-    salsa20(text, key);
-  });
-  test('nonce length is not 12 bytes', () {
-    var key = Uint8List(32);
-    var text = Uint8List(100);
-    expect(() => salsa20(text, key, nonce: [1]), throwsArgumentError);
-  });
-  test('counter length is not 8 bytes when nonce is 8 bytes', () {
-    var key = Uint8List(32);
-    var iv8 = Uint8List(8);
-    var iv16 = Uint8List(16);
-    for (int i = 0; i < 8; ++i) {
-      Salsa20Sink(key, iv16, Uint8List(i));
-      expect(() => Salsa20Sink(key, iv8, Uint8List(i)), throwsArgumentError);
-    }
-    for (int i = 8; i < 16; ++i) {
-      Salsa20Sink(key, iv8, Uint8List(i));
-      Salsa20Sink(key, iv16, Uint8List(i));
-    }
-  });
+
   test('Specification example (32-bytes key)', () {
     var key = [
       ...List.generate(16, (i) => i + 1),
@@ -74,43 +92,46 @@ void main() {
     var cipher = salsa20(sample, key, nonce: nonce);
     expect(output, equals(cipher));
   });
-  test('encryption <-> decryption (convert)', () {
-    var key = randomNumbers(32);
-    var nonce = randomBytes(16);
-    for (int j = 0; j < 100; ++j) {
-      var text = randomNumbers(j);
-      var bytes = Uint8List.fromList(text);
-      var cipher = salsa20(text, key, nonce: nonce);
-      var plain = salsa20(cipher, key, nonce: nonce);
-      expect(bytes, equals(plain), reason: '[text: $j]');
-    }
-  });
-  test('encryption <-> decryption (stream)', () async {
-    var key = randomNumbers(32);
-    var nonce = randomBytes(16);
-    for (int j = 0; j < 100; ++j) {
-      var text = randomNumbers(j);
-      var bytes = Uint8List.fromList(text);
-      var stream = Stream.fromIterable(text);
-      var cipherStream = salsa20Stream(stream, key, nonce: nonce);
-      var plainStream = salsa20Stream(cipherStream, key, nonce: nonce);
-      var plain = await plainStream.toList();
-      expect(plain, equals(bytes), reason: '[text: $j]');
-    }
-  });
-  test('8-byte nonce: encryption <-> decryption (convert)', () {
-    var key = randomNumbers(32);
-    var nonce = randomBytes(8);
-    for (int j = 0; j < 100; ++j) {
-      var text = randomNumbers(j);
-      var plain = Uint8List.fromList(text);
-      var cipher = salsa20(text, key, nonce: nonce);
-      var backwards = salsa20(cipher, key, nonce: nonce);
-      expect(plain, equals(backwards), reason: '[text: $j]');
-    }
+
+  group('correctness', () {
+    test('encryption <-> decryption (convert)', () {
+      var key = randomNumbers(32);
+      var nonce = randomBytes(16);
+      for (int j = 0; j < 100; ++j) {
+        var text = randomNumbers(j);
+        var bytes = Uint8List.fromList(text);
+        var cipher = salsa20(text, key, nonce: nonce);
+        var plain = salsa20(cipher, key, nonce: nonce);
+        expect(bytes, equals(plain), reason: '[text: $j]');
+      }
+    });
+    test('encryption <-> decryption (stream)', () async {
+      var key = randomNumbers(32);
+      var nonce = randomBytes(16);
+      for (int j = 0; j < 100; ++j) {
+        var text = randomNumbers(j);
+        var bytes = Uint8List.fromList(text);
+        var stream = Stream.fromIterable(text);
+        var cipherStream = salsa20Stream(stream, key, nonce: nonce);
+        var plainStream = salsa20Stream(cipherStream, key, nonce: nonce);
+        var plain = await plainStream.toList();
+        expect(plain, equals(bytes), reason: '[text: $j]');
+      }
+    });
+    test('8-byte nonce: encryption <-> decryption (convert)', () {
+      var key = randomNumbers(32);
+      var nonce = randomBytes(8);
+      for (int j = 0; j < 100; ++j) {
+        var text = randomNumbers(j);
+        var plain = Uint8List.fromList(text);
+        var cipher = salsa20(text, key, nonce: nonce);
+        var backwards = salsa20(cipher, key, nonce: nonce);
+        expect(plain, equals(backwards), reason: '[text: $j]');
+      }
+    });
   });
 
-  test('sink test (no add after close)', () {
+  test('Sink operations', () {
     var key = Uint8List.fromList(
       List.generate(16, (i) => i + 1),
     );
@@ -125,8 +146,7 @@ void main() {
       112, 29, 14, 232, 5, 16, 151, 140, 183, 141, 171, 9, 122, 181, 104, 182,
       177, 193
     ];
-    var counter = Nonce64.zero().bytes;
-    var sink = Salsa20Sink(key, nonce, counter);
+    var sink = Salsa20(key, nonce).createSink();
     int step = 8;
     for (int i = 0; i < sample.length; i += step) {
       var inp = sample.skip(i).take(step).toList();

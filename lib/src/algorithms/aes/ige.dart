@@ -11,7 +11,7 @@ import 'package:hashlib/hashlib.dart' show randomBytes;
 import '_core.dart';
 
 /// The sink used for encryption by the [AESInIGEModeEncrypt] algorithm.
-class AESInIGEModeEncryptSink extends CipherSink {
+class AESInIGEModeEncryptSink implements CipherSink {
   AESInIGEModeEncryptSink(
     this._key,
     this._iv,
@@ -51,9 +51,9 @@ class AESInIGEModeEncryptSink extends CipherSink {
   @override
   Uint8List add(
     List<int> data, [
+    bool last = false,
     int start = 0,
     int? end,
-    bool last = false,
   ]) {
     if (_closed) {
       throw StateError('The sink is closed');
@@ -108,10 +108,14 @@ class AESInIGEModeEncryptSink extends CipherSink {
       return output.sublist(0, p);
     }
   }
+
+  @override
+  @pragma('vm:prefer-inline')
+  Uint8List close() => add([], true);
 }
 
 /// The sink used for decryption by the [AESInIGEModeDecrypt] algorithm.
-class AESInIGEModeDecryptSink extends CipherSink {
+class AESInIGEModeDecryptSink implements CipherSink {
   AESInIGEModeDecryptSink(
     this._key,
     this._iv,
@@ -154,9 +158,9 @@ class AESInIGEModeDecryptSink extends CipherSink {
   @override
   Uint8List add(
     List<int> data, [
+    bool last = false,
     int start = 0,
     int? end,
-    bool last = false,
   ]) {
     if (_closed) {
       throw StateError('The sink is closed');
@@ -213,6 +217,10 @@ class AESInIGEModeDecryptSink extends CipherSink {
       return output.sublist(0, p);
     }
   }
+
+  @override
+  @pragma('vm:prefer-inline')
+  Uint8List close() => add([], true);
 }
 
 /// Provides encryption for AES cipher in IGE mode.

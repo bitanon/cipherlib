@@ -2,40 +2,34 @@
 // All rights reserved. Check LICENSE file for details.
 
 import 'package:cipherlib/src/algorithms/aead_cipher.dart';
-import 'package:cipherlib/src/algorithms/chacha20.dart';
+import 'package:cipherlib/src/algorithms/salsa20.dart';
 import 'package:cipherlib/src/utils/nonce.dart';
 import 'package:hashlib/hashlib.dart' show Poly1305;
 
-/// ChaCha20-Poly1305 is a cryptographic algorithm combining [ChaCha20]
-/// stream cipher for encryption and [Poly1305] for generating message
+/// XSalsa20-Poly1305 is a cryptographic algorithm combining the [XSalsa20]
+/// stream cipher for encryption and the [Poly1305] for generating message
 /// authentication code.
-/// It provides both confidentiality and integrity protection, making it a
-/// popular choice for secure communication protocols like TLS.
-///
-/// This implementation is based on the [RFC-8439][rfc]
-///
-/// [rfc]: https://www.rfc-editor.org/rfc/rfc8439.html
-class ChaCha20Poly1305 extends AEADCipher<ChaCha20, Poly1305> {
-  const ChaCha20Poly1305._(
-    ChaCha20 cipher,
+class XSalsa20Poly1305 extends AEADCipher<XSalsa20, Poly1305> {
+  const XSalsa20Poly1305._(
+    XSalsa20 cipher,
     Poly1305 mac,
     List<int>? aad,
   ) : super(cipher, mac, aad);
 
-  /// Creates a new instance of the [ChaCha20Poly1305] cipher.
+  /// Creates a new instance of the [XSalsa20Poly1305] cipher.
   ///
   /// Parameters:
   /// - [key] : Either 16 or 32 bytes key.
-  /// - [nonce] : Either 8 or 12 bytes nonce.
+  /// - [nonce] : Either 8 or 16 bytes nonce.
   /// - [aad] : Additional authenticated data.
   /// - [counter] : Initial block number.
-  factory ChaCha20Poly1305({
+  factory XSalsa20Poly1305({
     required List<int> key,
     List<int>? nonce,
     Nonce64? counter,
     List<int>? aad,
   }) =>
-      ChaCha20(key, nonce, counter).poly1305(aad);
+      XSalsa20(key, nonce, counter).poly1305(aad);
 
   @override
   @pragma('vm:prefer-inline')
@@ -47,25 +41,26 @@ class ChaCha20Poly1305 extends AEADCipher<ChaCha20, Poly1305> {
       super.sign(message).withIV(cipher.iv);
 }
 
-/// Adds [poly1305] to [ChaCha20] to create an instance of [ChaCha20Poly1305]
-extension ChaCha20ExtentionForPoly1305 on ChaCha20 {
-  /// Create an instance of [ChaCha20Poly1305] that uses [ChaCha20] for message
+/// Adds [poly1305] to [XSalsa20] to create an instance of [XSalsa20Poly1305]
+extension XSalsa20ExtentionForPoly1305 on XSalsa20 {
+  /// Creates an instance of [XSalsa20Poly1305] that uses [XSalsa20] for message
   /// encryption and [Poly1305] for MAC (Message Authentication Code) generation
   /// to ensure data integrity.
   ///
   /// The [Poly1305] hash instance is initialized by a 32-byte long OTK.
   @pragma('vm:prefer-inline')
-  ChaCha20Poly1305 poly1305([List<int>? aad]) =>
-      ChaCha20Poly1305._(this, Poly1305($otk()), aad);
+  XSalsa20Poly1305 poly1305([List<int>? aad]) {
+    return XSalsa20Poly1305._(this, Poly1305($otk()), aad);
+  }
 }
 
-/// Transforms [message] with ChaCha20 algorithm and generates the message
+/// Transforms [message] with XSalsa20 algorithm and generates the message
 /// digest with Poly1305 authentication code generator.
 ///
 /// Parameters:
 /// - [message] : arbitrary length plain-text.
 /// - [key] : Either 16 or 32 bytes key.
-/// - [nonce] : Either 8 or 12 bytes nonce.
+/// - [nonce] : Either 8 or 16 bytes nonce.
 /// - [aad] : Additional authenticated data.
 /// - [counter] : Initial block number.
 /// - [mac] : A 128-bit or 16-bytes long authentication tag for verification.
@@ -73,7 +68,7 @@ extension ChaCha20ExtentionForPoly1305 on ChaCha20 {
 /// Throws: [AssertionError] on [mac] verification failure.
 ///
 /// Both the encryption and decryption can be done using this same method.
-AEADResultWithIV chacha20poly1305(
+AEADResultWithIV xsalsa20poly1305(
   List<int> message,
   List<int> key, {
   List<int>? mac,
@@ -81,7 +76,7 @@ AEADResultWithIV chacha20poly1305(
   List<int>? aad,
   Nonce64? counter,
 }) {
-  var algo = ChaCha20Poly1305(
+  var algo = XSalsa20Poly1305(
     key: key,
     nonce: nonce,
     counter: counter,

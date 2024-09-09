@@ -17,35 +17,31 @@ class AEADResult {
   /// The message authentication code
   final HashDigest tag;
 
-  const AEADResult._({
-    required this.tag,
-    required this.data,
-  });
+  const AEADResult._(this.data, this.tag);
 
   /// Returns whether the generated [tag] (message authentication code) is
   /// equal to the provided tag [digest].
   bool verify(List<int>? digest) => tag.isEqual(digest);
 
   /// Creates a new instance of AEADResult with IV parameter
-  AEADResultWithIV withIV(Uint8List iv) =>
-      AEADResultWithIV._(tag: tag, data: data, iv: iv);
+  AEADResultWithIV withIV(Uint8List iv) => AEADResultWithIV._(data, tag, iv);
 }
 
 class AEADResultWithIV extends AEADResult {
   /// The IV, available if and only if cipher does supports it.
   final Uint8List iv;
 
-  const AEADResultWithIV._({
-    required this.iv,
-    required HashDigest tag,
-    required Uint8List data,
-  }) : super._(tag: tag, data: data);
+  const AEADResultWithIV._(
+    Uint8List data,
+    HashDigest tag,
+    this.iv,
+  ) : super._(data, tag);
 }
 
 /// Extends the base [AEADCipherSink] to generate message digest for cipher
 /// algorithms.
 class AEADCipherSink<C extends CipherSink, H extends HashDigestSink>
-    extends CipherSink {
+    implements CipherSink {
   final H _sink;
   final C _cipher;
   final List<int>? _aad;
@@ -82,25 +78,15 @@ class AEADCipherSink<C extends CipherSink, H extends HashDigestSink>
     _verifyMode = forVerification;
   }
 
-  /// Finalizes the message-digest and returns a [HashDigest].
-  ///
-  /// Throws [StateError] if this sink is not closed before generating digest.
-  HashDigest digest() {
-    if (!closed) {
-      close();
-    }
-    return _sink.digest();
-  }
-
   @override
   Uint8List add(
     List<int> data, [
+    bool last = false,
     int start = 0,
     int? end,
-    bool last = false,
   ]) {
     end ??= data.length;
-    var cipher = _cipher.add(data, start, end, last);
+    var cipher = _cipher.add(data, last, start, end);
     if (_verifyMode) {
       _dataLength += end - start;
       _sink.add(data, start, end);
@@ -134,6 +120,23 @@ class AEADCipherSink<C extends CipherSink, H extends HashDigestSink>
       ]);
     }
     return cipher;
+  }
+
+  @override
+  Uint8List close() {
+    final r = add([], true);
+    _sink.close();
+    return r;
+  }
+
+  /// Returns the current tag as [HashDigest] after sink is closed.
+  ///
+  /// Throws [StateError] if this sink is not closed before generating digest.
+  HashDigest digest() {
+    if (!closed) {
+      throw StateError('The sink is not yet closed');
+    }
+    return _sink.digest();
   }
 }
 
@@ -169,25 +172,22 @@ abstract class AEADCipher<C extends Cipher, M extends MACHashBase>
         verifyMode,
       );
 
-  /// Transforms the [message] with an authentication tag.
+  /// Transforms the [message]. Alias for [sign].
   @pragma('vm:prefer-inline')
-  AEADResult convert(List<int> message) {
+  AEADResult convert(List<int> message) => sign(message);
+
+  /// Signs the [message] with an authentication tag.
+  AEADResult sign(List<int> message) {
     var sink = createSink();
-    var cipher = sink.add(message, 0, null, true);
+    var cipher = sink.add(message, true);
     var digest = sink.digest();
-    return AEADResult._(
-      tag: digest,
-      data: cipher,
-    );
+    return AEADResult._(cipher, digest);
   }
 
   /// Returns true if [message] can be verified with the authentication [tag].
-  bool verify(List<int> message, List<int> tag) {
-    var sink = createSink(true);
-    sink.add(message, 0, null, true);
-    var digest = sink.digest();
-    return digest.isEqual(tag);
-  }
+  @pragma('vm:prefer-inline')
+  bool verify(List<int> message, List<int> tag) =>
+      (createSink(true)..add(message, true)).digest().isEqual(tag);
 
   @override
   Stream<Uint8List> bind(
@@ -202,7 +202,7 @@ abstract class AEADCipher<C extends Cipher, M extends MACHashBase>
       }
       cache = data;
     }
-    yield sink.add(cache ?? [], 0, null, true);
+    yield sink.add(cache ?? [], true);
     if (onDigest != null) {
       onDigest(sink.digest());
     }
@@ -225,7 +225,7 @@ abstract class AEADCipher<C extends Cipher, M extends MACHashBase>
         p = 0;
       }
     }
-    for (var e in sink.add(chunk, 0, p, true)) {
+    for (var e in sink.add(chunk, true, 0, p)) {
       yield e;
     }
     if (onDigest != null) {

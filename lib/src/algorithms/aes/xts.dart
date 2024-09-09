@@ -28,7 +28,7 @@ void _multiplyAlpha(Uint8List T) {
 /// Cryptographic Protection of Data on Block-Oriented Storage Devices][spec].
 ///
 /// [spec]: https://ieeexplore.ieee.org/document/8637988
-class AESInXTSModeEncryptSink extends CipherSink {
+class AESInXTSModeEncryptSink implements CipherSink {
   AESInXTSModeEncryptSink(
     this._ekey,
     this._tkey,
@@ -72,9 +72,9 @@ class AESInXTSModeEncryptSink extends CipherSink {
   @override
   Uint8List add(
     List<int> data, [
+    bool last = false,
     int start = 0,
     int? end,
-    bool last = false,
   ]) {
     if (_closed) {
       throw StateError('The sink is closed');
@@ -169,13 +169,17 @@ class AESInXTSModeEncryptSink extends CipherSink {
       return output.sublist(0, p);
     }
   }
+
+  @override
+  @pragma('vm:prefer-inline')
+  Uint8List close() => add([], true);
 }
 
 /// This implementation is derived from [1619-2018 - IEEE Standard for
 /// Cryptographic Protection of Data on Block-Oriented Storage Devices][spec].
 ///
 /// [spec]: https://ieeexplore.ieee.org/document/8637988
-class AESInXTSModeDecryptSink extends CipherSink {
+class AESInXTSModeDecryptSink implements CipherSink {
   AESInXTSModeDecryptSink(
     this._dkey,
     this._tkey,
@@ -220,9 +224,9 @@ class AESInXTSModeDecryptSink extends CipherSink {
   @override
   Uint8List add(
     List<int> data, [
+    bool last = false,
     int start = 0,
     int? end,
-    bool last = false,
   ]) {
     if (_closed) {
       throw StateError('The sink is closed');
@@ -317,6 +321,10 @@ class AESInXTSModeDecryptSink extends CipherSink {
       return output.sublist(0, p);
     }
   }
+
+  @override
+  @pragma('vm:prefer-inline')
+  Uint8List close() => add([], true);
 }
 
 /// Provides encryption for AES cipher in XTS mode.

@@ -107,6 +107,18 @@ void main() {
     }
   });
 
+  test('sign and verify', () {
+    for (int i = 0; i < 100; ++i) {
+      final key = randomBytes(32);
+      final iv = randomBytes(16);
+      final aad = randomBytes(key[0]);
+      final message = randomBytes(i);
+      final instance = ChaCha20Poly1305(key: key, nonce: iv, aad: aad);
+      final res = instance.sign(message);
+      expect(instance.verify(res.data, res.tag.bytes), isTrue);
+    }
+  });
+
   group('functionality tests', () {
     var key = fromHex(
       "808182838485868788898a8b8c8d8e8f"
@@ -202,7 +214,7 @@ void main() {
       expect(output, equals(cipher));
       await done.future;
     });
-    test('sink test (no call after close)', () {
+    test('Sink operations', () {
       var sink = algo.createSink();
       expect(sink.macLength, 16);
 
@@ -219,7 +231,7 @@ void main() {
       expect(() => sink.add([1]), throwsStateError);
 
       sink.reset(true);
-      expect(sink.add(sample), equals(cipher));
+      expect(sink.add(sample, true), equals(cipher));
       expect(sink.digest().hex(), '67a0fa25b34192a2844b8bbde2e76c92');
     });
   });

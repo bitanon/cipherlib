@@ -11,7 +11,7 @@ import 'package:hashlib/hashlib.dart' show randomBytes;
 import '_core.dart';
 
 /// The sink used for encryption by the [AESInOFBModeCipher] algorithm.
-class AESInOFBModeSink extends CipherSink {
+class AESInOFBModeSink implements CipherSink {
   AESInOFBModeSink(
     this._key,
     this._iv,
@@ -46,9 +46,9 @@ class AESInOFBModeSink extends CipherSink {
   @override
   Uint8List add(
     List<int> data, [
+    bool last = false,
     int start = 0,
     int? end,
-    bool last = false,
   ]) {
     if (_closed) {
       throw StateError('The sink is closed');
@@ -81,6 +81,10 @@ class AESInOFBModeSink extends CipherSink {
 
     return output;
   }
+
+  @override
+  @pragma('vm:prefer-inline')
+  Uint8List close() => add([], true);
 }
 
 /// Provides encryption for AES cipher in OFB mode.

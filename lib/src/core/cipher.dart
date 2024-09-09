@@ -42,8 +42,7 @@ abstract class Cipher<S extends CipherSink> extends StreamCipherBase {
 
   /// Transforms the [message].
   @pragma('vm:prefer-inline')
-  Uint8List convert(List<int> message) =>
-      createSink().add(message, 0, null, true);
+  Uint8List convert(List<int> message) => createSink().add(message, true);
 
   @override
   Stream<Uint8List> bind(Stream<List<int>> stream) async* {
@@ -55,7 +54,7 @@ abstract class Cipher<S extends CipherSink> extends StreamCipherBase {
       }
       cache = data;
     }
-    yield sink.add(cache ?? [], 0, null, true);
+    yield sink.add(cache ?? [], true);
   }
 
   @override
@@ -72,7 +71,7 @@ abstract class Cipher<S extends CipherSink> extends StreamCipherBase {
         p = 0;
       }
     }
-    for (var e in sink.add(chunk, 0, p, true)) {
+    for (var e in sink.add(chunk, true, 0, p)) {
       yield e;
     }
   }

@@ -48,7 +48,7 @@ const List<int> _pow2 = <int>[
 /// This implementation is derived from [NIST GCM Specification][spec].
 ///
 /// [spec]: https://csrc.nist.rip/groups/ST/toolkit/BCM/documents/proposedmodes/gcm/gcm-spec.pdf
-abstract class _AESInGCMModeSinkBase extends CipherSink {
+abstract class _AESInGCMModeSinkBase implements CipherSink {
   _AESInGCMModeSinkBase(
     this._key,
     this._iv,
@@ -237,6 +237,10 @@ abstract class _AESInGCMModeSinkBase extends CipherSink {
     _tag32[2] = t2;
     _tag32[3] = t3;
   }
+
+  @override
+  @pragma('vm:prefer-inline')
+  Uint8List close() => add([], true);
 }
 
 /// The sink used for both encryption and decryption by the
@@ -260,9 +264,9 @@ class AESInGCMModeEncryptSink extends _AESInGCMModeSinkBase {
   @override
   Uint8List add(
     List<int> data, [
+    bool last = false,
     int start = 0,
     int? end,
-    bool last = false,
   ]) {
     if (_closed) {
       throw StateError('The sink is closed');
@@ -328,9 +332,9 @@ class AESInGCMModeDecryptSink extends _AESInGCMModeSinkBase {
   @override
   Uint8List add(
     List<int> data, [
+    bool last = false,
     int start = 0,
     int? end,
-    bool last = false,
   ]) {
     if (_closed) {
       throw StateError('The sink is closed');

@@ -1,8 +1,6 @@
 // Copyright (c) 2024, Sudipto Chandra
 // All rights reserved. Check LICENSE file for details.
 
-import 'dart:typed_data';
-
 import 'package:cipherlib/src/algorithms/aead_cipher.dart';
 import 'package:cipherlib/src/algorithms/salsa20.dart';
 import 'package:cipherlib/src/utils/nonce.dart';
@@ -31,25 +29,28 @@ class Salsa20Poly1305 extends AEADCipher<Salsa20, Poly1305> {
     Nonce64? counter,
     List<int>? aad,
   }) =>
-      Salsa20(
-        key,
-        nonce: nonce,
-        counter: counter,
-      ).poly1305(aad);
+      Salsa20(key, nonce, counter).poly1305(aad);
 
   @override
   @pragma('vm:prefer-inline')
-  AEADResultWithIV convert(List<int> message) {
-    return super.convert(message).withIV(cipher.iv);
-  }
+  AEADResultWithIV convert(List<int> message) => sign(message);
+
+  @override
+  @pragma('vm:prefer-inline')
+  AEADResultWithIV sign(List<int> message) =>
+      super.sign(message).withIV(cipher.iv);
 }
 
 /// Adds [poly1305] to [Salsa20] to create an instance of [Salsa20Poly1305]
 extension Salsa20ExtentionForPoly1305 on Salsa20 {
+  /// Create an instance of [Salsa20Poly1305] that uses [Salsa20] for message
+  /// encryption and [Poly1305] for MAC (Message Authentication Code) generation
+  /// to ensure data integrity.
+  ///
+  /// The [Poly1305] hash instance is initialized by a 32-byte long OTK.
   @pragma('vm:prefer-inline')
   Salsa20Poly1305 poly1305([List<int>? aad]) {
-    var otk = Salsa20Sink(key, iv, Uint8List(8)).add(Uint8List(32));
-    return Salsa20Poly1305._(this, Poly1305(otk), aad);
+    return Salsa20Poly1305._(this, Poly1305($otk()), aad);
   }
 }
 

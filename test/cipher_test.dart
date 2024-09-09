@@ -48,14 +48,12 @@ class TestCollateCipher extends CollateCipher {
 }
 
 // Mock implementation of CipherSink for testing
-class MockCipherSink extends CipherSink {
+class MockCipherSink implements CipherSink {
   bool _closed = false;
 
   @override
-  add(List<int> data, [int start = 0, int? end, bool flush = false]) {
-    if (flush) {
-      _closed = true;
-    }
+  add(List<int> data, [bool last = false, int start = 0, int? end]) {
+    _closed = last;
     return Uint8List.fromList(
       data.sublist(start, end).map((e) => e + 1).toList(),
     );
@@ -67,7 +65,7 @@ class MockCipherSink extends CipherSink {
   @override
   close() {
     _closed = true;
-    return super.close();
+    return Uint8List(0);
   }
 
   @override
