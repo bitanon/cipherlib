@@ -9,7 +9,7 @@ import 'package:cipherlib/src/core/cipher_sink.dart';
 import 'package:hashlib/hashlib.dart'
     show HashDigest, HashDigestSink, MACHashBase;
 
-/// The result fromo AEAD ciphers
+/// The result from AEAD ciphers
 class AEADResult {
   /// The output message
   final Uint8List data;
@@ -27,8 +27,9 @@ class AEADResult {
   AEADResultWithIV withIV(Uint8List iv) => AEADResultWithIV._(data, tag, iv);
 }
 
+/// The result from AEAD ciphers having an IV or nonce
 class AEADResultWithIV extends AEADResult {
-  /// The IV, available if and only if cipher does supports it.
+  /// The nonce or initialization vector
   final Uint8List iv;
 
   const AEADResultWithIV._(
@@ -162,6 +163,11 @@ abstract class AEADCipher<C extends Cipher, M extends MACHashBase>
     this.aad,
   ]);
 
+  /// Creates a sink to process multiple input messages in chunks
+  ///
+  /// If [verifyMode] is true, the generated tag can only be used to verify
+  /// the input message integrity. To get a tag for the input message itself,
+  /// pass it as false.
   AEADCipherSink createSink([
     bool verifyMode = false,
   ]) =>

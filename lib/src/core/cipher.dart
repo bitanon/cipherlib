@@ -8,6 +8,7 @@ import 'package:hashlib/hashlib.dart' show fillRandom;
 
 import 'cipher_sink.dart';
 
+/// Template for all Cipher algorithms in this package
 abstract class CipherBase {
   const CipherBase();
 
