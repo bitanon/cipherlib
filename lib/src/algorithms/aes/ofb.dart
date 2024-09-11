@@ -3,11 +3,12 @@
 
 import 'dart:typed_data';
 
-import 'package:cipherlib/src/algorithms/padding.dart';
+import 'package:cipherlib/src/core/cipher.dart';
 import 'package:cipherlib/src/core/cipher_sink.dart';
-import 'package:cipherlib/src/core/salted_cipher.dart';
+import 'package:cipherlib/src/core/collate_cipher.dart';
 import 'package:hashlib/hashlib.dart' show randomBytes;
 
+import '../padding.dart';
 import '_core.dart';
 
 /// The sink used for encryption by the [AESInOFBModeCipher] algorithm.
@@ -88,21 +89,24 @@ class AESInOFBModeSink implements CipherSink {
 }
 
 /// Provides encryption for AES cipher in OFB mode.
-class AESInOFBModeCipher extends SaltedCipher {
+class AESInOFBModeCipher extends Cipher with SaltedCipher {
   @override
   String get name => "AES#cipher/OFB/${Padding.none.name}";
 
   /// Key for the cipher
   final Uint8List key;
 
+  @override
+  final Uint8List iv;
+
   /// Number of bytes to use per block
   final int sbyte;
 
   const AESInOFBModeCipher(
     this.key,
-    Uint8List iv,
+    this.iv,
     this.sbyte,
-  ) : super(iv);
+  );
 
   @override
   @pragma('vm:prefer-inline')
@@ -110,7 +114,7 @@ class AESInOFBModeCipher extends SaltedCipher {
 }
 
 /// Provides encryption and decryption for AES cipher in OFB mode.
-class AESInOFBMode extends SaltedCollateCipher {
+class AESInOFBMode extends CollateCipher with SaltedCipher {
   @override
   String get name => "AES/OFB/${Padding.none.name}";
 
@@ -124,6 +128,9 @@ class AESInOFBMode extends SaltedCollateCipher {
     required this.encryptor,
     required this.decryptor,
   });
+
+  @override
+  Uint8List get iv => encryptor.iv;
 
   /// Creates AES cipher in OFB mode.
   ///

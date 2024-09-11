@@ -23,7 +23,7 @@ class CipherlibBenchmark extends Benchmark {
 
   @override
   void run() {
-    cipher.chacha20(input, key, nonce: nonce);
+    cipher.ChaCha20(key, nonce).convert(input);
   }
 }
 

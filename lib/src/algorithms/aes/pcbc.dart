@@ -3,11 +3,12 @@
 
 import 'dart:typed_data';
 
-import 'package:cipherlib/src/algorithms/padding.dart';
+import 'package:cipherlib/src/core/cipher.dart';
 import 'package:cipherlib/src/core/cipher_sink.dart';
-import 'package:cipherlib/src/core/salted_cipher.dart';
+import 'package:cipherlib/src/core/collate_cipher.dart';
 import 'package:hashlib/hashlib.dart' show randomBytes;
 
+import '../padding.dart';
 import '_core.dart';
 
 /// The sink used for encryption by the [AESInPCBCModeEncrypt] algorithm.
@@ -213,21 +214,24 @@ class AESInPCBCModeDecryptSink implements CipherSink {
 }
 
 /// Provides encryption for AES cipher in PCBC mode.
-class AESInPCBCModeEncrypt extends SaltedCipher {
+class AESInPCBCModeEncrypt extends Cipher with SaltedCipher {
   @override
   String get name => "AES#encrypt/PCBC/${padding.name}";
 
   /// Key for the cipher
   final Uint8List key;
 
+  @override
+  final Uint8List iv;
+
   /// Padding scheme for the input message
   final Padding padding;
 
   const AESInPCBCModeEncrypt(
     this.key,
-    Uint8List iv, [
+    this.iv, [
     this.padding = Padding.pkcs7,
-  ]) : super(iv);
+  ]);
 
   @override
   @pragma('vm:prefer-inline')
@@ -236,21 +240,24 @@ class AESInPCBCModeEncrypt extends SaltedCipher {
 }
 
 /// Provides decryption for AES cipher in PCBC mode.
-class AESInPCBCModeDecrypt extends SaltedCipher {
+class AESInPCBCModeDecrypt extends Cipher with SaltedCipher {
   @override
   String get name => "AES#decrypt/PCBC/${padding.name}";
 
   /// Key for the cipher
   final Uint8List key;
 
+  @override
+  final Uint8List iv;
+
   /// Padding scheme for the output message
   final Padding padding;
 
   const AESInPCBCModeDecrypt(
     this.key,
-    Uint8List iv, [
+    this.iv, [
     this.padding = Padding.pkcs7,
-  ]) : super(iv);
+  ]);
 
   @override
   @pragma('vm:prefer-inline')
@@ -259,7 +266,7 @@ class AESInPCBCModeDecrypt extends SaltedCipher {
 }
 
 /// Provides encryption and decryption for AES cipher in PCBC mode.
-class AESInPCBCMode extends SaltedCollateCipher {
+class AESInPCBCMode extends CollateCipher with SaltedCipher {
   @override
   String get name => "AES/PCBC/${padding.name}";
 
@@ -273,6 +280,9 @@ class AESInPCBCMode extends SaltedCollateCipher {
     required this.encryptor,
     required this.decryptor,
   });
+
+  @override
+  Uint8List get iv => encryptor.iv;
 
   /// Creates AES cipher in PCBC mode.
   ///

@@ -11,6 +11,9 @@ import 'utils.dart';
 
 void main() {
   group('Functionality test', () {
+    test('name', () {
+      expect(ChaCha20(Uint8List(32)).name, "ChaCha20");
+    });
     test('accepts empty message', () {
       var key = randomNumbers(32);
       var nonce = randomBytes(12);
@@ -159,6 +162,61 @@ void main() {
         var plain = chacha20(cipher, key, nonce: nonce);
         expect(bytes, equals(plain), reason: '[text: $j]');
       }
+    });
+  });
+
+  group('counter increment', () {
+    test('at 32-bit with 8-byte nonce', () {
+      var key = randomBytes(32);
+      var iv = fromHex('3122331221327845');
+      var counter1 = Nonce64.int32(0xFFFFFFFF, 0x0F0F0FFF);
+      var counter2 = Nonce64.int32(1, 0x0F0F1000);
+      var message = Uint8List(256);
+      var out1 = chacha20(message, key, nonce: iv, counter: counter1);
+      var out2 = chacha20(message, key, nonce: iv, counter: counter2);
+      expect(out1.skip(128), equals(out2.take(128)));
+    });
+
+    test('at 64-bit with 8-byte nonce', () {
+      var key = randomBytes(32);
+      var iv = fromHex('3122331221327845');
+      var counter1 = Nonce64.int32(0xFFFFFFFF, 0xFFFFFFFF);
+      var counter2 = Nonce64.int32(1);
+      var message = Uint8List(256);
+      var out1 = chacha20(message, key, nonce: iv, counter: counter1);
+      var out2 = chacha20(message, key, nonce: iv, counter: counter2);
+      expect(out1.skip(128), equals(out2.take(128)));
+    });
+
+    test('at 32-bit with 12-byte nonce', () {
+      var key = randomBytes(32);
+      var iv = fromHex('FF0F0F0F3122331221327845');
+      var counter1 = Nonce64.int32(0xFFFFFFFF, 0xFFFFFFFF);
+      var counter2 = Nonce64.int32(1, 0xFFFFFFFF);
+      var message = Uint8List(256);
+      var out1 = chacha20(message, key, nonce: iv, counter: counter1);
+      var out2 = chacha20(message, key, nonce: iv, counter: counter2);
+      expect(out1.skip(128), equals(out2.take(128)));
+    });
+
+    test('at 32-bit with 16-byte nonce', () {
+      var key = randomBytes(32);
+      var nonce1 = fromHex('FFFFFFFFFF0F0F0F3122331221327845');
+      var nonce2 = fromHex('0100000000100F0F3122331221327845');
+      var message = Uint8List(256);
+      var out1 = chacha20(message, key, nonce: nonce1);
+      var out2 = chacha20(message, key, nonce: nonce2);
+      expect(out1.skip(128), equals(out2.take(128)));
+    });
+
+    test('at 64-bit with 16-byte nonce', () {
+      var key = randomBytes(32);
+      var nonce1 = fromHex('FFFFFFFFFFFFFFFF3122331221327845');
+      var nonce2 = fromHex('01000000000000003122331221327845');
+      var message = Uint8List(256);
+      var out1 = chacha20(message, key, nonce: nonce1);
+      var out2 = chacha20(message, key, nonce: nonce2);
+      expect(out1.skip(128), equals(out2.take(128)));
     });
   });
 

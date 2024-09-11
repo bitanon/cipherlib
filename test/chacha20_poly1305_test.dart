@@ -113,10 +113,21 @@ void main() {
       final iv = randomBytes(16);
       final aad = randomBytes(key[0]);
       final message = randomBytes(i);
-      final instance = ChaCha20Poly1305(key: key, nonce: iv, aad: aad);
+      final instance = ChaCha20Poly1305(key, nonce: iv, aad: aad);
       final res = instance.sign(message);
       expect(instance.verify(res.data, res.tag.bytes), isTrue);
     }
+  });
+
+  test('reset iv', () {
+    var x = ChaCha20Poly1305(Uint8List(32));
+    var iv = [...x.iv];
+    var key1 = [...x.cipher.key];
+    var key2 = [...x.mac.keypair];
+    x.resetIV();
+    expect(iv, isNot(equals(x.iv)));
+    expect(key1, equals(x.cipher.key));
+    expect(key2, isNot(equals(x.mac.keypair)));
   });
 
   group('functionality tests', () {
@@ -141,7 +152,7 @@ void main() {
       "6116",
     );
     var algo = ChaCha20Poly1305(
-      key: key,
+      key,
       aad: aad,
       nonce: nonce,
     );
@@ -158,7 +169,7 @@ void main() {
       var input = List.generate(1200, (index) => index);
       var stream = Stream.fromIterable(input);
       var output = await algo.stream(stream).toList();
-      var expected = algo.convert(input).data;
+      var expected = algo.convert(input);
       expect(output, equals(expected));
     });
     test('accepts integer stream with onDigest callback', () async {
@@ -192,7 +203,7 @@ void main() {
       await for (var out in algo.bind(stream)) {
         output.addAll(out);
       }
-      var expected = algo.convert(input).data;
+      var expected = algo.convert(input);
       expect(output, equals(expected));
     });
     test('binds stream with onDigest call', () async {
@@ -224,6 +235,7 @@ void main() {
         var out = cipher.skip(i).take(step).toList();
         expect(sink.add(inp), equals(out));
       }
+      expect(() => sink.digest(), throwsStateError);
       expect(sink.close(), equals([]));
       expect(sink.closed, true);
       expect(sink.digest().hex(), '1ae10b594f09e26a7e902ecbd0600691');

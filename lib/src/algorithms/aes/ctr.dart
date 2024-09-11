@@ -3,12 +3,13 @@
 
 import 'dart:typed_data';
 
-import 'package:cipherlib/src/algorithms/padding.dart';
+import 'package:cipherlib/src/core/cipher.dart';
 import 'package:cipherlib/src/core/cipher_sink.dart';
-import 'package:cipherlib/src/core/salted_cipher.dart';
+import 'package:cipherlib/src/core/collate_cipher.dart';
 import 'package:cipherlib/src/utils/nonce.dart';
 import 'package:hashlib/hashlib.dart' show randomBytes;
 
+import '../padding.dart';
 import '_core.dart';
 
 const int _mask32 = 0xFFFFFFFF;
@@ -99,14 +100,17 @@ class AESInCTRModeSink implements CipherSink {
 }
 
 /// Provides AES cipher in CTR mode.
-class AESInCTRModeCipher extends SaltedCipher {
+class AESInCTRModeCipher extends Cipher with SaltedCipher {
   @override
   String get name => "AES#cipher/CTR/${Padding.none.name}";
 
   /// Key for the cipher
   final Uint8List key;
 
-  const AESInCTRModeCipher(this.key, Uint8List iv) : super(iv);
+  @override
+  final Uint8List iv;
+
+  const AESInCTRModeCipher(this.key, this.iv);
 
   @override
   @pragma('vm:prefer-inline')
@@ -114,7 +118,7 @@ class AESInCTRModeCipher extends SaltedCipher {
 }
 
 /// Provides encryption and decryption for AES cipher in CTR mode.
-class AESInCTRMode extends SaltedCollateCipher {
+class AESInCTRMode extends CollateCipher with SaltedCipher {
   @override
   String get name => "AES/CTR/${Padding.none.name}";
 
@@ -128,6 +132,9 @@ class AESInCTRMode extends SaltedCollateCipher {
     required this.encryptor,
     required this.decryptor,
   });
+
+  @override
+  Uint8List get iv => encryptor.iv;
 
   /// Creates AES cipher in CTR mode.
   ///

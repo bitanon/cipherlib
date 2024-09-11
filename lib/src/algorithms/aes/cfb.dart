@@ -3,11 +3,12 @@
 
 import 'dart:typed_data';
 
-import 'package:cipherlib/src/algorithms/padding.dart';
+import 'package:cipherlib/src/core/cipher.dart';
 import 'package:cipherlib/src/core/cipher_sink.dart';
-import 'package:cipherlib/src/core/salted_cipher.dart';
+import 'package:cipherlib/src/core/collate_cipher.dart';
 import 'package:hashlib/hashlib.dart' show randomBytes;
 
+import '../padding.dart';
 import '_core.dart';
 
 /// The sink used for encryption by the [AESInCFBModeEncrypt] algorithm.
@@ -164,7 +165,7 @@ class AESInCFBModeDecryptSink implements CipherSink {
 }
 
 /// Provides encryption for AES cipher in CFB mode.
-class AESInCFBModeEncrypt extends SaltedCipher {
+class AESInCFBModeEncrypt extends Cipher with SaltedCipher {
   @override
   String get name => "AES#encrypt/CFB/${Padding.none.name}";
 
@@ -174,11 +175,14 @@ class AESInCFBModeEncrypt extends SaltedCipher {
   /// Number of bytes to use per block
   final int sbyte;
 
+  @override
+  final Uint8List iv;
+
   const AESInCFBModeEncrypt(
     this.key,
-    Uint8List iv,
+    this.iv,
     this.sbyte,
-  ) : super(iv);
+  );
 
   @override
   @pragma('vm:prefer-inline')
@@ -187,7 +191,7 @@ class AESInCFBModeEncrypt extends SaltedCipher {
 }
 
 /// Provides decryption for AES cipher in CFB mode.
-class AESInCFBModeDecrypt extends SaltedCipher {
+class AESInCFBModeDecrypt extends Cipher with SaltedCipher {
   @override
   String get name => "AES#decrypt/CFB/${Padding.none.name}";
 
@@ -197,7 +201,14 @@ class AESInCFBModeDecrypt extends SaltedCipher {
   /// Number of bytes to use per block
   final int sbyte;
 
-  const AESInCFBModeDecrypt(this.key, Uint8List iv, this.sbyte) : super(iv);
+  @override
+  final Uint8List iv;
+
+  const AESInCFBModeDecrypt(
+    this.key,
+    this.iv,
+    this.sbyte,
+  );
 
   @override
   @pragma('vm:prefer-inline')
@@ -206,7 +217,7 @@ class AESInCFBModeDecrypt extends SaltedCipher {
 }
 
 /// Provides encryption and decryption for AES cipher in CFB mode.
-class AESInCFBMode extends SaltedCollateCipher {
+class AESInCFBMode extends CollateCipher with SaltedCipher {
   @override
   String get name => "AES/CFB/${Padding.none.name}";
 
@@ -220,6 +231,9 @@ class AESInCFBMode extends SaltedCollateCipher {
     required this.encryptor,
     required this.decryptor,
   });
+
+  @override
+  Uint8List get iv => encryptor.iv;
 
   /// Creates AES cipher in CFB mode.
   ///

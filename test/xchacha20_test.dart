@@ -12,6 +12,9 @@ import 'utils.dart';
 
 void main() {
   group('Functionality test', () {
+    test('name', () {
+      expect(XChaCha20(Uint8List(32)).name, "XChaCha20");
+    });
     test('accepts empty message', () {
       final key = randomNumbers(32);
       expect(xchacha20([], key), equals([]));
@@ -37,47 +40,82 @@ void main() {
         }
       }
     });
-    test('If counter is not provided, default one is used', () {
+    test('If counter is not provided, default one is used (24 byte nonce)', () {
       final key = Uint8List(32);
       final nonce = List.filled(24, 1);
       final algo = XChaCha20(key, nonce);
-      expect(algo.iv, equals([1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1]));
+      expect(algo.activeIV,
+          equals([1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1]));
     });
-    test('Counter is set correctly when provided', () {
+    test('Counter is set correctly when provided  (24 byte nonce)', () {
       final key = Uint8List(32);
       final nonce = List.filled(24, 1);
       final counter = Nonce64.bytes([2, 2, 2, 2, 2, 2, 2, 2]);
       final algo = XChaCha20(key, nonce, counter);
-      expect(algo.iv, equals([2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1]));
+      expect(algo.activeIV,
+          equals([2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1]));
+    });
+    test('If counter is not provided, default one is used (28 byte nonce)', () {
+      final key = Uint8List(32);
+      final nonce = List.filled(28, 1);
+      final algo = XChaCha20(key, nonce);
+      expect(algo.activeIV,
+          equals([1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]));
+    });
+    test('Counter is set correctly when provided  (28 byte nonce)', () {
+      final key = Uint8List(32);
+      final nonce = List.filled(28, 1);
+      final counter = Nonce64.bytes([2, 2, 2, 2, 2, 2, 2, 2]);
+      final algo = XChaCha20(key, nonce, counter);
+      expect(algo.activeIV,
+          equals([2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]));
+    });
+    test('Counter is not expected with 32-byte nonce', () {
+      final key = Uint8List(32);
+      final c = Nonce64.zero();
+      expect(() => XChaCha20(key, Uint8List(32), c), throwsArgumentError);
     });
     test('random nonce is used if nonce is null, ', () {
       var key = randomNumbers(32);
       var text = randomBytes(100);
       xchacha20(text, key);
     });
+    test('reset iv', () {
+      var x = XChaCha20(Uint8List(32));
+      var iv = [...x.iv];
+      var key = [...x.key];
+      var activeIV = [...x.activeIV];
+      x.resetIV();
+      expect(iv, isNot(equals(x.iv)));
+      expect(key, isNot(equals(x.key)));
+      expect(activeIV, isNot(equals(x.activeIV)));
+    });
   });
 
-  test('XChaCha20: encryption <=> decryption', () {
-    for (int i = 0; i < 100; ++i) {
-      final key = randomBytes(32);
-      final iv = randomBytes(24);
-      final message = randomBytes(i);
-      final cipher = xchacha20(message, key, nonce: iv);
-      final plain = xchacha20(cipher, key, nonce: iv);
-      expect(plain, equals(message));
-    }
-  });
-
-  test('XChaCha20Poly1305: sign and verify', () {
-    for (int i = 0; i < 100; ++i) {
-      final key = randomBytes(32);
-      final iv = randomBytes(24);
-      final aad = randomBytes(key[0]);
-      final message = randomBytes(i);
-      final instance = XChaCha20Poly1305(key: key, nonce: iv, aad: aad);
-      final res = instance.sign(message);
-      expect(instance.verify(res.data, res.tag.bytes), isTrue);
-    }
+  group('correctness', () {
+    test('XChaCha20: encryption <=> decryption', () {
+      for (int i = 0; i < 100; ++i) {
+        final key = randomBytes(32);
+        final iv = randomBytes(24);
+        final message = randomBytes(i);
+        final cipher = xchacha20(message, key, nonce: iv);
+        final plain = xchacha20(cipher, key, nonce: iv);
+        expect(plain, equals(message));
+      }
+    });
+    test('XChaCha20: encryption <-> decryption (stream)', () async {
+      for (int j = 0; j < 100; ++j) {
+        var key = randomNumbers(16);
+        var nonce = randomBytes(24);
+        var text = randomNumbers(j);
+        var bytes = Uint8List.fromList(text);
+        var stream = Stream.fromIterable(text);
+        var cipherStream = xchacha20Stream(stream, key, nonce: nonce);
+        var plainStream = xchacha20Stream(cipherStream, key, nonce: nonce);
+        var plain = await plainStream.toList();
+        expect(bytes, equals(plain), reason: '[text: $j]');
+      }
+    });
   });
 
   test('HChaCha20 subkey', () {
@@ -219,19 +257,6 @@ void main() {
       final out = fromHex(item['out']!).take(inp.length).toList();
       final res = xchacha20(inp, key, nonce: iv);
       expect(toHex(res), equals(toHex(out)));
-    }
-  });
-  test('golang-crypto test vectors for XChaCha20-Poly1305', () {
-    for (final item in xchacha20_vectors) {
-      final inp = fromHex(item['plain']!);
-      final aad = fromHex(item['aad']!);
-      final key = fromHex(item['key']!);
-      final iv = fromHex(item['nonce']!);
-      final out = fromHex(item['out']!).take(inp.length).toList();
-      final tag = fromHex(item['out']!).skip(inp.length).toList();
-      final res = xchacha20poly1305(inp, key, nonce: iv, aad: aad);
-      expect(toHex(res.data), equals(toHex(out)));
-      expect(res.tag.hex(), equals(toHex(tag)));
     }
   });
 }

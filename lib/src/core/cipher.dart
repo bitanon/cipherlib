@@ -4,6 +4,8 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:hashlib/hashlib.dart' show fillRandom;
+
 import 'cipher_sink.dart';
 
 abstract class CipherBase {
@@ -75,4 +77,14 @@ abstract class Cipher<S extends CipherSink> extends StreamCipherBase {
       yield e;
     }
   }
+}
+
+/// Mixin to use a random initialization vector or salt with the Cipher
+abstract class SaltedCipher implements CipherBase {
+  /// The salt or initialization vector
+  Uint8List get iv;
+
+  /// Replaces current IV with a new random one
+  @pragma('vm:prefer-inline')
+  void resetIV() => fillRandom(iv.buffer);
 }

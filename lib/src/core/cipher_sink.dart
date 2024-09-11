@@ -5,8 +5,6 @@ import 'dart:typed_data';
 
 /// Template for Cipher algorithm sink.
 abstract class CipherSink implements Sink<List<int>> {
-  const CipherSink();
-
   /// Returns true if the sink is closed, false otherwise
   bool get closed;
 

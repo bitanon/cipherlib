@@ -3,8 +3,8 @@
 
 import 'dart:typed_data';
 
+import 'package:cipherlib/src/core/cipher.dart';
 import 'package:cipherlib/src/core/cipher_sink.dart';
-import 'package:cipherlib/src/core/salted_cipher.dart';
 import 'package:cipherlib/src/utils/nonce.dart';
 import 'package:hashlib/hashlib.dart' show randomBytes;
 
@@ -56,7 +56,8 @@ class Salsa20Sink implements CipherSink {
     for (int i = start; i < end; i++) {
       if (_pos == 0) {
         _process(_state32, _key32, _iv32);
-        if ((++_iv32[2]) == 0) {
+        ++_iv32[2];
+        if (_iv32[2] == 0) {
           ++_iv32[3];
         }
       }
@@ -216,21 +217,26 @@ class Salsa20Sink implements CipherSink {
 ///
 /// See also:
 /// - [XSalsa20] for better security with 192-bit nonce
-class Salsa20 extends SaltedCipher {
-  @override
-  String get name => "Salsa20";
+class Salsa20 extends Cipher with SaltedCipher {
+  final Uint8List _nonce;
 
   /// Key for the cipher
   final Uint8List key;
 
+  @override
+  String get name => "Salsa20";
+
   const Salsa20._(
     this.key,
-    Uint8List nonce,
-  ) : super(nonce);
+    this._nonce,
+  );
+
+  @override
+  Uint8List get iv => _nonce;
 
   @override
   @pragma('vm:prefer-inline')
-  Salsa20Sink createSink() => Salsa20Sink(key, iv);
+  Salsa20Sink createSink() => Salsa20Sink(key, _nonce);
 
   /// Creates an instance with a [key], [nonce], and [counter] containing a
   /// list of bytes.
@@ -271,7 +277,7 @@ class Salsa20 extends SaltedCipher {
     var state32 = Uint32List(16);
     var state = Uint8List.view(state32.buffer);
     var key32 = Uint32List.view(key.buffer);
-    var nonce32 = Uint32List.view(iv.buffer);
+    var nonce32 = Uint32List.view(_nonce.buffer);
     Salsa20Sink._process(state32, key32, nonce32);
     return state.sublist(0, 32);
   }
@@ -288,13 +294,26 @@ class Salsa20 extends SaltedCipher {
 /// See also:
 /// - [Salsa20]
 class XSalsa20 extends Salsa20 {
+  final Uint8List _xkey;
+  final Uint8List _xnonce;
+  final Nonce64? _xcounter;
+
   @override
   String get name => "XSalsa20";
 
   const XSalsa20._(
+    this._xkey,
+    this._xnonce,
+    this._xcounter,
     Uint8List key,
-    Uint8List nonce,
-  ) : super._(key, nonce);
+    Uint8List iv,
+  ) : super._(key, iv);
+
+  @override
+  Uint8List get iv => _xnonce;
+
+  /// The IV used by the base algorithm
+  Uint8List get activeIV => _nonce;
 
   /// Creates a [XSalsa20] with [key], and [nonce].
   ///
@@ -321,10 +340,28 @@ class XSalsa20 extends Salsa20 {
     }
     var nonce8 = nonce is Uint8List ? nonce : Uint8List.fromList(nonce);
 
+    var instance = XSalsa20._(
+      key8,
+      nonce8,
+      counter,
+      Uint8List(32),
+      Uint8List(16),
+    );
+    instance._hsalsa20();
+    return instance;
+  }
+
+  @override
+  void resetIV() {
+    super.resetIV();
+    _hsalsa20();
+  }
+
+  void _hsalsa20() {
     // HSalsa20 state from key and first 128-bit of nonce
     var state32 = Uint32List(16);
-    var key32 = Uint32List.view(key8.buffer);
-    var nonce32 = Uint32List.view(nonce8.buffer);
+    var key32 = Uint32List.view(_xkey.buffer);
+    var nonce32 = Uint32List.view(_xnonce.buffer);
     Salsa20Sink._process(state32, key32, nonce32, true);
 
     // Take first 128-bit and last 128-bit from state as subkey
@@ -338,21 +375,19 @@ class XSalsa20 extends Salsa20 {
       state32[8],
       state32[9],
     ]);
+    key.setAll(0, Uint8List.view(subkey32.buffer));
 
     // Use the subkey and last 128-bit of nonce or 96-bit nonce and counter.
-    var iv32 = Uint32List(4);
-    var iv = Uint8List.view(iv32.buffer);
+    var iv32 = Uint32List.view(_nonce.buffer);
     iv32[0] = nonce32[4];
     iv32[1] = nonce32[5];
-    if (nonce.length == 32) {
+    if (_xnonce.length == 32) {
       iv32[2] = nonce32[6];
       iv32[3] = nonce32[7];
-    } else if (counter != null) {
-      var counter32 = Uint32List.view(counter.bytes.buffer);
+    } else if (_xcounter != null) {
+      var counter32 = Uint32List.view(_xcounter!.bytes.buffer);
       iv32[2] = counter32[0];
       iv32[3] = counter32[1];
     }
-    var subkey = Uint8List.view(subkey32.buffer);
-    return XSalsa20._(subkey, iv);
   }
 }

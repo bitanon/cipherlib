@@ -9,7 +9,6 @@ export 'chacha20_poly1305.dart';
 export 'core/cipher.dart';
 export 'core/cipher_sink.dart';
 export 'core/collate_cipher.dart';
-export 'core/salted_cipher.dart';
 export 'salsa20.dart';
 export 'salsa20_poly1305.dart';
 export 'utils/nonce.dart';

@@ -1,8 +1,11 @@
 // Copyright (c) 2024, Sudipto Chandra
 // All rights reserved. Check LICENSE file for details.
 
+import 'dart:typed_data';
+
 import 'package:cipherlib/src/algorithms/aead_cipher.dart';
 import 'package:cipherlib/src/algorithms/chacha20.dart';
+import 'package:cipherlib/src/core/cipher.dart';
 import 'package:cipherlib/src/utils/nonce.dart';
 import 'package:hashlib/hashlib.dart' show Poly1305;
 
@@ -15,7 +18,8 @@ import 'package:hashlib/hashlib.dart' show Poly1305;
 /// This implementation is based on the [RFC-8439][rfc]
 ///
 /// [rfc]: https://www.rfc-editor.org/rfc/rfc8439.html
-class ChaCha20Poly1305 extends AEADCipher<ChaCha20, Poly1305> {
+class ChaCha20Poly1305 extends AEADCipher<ChaCha20, Poly1305>
+    with SaltedCipher {
   const ChaCha20Poly1305._(
     ChaCha20 cipher,
     Poly1305 mac,
@@ -29,8 +33,8 @@ class ChaCha20Poly1305 extends AEADCipher<ChaCha20, Poly1305> {
   /// - [nonce] : Either 8 or 12 bytes nonce.
   /// - [aad] : Additional authenticated data.
   /// - [counter] : Initial block number.
-  factory ChaCha20Poly1305({
-    required List<int> key,
+  factory ChaCha20Poly1305(
+    List<int> key, {
     List<int>? nonce,
     Nonce64? counter,
     List<int>? aad,
@@ -39,12 +43,17 @@ class ChaCha20Poly1305 extends AEADCipher<ChaCha20, Poly1305> {
 
   @override
   @pragma('vm:prefer-inline')
-  AEADResultWithIV convert(List<int> message) => sign(message);
-
-  @override
-  @pragma('vm:prefer-inline')
   AEADResultWithIV sign(List<int> message) =>
       super.sign(message).withIV(cipher.iv);
+
+  @override
+  Uint8List get iv => cipher.iv;
+
+  @override
+  void resetIV() {
+    cipher.resetIV();
+    mac.keypair.setAll(0, cipher.$otk());
+  }
 }
 
 /// Adds [poly1305] to [ChaCha20] to create an instance of [ChaCha20Poly1305]
@@ -59,8 +68,8 @@ extension ChaCha20ExtentionForPoly1305 on ChaCha20 {
       ChaCha20Poly1305._(this, Poly1305($otk()), aad);
 }
 
-/// Transforms [message] with ChaCha20 algorithm and generates the message
-/// digest with Poly1305 authentication code generator.
+/// Encrypts or Decrypts the [message] using ChaCha20 cipher and generates an
+/// authentication tag with Poly1305.
 ///
 /// Parameters:
 /// - [message] : arbitrary length plain-text.
@@ -82,7 +91,7 @@ AEADResultWithIV chacha20poly1305(
   Nonce64? counter,
 }) {
   var algo = ChaCha20Poly1305(
-    key: key,
+    key,
     nonce: nonce,
     counter: counter,
     aad: aad,
@@ -90,5 +99,5 @@ AEADResultWithIV chacha20poly1305(
   if (mac != null && !algo.verify(message, mac)) {
     throw AssertionError('Message authenticity check failed');
   }
-  return algo.convert(message);
+  return algo.sign(message);
 }

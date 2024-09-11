@@ -3,11 +3,12 @@
 
 import 'dart:typed_data';
 
-import 'package:cipherlib/src/algorithms/padding.dart';
+import 'package:cipherlib/src/core/cipher.dart';
 import 'package:cipherlib/src/core/cipher_sink.dart';
-import 'package:cipherlib/src/core/salted_cipher.dart';
+import 'package:cipherlib/src/core/collate_cipher.dart';
 import 'package:hashlib/hashlib.dart' show randomBytes;
 
+import '../padding.dart';
 import '_core.dart';
 
 const List<int> _pow2 = <int>[
@@ -400,12 +401,15 @@ class AESInGCMModeDecryptSink extends _AESInGCMModeSinkBase {
 }
 
 /// Provides AES cipher in GCM mode for encryption.
-class AESInGCMModeEncrypt extends SaltedCipher {
+class AESInGCMModeEncrypt extends Cipher with SaltedCipher {
   @override
   String get name => "AES#encrypt/GCM/${Padding.none.name}";
 
   /// Key for the cipher
   final Uint8List key;
+
+  @override
+  final Uint8List iv;
 
   /// The length of the message authentication tag in bytes
   final int tagSize;
@@ -415,10 +419,10 @@ class AESInGCMModeEncrypt extends SaltedCipher {
 
   const AESInGCMModeEncrypt(
     this.key,
-    Uint8List iv, {
+    this.iv, {
     this.aad,
     this.tagSize = 16,
-  }) : super(iv);
+  });
 
   @override
   @pragma('vm:prefer-inline')
@@ -427,12 +431,15 @@ class AESInGCMModeEncrypt extends SaltedCipher {
 }
 
 /// Provides AES cipher in GCM mode for decryption.
-class AESInGCMModeDecrypt extends SaltedCipher {
+class AESInGCMModeDecrypt extends Cipher with SaltedCipher {
   @override
   String get name => "AES#decrypt/GCM/${Padding.none.name}";
 
   /// Key for the cipher
   final Uint8List key;
+
+  @override
+  final Uint8List iv;
 
   /// The length of the message authentication tag in bytes
   final int tagSize;
@@ -442,10 +449,10 @@ class AESInGCMModeDecrypt extends SaltedCipher {
 
   const AESInGCMModeDecrypt(
     this.key,
-    Uint8List iv, {
+    this.iv, {
     this.aad,
     this.tagSize = 16,
-  }) : super(iv);
+  });
 
   @override
   @pragma('vm:prefer-inline')
@@ -454,7 +461,7 @@ class AESInGCMModeDecrypt extends SaltedCipher {
 }
 
 /// Provides encryption and decryption for AES cipher in GCM mode.
-class AESInGCMMode extends SaltedCollateCipher {
+class AESInGCMMode extends CollateCipher with SaltedCipher {
   @override
   String get name => "AES/GCM/${Padding.none.name}";
 
@@ -468,6 +475,9 @@ class AESInGCMMode extends SaltedCollateCipher {
     required this.encryptor,
     required this.decryptor,
   });
+
+  @override
+  Uint8List get iv => encryptor.iv;
 
   /// Creates AES cipher in GCM mode.
   ///

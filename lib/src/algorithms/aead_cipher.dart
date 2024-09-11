@@ -174,7 +174,8 @@ abstract class AEADCipher<C extends Cipher, M extends MACHashBase>
 
   /// Transforms the [message]. Alias for [sign].
   @pragma('vm:prefer-inline')
-  AEADResult convert(List<int> message) => sign(message);
+  Uint8List convert(List<int> message, [bool verifyMode = false]) =>
+      createSink(verifyMode).add(message, true);
 
   /// Signs the [message] with an authentication tag.
   AEADResult sign(List<int> message) {
@@ -193,8 +194,9 @@ abstract class AEADCipher<C extends Cipher, M extends MACHashBase>
   Stream<Uint8List> bind(
     Stream<List<int>> stream, [
     Function(HashDigest tag)? onDigest,
+    bool verifyMode = false,
   ]) async* {
-    var sink = createSink();
+    var sink = createSink(verifyMode);
     List<int>? cache;
     await for (var data in stream) {
       if (cache != null) {
@@ -212,9 +214,10 @@ abstract class AEADCipher<C extends Cipher, M extends MACHashBase>
   Stream<int> stream(
     Stream<int> stream, [
     Function(HashDigest tag)? onDigest,
+    bool verifyMode = false,
   ]) async* {
     int p = 0;
-    var sink = createSink();
+    var sink = createSink(verifyMode);
     var chunk = Uint8List(1024);
     await for (var x in stream) {
       chunk[p++] = x;

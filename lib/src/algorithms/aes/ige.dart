@@ -3,11 +3,12 @@
 
 import 'dart:typed_data';
 
-import 'package:cipherlib/src/algorithms/padding.dart';
+import 'package:cipherlib/src/core/cipher.dart';
 import 'package:cipherlib/src/core/cipher_sink.dart';
-import 'package:cipherlib/src/core/salted_cipher.dart';
+import 'package:cipherlib/src/core/collate_cipher.dart';
 import 'package:hashlib/hashlib.dart' show randomBytes;
 
+import '../padding.dart';
 import '_core.dart';
 
 /// The sink used for encryption by the [AESInIGEModeEncrypt] algorithm.
@@ -224,21 +225,24 @@ class AESInIGEModeDecryptSink implements CipherSink {
 }
 
 /// Provides encryption for AES cipher in IGE mode.
-class AESInIGEModeEncrypt extends SaltedCipher {
+class AESInIGEModeEncrypt extends Cipher with SaltedCipher {
   @override
   String get name => "AES#encrypt/IGE/${padding.name}";
 
   /// Key for the cipher
   final Uint8List key;
 
+  @override
+  final Uint8List iv;
+
   /// Padding scheme for the input message
   final Padding padding;
 
   const AESInIGEModeEncrypt(
     this.key,
-    Uint8List iv, [
+    this.iv, [
     this.padding = Padding.pkcs7,
-  ]) : super(iv);
+  ]);
 
   @override
   @pragma('vm:prefer-inline')
@@ -247,21 +251,24 @@ class AESInIGEModeEncrypt extends SaltedCipher {
 }
 
 /// Provides decryption for AES cipher in IGE mode.
-class AESInIGEModeDecrypt extends SaltedCipher {
+class AESInIGEModeDecrypt extends Cipher with SaltedCipher {
   @override
   String get name => "AES#decrypt/IGE/${padding.name}";
 
   /// Key for the cipher
   final Uint8List key;
 
+  @override
+  final Uint8List iv;
+
   /// Padding scheme for the output message
   final Padding padding;
 
   const AESInIGEModeDecrypt(
     this.key,
-    Uint8List iv, [
+    this.iv, [
     this.padding = Padding.pkcs7,
-  ]) : super(iv);
+  ]);
 
   @override
   @pragma('vm:prefer-inline')
@@ -270,7 +277,7 @@ class AESInIGEModeDecrypt extends SaltedCipher {
 }
 
 /// Provides encryption and decryption for AES cipher in IGE mode.
-class AESInIGEMode extends SaltedCollateCipher {
+class AESInIGEMode extends CollateCipher with SaltedCipher {
   @override
   String get name => "AES/IGE/${padding.name}";
 
@@ -284,6 +291,9 @@ class AESInIGEMode extends SaltedCollateCipher {
     required this.encryptor,
     required this.decryptor,
   });
+
+  @override
+  Uint8List get iv => encryptor.iv;
 
   /// Creates AES cipher in IGE mode.
   ///

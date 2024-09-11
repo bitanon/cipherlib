@@ -1,15 +1,18 @@
 // Copyright (c) 2024, Sudipto Chandra
 // All rights reserved. Check LICENSE file for details.
 
+import 'dart:typed_data';
+
 import 'package:cipherlib/src/algorithms/aead_cipher.dart';
 import 'package:cipherlib/src/algorithms/salsa20.dart';
+import 'package:cipherlib/src/core/cipher.dart';
 import 'package:cipherlib/src/utils/nonce.dart';
 import 'package:hashlib/hashlib.dart' show Poly1305;
 
 /// Salsa20-Poly1305 is a cryptographic algorithm combining the [Salsa20]
 /// stream cipher for encryption and the [Poly1305] for generating message
 /// authentication code.
-class Salsa20Poly1305 extends AEADCipher<Salsa20, Poly1305> {
+class Salsa20Poly1305 extends AEADCipher<Salsa20, Poly1305> with SaltedCipher {
   const Salsa20Poly1305._(
     Salsa20 cipher,
     Poly1305 mac,
@@ -23,8 +26,8 @@ class Salsa20Poly1305 extends AEADCipher<Salsa20, Poly1305> {
   /// - [nonce] : Either 8 or 16 bytes nonce.
   /// - [aad] : Additional authenticated data.
   /// - [counter] : Initial block number.
-  factory Salsa20Poly1305({
-    required List<int> key,
+  factory Salsa20Poly1305(
+    List<int> key, {
     List<int>? nonce,
     Nonce64? counter,
     List<int>? aad,
@@ -33,12 +36,17 @@ class Salsa20Poly1305 extends AEADCipher<Salsa20, Poly1305> {
 
   @override
   @pragma('vm:prefer-inline')
-  AEADResultWithIV convert(List<int> message) => sign(message);
-
-  @override
-  @pragma('vm:prefer-inline')
   AEADResultWithIV sign(List<int> message) =>
       super.sign(message).withIV(cipher.iv);
+
+  @override
+  Uint8List get iv => cipher.iv;
+
+  @override
+  void resetIV() {
+    cipher.resetIV();
+    mac.keypair.setAll(0, cipher.$otk());
+  }
 }
 
 /// Adds [poly1305] to [Salsa20] to create an instance of [Salsa20Poly1305]
@@ -54,8 +62,8 @@ extension Salsa20ExtentionForPoly1305 on Salsa20 {
   }
 }
 
-/// Transforms [message] with Salsa20 algorithm and generates the message
-/// digest with Poly1305 authentication code generator.
+/// Encrypts or Decrypts the [message] using Salsa20 cipher and generates an
+/// authentication tag with Poly1305.
 ///
 /// Parameters:
 /// - [message] : arbitrary length plain-text.
@@ -77,7 +85,7 @@ AEADResultWithIV salsa20poly1305(
   Nonce64? counter,
 }) {
   var algo = Salsa20Poly1305(
-    key: key,
+    key,
     nonce: nonce,
     counter: counter,
     aad: aad,
@@ -85,5 +93,5 @@ AEADResultWithIV salsa20poly1305(
   if (mac != null && !algo.verify(message, mac)) {
     throw AssertionError('Message authenticity check failed');
   }
-  return algo.convert(message);
+  return algo.sign(message);
 }

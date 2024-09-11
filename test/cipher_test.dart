@@ -25,11 +25,14 @@ class TestCipher extends Cipher {
 }
 
 // Concrete implementation of SaltedCipher for testing
-class TestSaltedCipher extends SaltedCipher {
+class TestSaltedCipher extends Cipher with SaltedCipher {
   @override
   String get name => 'TestSaltedCipher';
 
-  const TestSaltedCipher(Uint8List iv) : super(iv);
+  @override
+  final Uint8List iv;
+
+  const TestSaltedCipher(this.iv);
 
   @override
   CipherSink createSink() => MockCipherSink();

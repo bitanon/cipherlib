@@ -3,12 +3,13 @@
 
 import 'dart:typed_data';
 
-import 'package:cipherlib/src/algorithms/padding.dart';
+import 'package:cipherlib/src/core/cipher.dart';
 import 'package:cipherlib/src/core/cipher_sink.dart';
-import 'package:cipherlib/src/core/salted_cipher.dart';
+import 'package:cipherlib/src/core/collate_cipher.dart';
 import 'package:cipherlib/src/utils/nonce.dart';
 import 'package:hashlib/hashlib.dart' show randomBytes;
 
+import '../padding.dart';
 import '_core.dart';
 
 /// Multiply [T] by `alpha` = `0x87` in 128-bit Galois Field
@@ -328,7 +329,7 @@ class AESInXTSModeDecryptSink implements CipherSink {
 }
 
 /// Provides encryption for AES cipher in XTS mode.
-class AESInXTSModeEncrypt extends SaltedCipher {
+class AESInXTSModeEncrypt extends Cipher with SaltedCipher {
   @override
   String get name => "AES#encrypt/XTS/${Padding.none.name}";
 
@@ -338,11 +339,14 @@ class AESInXTSModeEncrypt extends SaltedCipher {
   /// Key for the tweak encryption
   final Uint8List tkey;
 
+  @override
+  final Uint8List iv;
+
   const AESInXTSModeEncrypt(
     this.ekey,
     this.tkey,
-    Uint8List iv,
-  ) : super(iv);
+    this.iv,
+  );
 
   @override
   @pragma('vm:prefer-inline')
@@ -351,7 +355,7 @@ class AESInXTSModeEncrypt extends SaltedCipher {
 }
 
 /// Provides decryption for AES cipher in XTS mode.
-class AESInXTSModeDecrypt extends SaltedCipher {
+class AESInXTSModeDecrypt extends Cipher with SaltedCipher {
   @override
   String get name => "AES#decrypt/XTS/${Padding.none.name}";
 
@@ -361,11 +365,14 @@ class AESInXTSModeDecrypt extends SaltedCipher {
   /// Key for the tweak encryption
   final Uint8List tkey;
 
+  @override
+  final Uint8List iv;
+
   const AESInXTSModeDecrypt(
     this.ekey,
     this.tkey,
-    Uint8List iv,
-  ) : super(iv);
+    this.iv,
+  );
 
   @override
   @pragma('vm:prefer-inline')
@@ -374,7 +381,7 @@ class AESInXTSModeDecrypt extends SaltedCipher {
 }
 
 /// Provides encryption and decryption for AES cipher in XTS mode.
-class AESInXTSMode extends SaltedCollateCipher {
+class AESInXTSMode extends CollateCipher with SaltedCipher {
   @override
   String get name => "AES/XTS/${Padding.none.name}";
 
@@ -388,6 +395,9 @@ class AESInXTSMode extends SaltedCollateCipher {
     required this.encryptor,
     required this.decryptor,
   });
+
+  @override
+  Uint8List get iv => encryptor.iv;
 
   /// Creates AES cipher in XTS mode.
   ///
