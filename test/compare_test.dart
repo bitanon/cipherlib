@@ -10,7 +10,7 @@ import 'dart:typed_data' show Uint8List;
 import 'package:cipherlib/cipherlib.dart' as my;
 import 'package:cipherlib/src/cipherlib_base.dart';
 import 'package:cryptography/cryptography.dart' as crypto;
-import 'package:hashlib_codecs/hashlib_codecs.dart';
+import 'package:hashlib/codecs.dart';
 import 'package:pointycastle/pointycastle.dart' as pc;
 import 'package:test/test.dart';
 

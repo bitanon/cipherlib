@@ -4,7 +4,7 @@
 import 'dart:typed_data';
 
 import 'package:cipherlib/src/algorithms/aes/_core.dart';
-import 'package:hashlib_codecs/hashlib_codecs.dart';
+import 'package:hashlib/codecs.dart';
 import 'package:test/test.dart';
 
 void main() {

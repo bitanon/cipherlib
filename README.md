@@ -12,10 +12,9 @@ Implementations of cryptographic algorithms for encryption and decryption in Dar
 
 ## Depencencies
 
-There are only 2 dependencies used by this package:
+There are only 1 dependency used by this package:
 
 - [hashlib](https://pub.dev/packages/hashlib)
-- [hashlib_codecs](https://pub.dev/packages/hashlib_codecs)
 
 ## Features
 
@@ -60,17 +59,19 @@ Examples can be found inside the `example` folder.
 
 ```dart
 import 'package:cipherlib/cipherlib.dart';
-import 'package:hashlib_codecs/hashlib_codecs.dart';
+import 'package:hashlib/hashlib.dart';
+import 'package:hashlib/codecs.dart';
 
 void main() {
   print('----- AES -----');
   {
     var plain = 'A not very secret message';
-    var key = 'abcdefghijklmnopabcdefghijklmnop'.codeUnits;
-    var iv = 'lka9JLKasljkdPsd'.codeUnits;
+    var key = randomBytes(32);
+    var iv = randomBytes(16);
     print('  Text: $plain');
     print('   Key: ${toHex(key)}');
     print(' Nonce: ${toHex(iv)}');
+    // different modes
     print('  ECB: ${toHex(AES(key).ecb().encryptString(plain))}');
     print('  CBC: ${toHex(AES(key).cbc(iv).encryptString(plain))}');
     print('  CTR: ${toHex(AES(key).ctr(iv).encryptString(plain))}');
@@ -83,51 +84,32 @@ void main() {
   }
   print('');
 
-  print('----- XOR -----');
-  {
-    var key = [0x54];
-    var inp = [0x03, 0xF1];
-    var cipher = xor(inp, key);
-    var plain = xor(cipher, key);
-    print('  Text: ${toBinary(inp)}');
-    print('   Key: ${toBinary(key)}');
-    print('   XOR: ${toBinary(cipher)}');
-    print(' Plain: ${toBinary(plain)}');
-  }
-  print('');
-
-  print('----- ChaCha20 -----');
+  print('----- XChaCha20 -----');
   {
     var text = "Hide me!";
-    var key = fromHex(
-        "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f");
-    var nonce = fromHex("00000000000000004a000000");
-    var res = chacha20poly1305(toUtf8(text), key, nonce: nonce);
-    var plain = chacha20(res.data, key, nonce: nonce);
+    var key = randomBytes(32);
+    var nonce = randomBytes(24);
+    // encrypt and sign
+    var cipher = xchacha20poly1305(
+      toUtf8(text),
+      key,
+      nonce: nonce,
+    );
+    // verify and decrypt
+    var plain = xchacha20poly1305(
+      cipher.data,
+      key,
+      nonce: nonce,
+      mac: cipher.tag.bytes,
+    );
     print('  Text: $text');
     print('   Key: ${toHex(key)}');
     print(' Nonce: ${toHex(nonce)}');
-    print('Cipher: ${toHex(res.data)}');
-    print('   Tag: ${res.tag.hex()}');
-    print(' Plain: ${fromUtf8(plain)}');
+    print('Cipher: ${toHex(cipher.data)}');
+    print('   Tag: ${cipher.tag.hex()}');
+    print(' Plain: ${fromUtf8(plain.data)}');
   }
   print('');
-
-  print('----- Salsa20 -----');
-  {
-    var text = "Hide me!";
-    var key = fromHex(
-        "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f");
-    var nonce = fromHex("00000000000000004a00000000000000");
-    var res = salsa20poly1305(toUtf8(text), key, nonce: nonce);
-    var plain = salsa20(res.data, key, nonce: nonce);
-    print('  Text: $text');
-    print('   Key: ${toHex(key)}');
-    print(' Nonce: ${toHex(nonce)}');
-    print('Cipher: ${toHex(res.data)}');
-    print('   Tag: ${res.tag.hex()}');
-    print(' Plain: ${fromUtf8(plain)}');
-  }
 }
 ```
 

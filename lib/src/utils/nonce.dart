@@ -3,8 +3,8 @@
 
 import 'dart:typed_data';
 
+import 'package:hashlib/codecs.dart' show fromHex;
 import 'package:hashlib/hashlib.dart' show randomBytes;
-import 'package:hashlib_codecs/hashlib_codecs.dart' show fromHex;
 
 Uint8List _copyBytes(int size, List<int> data) {
   int n = data.length;
