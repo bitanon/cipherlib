@@ -4,7 +4,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:hashlib/hashlib.dart' show fillRandom;
+import 'package:hashlib/random.dart' show fillRandom;
 
 import 'cipher_sink.dart';
 

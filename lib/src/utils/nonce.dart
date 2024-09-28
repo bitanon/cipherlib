@@ -4,7 +4,7 @@
 import 'dart:typed_data';
 
 import 'package:hashlib/codecs.dart' show fromHex;
-import 'package:hashlib/hashlib.dart' show randomBytes;
+import 'package:hashlib/random.dart' show randomBytes;
 
 Uint8List _copyBytes(int size, List<int> data) {
   int n = data.length;

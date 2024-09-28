@@ -7,7 +7,7 @@ import 'package:cipherlib/src/core/cipher.dart';
 import 'package:cipherlib/src/core/cipher_sink.dart';
 import 'package:cipherlib/src/core/collate_cipher.dart';
 import 'package:cipherlib/src/utils/nonce.dart';
-import 'package:hashlib/hashlib.dart' show randomBytes;
+import 'package:hashlib/random.dart' show randomBytes;
 
 import '../padding.dart';
 import '_core.dart';
