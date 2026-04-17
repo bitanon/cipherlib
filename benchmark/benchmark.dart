@@ -23,8 +23,8 @@ import 'xor.dart' as xor;
 IOSink sink = stdout;
 RandomAccessFile? raf;
 
-void dump(message) {
-  raf?.writeStringSync(message + '\n');
+void dump(String message) {
+  raf?.writeStringSync('$message\n');
   stdout.writeln(message);
 }
 

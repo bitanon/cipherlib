@@ -22,10 +22,10 @@ import 'utils/nonce.dart';
 class ChaCha20Poly1305 extends AEADCipher<ChaCha20, Poly1305>
     with SaltedCipher {
   const ChaCha20Poly1305._(
-    ChaCha20 cipher,
-    Poly1305 mac,
-    List<int>? aad,
-  ) : super(cipher, mac, aad);
+    super.cipher,
+    super.mac,
+    super.aad,
+  );
 
   /// Creates a new instance of the [ChaCha20Poly1305] cipher.
   ///

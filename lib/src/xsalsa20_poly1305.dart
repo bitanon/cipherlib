@@ -16,10 +16,10 @@ import 'utils/nonce.dart';
 class XSalsa20Poly1305 extends AEADCipher<XSalsa20, Poly1305>
     with SaltedCipher {
   const XSalsa20Poly1305._(
-    XSalsa20 cipher,
-    Poly1305 mac,
-    List<int>? aad,
-  ) : super(cipher, mac, aad);
+    super.cipher,
+    super.mac,
+    super.aad,
+  );
 
   /// Creates a new instance of the [XSalsa20Poly1305] cipher.
   ///

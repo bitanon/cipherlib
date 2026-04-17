@@ -248,11 +248,11 @@ abstract class _AESInGCMModeSinkBase implements CipherSink {
 /// [AESInGCMModeEncrypt] algorithm.
 class AESInGCMModeEncryptSink extends _AESInGCMModeSinkBase {
   AESInGCMModeEncryptSink(
-    Uint8List key,
-    Uint8List iv,
-    Iterable<int>? aad, [
+    super._key,
+    super._iv,
+    super._aad, [
     this._tagSize = 16,
-  ]) : super(key, iv, aad) {
+  ]) {
     if (_tagSize < 1) {
       throw StateError('Tag size must be at least 1');
     } else if (_tagSize > 16) {
@@ -315,11 +315,11 @@ class AESInGCMModeEncryptSink extends _AESInGCMModeSinkBase {
 /// [AESInGCMModeDecrypt] algorithm.
 class AESInGCMModeDecryptSink extends _AESInGCMModeSinkBase {
   AESInGCMModeDecryptSink(
-    Uint8List key,
-    Uint8List iv,
-    Iterable<int>? aad, [
+    super._key,
+    super._iv,
+    super._aad, [
     this._tagSize = 16,
-  ]) : super(key, iv, aad) {
+  ]) {
     if (_tagSize < 1) {
       throw StateError('Tag size must be at least 1');
     } else if (_tagSize > 16) {

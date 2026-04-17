@@ -15,10 +15,10 @@ import 'utils/nonce.dart';
 /// authentication code.
 class Salsa20Poly1305 extends AEADCipher<Salsa20, Poly1305> with SaltedCipher {
   const Salsa20Poly1305._(
-    Salsa20 cipher,
-    Poly1305 mac,
-    List<int>? aad,
-  ) : super(cipher, mac, aad);
+    super.cipher,
+    super.mac,
+    super.aad,
+  );
 
   /// Creates a new instance of the [Salsa20Poly1305] cipher.
   ///

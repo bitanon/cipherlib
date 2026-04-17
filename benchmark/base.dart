@@ -73,9 +73,11 @@ abstract class Benchmark extends BenchmarkBase with BenchmarkTools {
 
   Stream<int> get inputStream => Stream.fromIterable(input);
 
-  Benchmark(String name, this.size, this.iter)
-      : input = List.filled(size, 0x3f),
-        super(name);
+  Benchmark(
+    super.name,
+    this.size,
+    this.iter,
+  ) : input = List.filled(size, 0x3f);
 
   @override
   void exercise() {
@@ -98,9 +100,11 @@ abstract class AsyncBenchmark extends AsyncBenchmarkBase with BenchmarkTools {
 
   Stream<int> get inputStream => Stream.fromIterable(input);
 
-  AsyncBenchmark(String name, this.size, this.iter)
-      : input = List.filled(size, 0x3f),
-        super(name);
+  AsyncBenchmark(
+    super.name,
+    this.size,
+    this.iter,
+  ) : input = List.filled(size, 0x3f);
 
   @override
   Future<void> exercise() async {

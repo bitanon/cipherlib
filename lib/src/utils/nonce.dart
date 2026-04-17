@@ -109,7 +109,7 @@ class Nonce extends _NonceBase {
 
 /// The 64-bit initialization vector builder.
 class Nonce64 extends Nonce {
-  const Nonce64._(Uint8List bytes) : super._(bytes);
+  const Nonce64._(super.bytes) : super._();
 
   /// Create a 64-bit nonce with zeros
   factory Nonce64.zero() => Nonce64._(Uint8List(8));
@@ -172,7 +172,7 @@ class Nonce64 extends Nonce {
 
 /// The 128-bit initialization vector builder.
 class Nonce128 extends Nonce {
-  const Nonce128._(Uint8List bytes) : super._(bytes);
+  const Nonce128._(super.bytes) : super._();
 
   /// Create a 128-bit nonce with zeros
   factory Nonce128.zero() => Nonce128._(Uint8List(16));

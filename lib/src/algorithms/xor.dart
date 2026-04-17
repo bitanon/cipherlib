@@ -74,7 +74,7 @@ class XOR extends Cipher {
 
   const XOR(this.key);
 
-  /// Creates a [XOR] with List<int> [key], transforming every elements to
+  /// Creates a [XOR] with `List<int>` [key], transforming every elements to
   /// unsigned 8-bit numbers.
   factory XOR.fromList(List<int> key) =>
       XOR(key is Uint8List ? key : Uint8List.fromList(key));

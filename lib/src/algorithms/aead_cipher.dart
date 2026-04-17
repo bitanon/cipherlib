@@ -34,10 +34,10 @@ class AEADResultWithIV extends AEADResult {
   final Uint8List iv;
 
   const AEADResultWithIV._(
-    Uint8List data,
-    HashDigest tag,
+    super.data,
+    super.tag,
     this.iv,
-  ) : super._(data, tag);
+  ) : super._();
 }
 
 /// Extends the base [AEADCipherSink] to generate message digest for cipher
