@@ -1,6 +1,6 @@
 import 'package:cipherlib/cipherlib.dart';
-import 'package:hashlib/codecs.dart';
-import 'package:hashlib/random.dart';
+import 'package:cipherlib/codecs.dart';
+import 'package:cipherlib/random.dart';
 
 void main() {
   print('----- AES -----');

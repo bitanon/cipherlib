@@ -5,7 +5,7 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:cipherlib/cipherlib.dart';
-import 'package:hashlib/codecs.dart';
+import 'package:cipherlib/codecs.dart';
 import 'package:test/test.dart';
 
 import 'utils.dart';

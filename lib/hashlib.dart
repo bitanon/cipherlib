@@ -1,7 +1,11 @@
-// Copyright (c) 2024, Sudipto Chandra
+// Copyright (c) 2023, Sudipto Chandra
 // All rights reserved. Check LICENSE file for details.
 
-/// Secure hash algorithms in pure dart.
-library hashlib;
+// Collection of hashing algorithms, checksum generators, message authentication
+// code (MAC) utilities and key derivation functions.
+//
+// This library serves as a convenience export so that all supported algorithms
+// can be used with a single import.
+library;
 
 export 'package:hashlib/hashlib.dart';

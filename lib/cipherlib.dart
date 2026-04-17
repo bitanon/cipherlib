@@ -3,6 +3,6 @@
 
 /// Implementations of cryptographic algorithms for encryption and decryption
 /// in pure Dart.
-library cipherlib;
+library;
 
 export 'src/cipherlib_base.dart';
