@@ -27,11 +27,13 @@ class XORSink extends CipherSink {
   @pragma('vm:prefer-inline')
   Uint8List $add(List<int> data, int start, int end) {
     var result = Uint8List(end - start);
-    for (int i = start; i < end; i++) {
+    for (int i = start; i < end;) {
+      for (; _pos < _key.length && i < end; ++_pos, ++i) {
+        result[i - start] = data[i] ^ _key[_pos];
+      }
       if (_pos == _key.length) {
         _pos = 0;
       }
-      result[i - start] = data[i] ^ _key[_pos++];
     }
     return result;
   }

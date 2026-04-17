@@ -43,13 +43,14 @@ class AESInECBModeEncryptSink extends CipherSink {
     var output = Uint8List(n);
 
     p = 0;
-    for (i = start; i < end; ++i) {
-      _block[_pos] = data[i];
-      _pos++;
+    for (i = start; i < end;) {
+      for (; _pos < 16 && i < end; ++_pos, ++i) {
+        _block[_pos] = data[i];
+      }
       if (_pos == 16) {
         AESCore.$encryptLE(_block32, _xkey32);
-        for (j = 0; j < 16; ++j) {
-          output[p++] = _block[j];
+        for (j = 0; j < 16; ++j, ++p) {
+          output[p] = _block[j];
         }
         _pos = 0;
       }
@@ -58,8 +59,8 @@ class AESInECBModeEncryptSink extends CipherSink {
     if (closed) {
       if (_padding.pad(_block, _pos)) {
         AESCore.$encryptLE(_block32, _xkey32);
-        for (j = 0; j < 16; ++j) {
-          output[p++] = _block[j];
+        for (j = 0; j < 16; ++j, ++p) {
+          output[p] = _block[j];
         }
         _pos = 0;
       }
@@ -111,19 +112,20 @@ class AESInECBModeDecryptSink extends CipherSink {
     p = 0;
     n = _rpos + end - start;
     var output = Uint8List(n);
-    for (i = start; i < end; ++i) {
-      _block[_pos] = data[i];
-      _pos++;
+    for (i = start; i < end;) {
+      for (; _pos < 16 && i < end; ++_pos, ++i) {
+        _block[_pos] = data[i];
+      }
       if (_pos == 16) {
         AESCore.$decryptLE(_block32, _xkey32);
-        for (j = 0; j < 16; ++j) {
+        for (j = 0; j < 16; ++j, ++_rpos) {
           if (_rpos == 16) {
-            for (k = 0; k < 16; ++k) {
-              output[p++] = _residue[k];
+            for (k = 0; k < 16; ++k, ++p) {
+              output[p] = _residue[k];
             }
             _rpos = 0;
           }
-          _residue[_rpos++] = _block[j];
+          _residue[_rpos] = _block[j];
         }
         _pos = 0;
       }

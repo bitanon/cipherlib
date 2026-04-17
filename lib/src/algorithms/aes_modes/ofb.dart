@@ -38,30 +38,37 @@ class AESInOFBModeSink extends CipherSink {
     for (int i = 0; i < 16; ++i) {
       _salt[i] = _iv[i];
     }
+    _nextBlock();
+  }
+
+  @pragma('vm:prefer-inline')
+  void _nextBlock() {
+    int i;
+    for (i = 0; i < 16; ++i) {
+      _block[i] = _salt[i];
+    }
+    AESCore.$encryptLE(_block32, _xkey32);
+    for (i = _sbyte; i < 16; ++i) {
+      _salt[i - _sbyte] = _salt[i];
+    }
+    for (i = 0; i < _sbyte; ++i) {
+      _salt[16 - _sbyte + i] = _block[i];
+    }
   }
 
   @override
   @pragma('vm:prefer-inline')
   Uint8List $add(List<int> data, int start, int end) {
-    int i, j, p;
+    int i, p;
     var output = Uint8List(end - start);
 
     p = 0;
-    for (i = start; i < end; ++i) {
-      if (_pos == 0) {
-        for (j = 0; j < 16; ++j) {
-          _block[j] = _salt[j];
-        }
-        AESCore.$encryptLE(_block32, _xkey32);
-        for (j = _sbyte; j < 16; ++j) {
-          _salt[j - _sbyte] = _salt[j];
-        }
-        for (j = 0; j < _sbyte; ++j) {
-          _salt[16 - _sbyte + j] = _block[j];
-        }
+    for (i = start; i < end;) {
+      for (; _pos < _sbyte && i < end; ++_pos, ++i, ++p) {
+        output[p] = _block[_pos] ^ data[i];
       }
-      output[p++] = _block[_pos++] ^ data[i];
       if (_pos == _sbyte) {
+        _nextBlock();
         _pos = 0;
       }
     }

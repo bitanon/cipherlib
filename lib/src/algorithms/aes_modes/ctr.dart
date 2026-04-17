@@ -48,6 +48,24 @@ class AESInCTRModeSink extends CipherSink {
     _s1 = (_iv[4] << 24) | (_iv[5] << 16) | (_iv[6] << 8) | (_iv[7]);
     _s2 = (_iv[8] << 24) | (_iv[9] << 16) | (_iv[10] << 8) | (_iv[11]);
     _s3 = (_iv[12] << 24) | (_iv[13] << 16) | (_iv[14] << 8) | (_iv[15]);
+    _process();
+  }
+
+  @pragma('vm:prefer-inline')
+  void _process() {
+    _block32[0] = _s0;
+    _block32[1] = _s1;
+    _block32[2] = _s2;
+    _block32[3] = _s3;
+    AESCore.$encrypt(_block32, _xkey32);
+    _block32[0] = _swap32(_block32[0]);
+    _block32[1] = _swap32(_block32[1]);
+    _block32[2] = _swap32(_block32[2]);
+    _block32[3] = _swap32(_block32[3]);
+    _s3 = (_s3 + 1) & _mask32;
+    if (_s3 == 0) {
+      _s2 = (_s2 + 1) & _mask32;
+    }
   }
 
   @override
@@ -57,24 +75,16 @@ class AESInCTRModeSink extends CipherSink {
     var output = Uint8List(end - start);
 
     p = 0;
-    for (i = start; i < end; ++i) {
-      if (_pos == 0) {
-        _block32[0] = _s0;
-        _block32[1] = _s1;
-        _block32[2] = _s2;
-        _block32[3] = _s3;
-        AESCore.$encrypt(_block32, _xkey32);
-        _block32[0] = _swap32(_block32[0]);
-        _block32[1] = _swap32(_block32[1]);
-        _block32[2] = _swap32(_block32[2]);
-        _block32[3] = _swap32(_block32[3]);
-        _s3 = (_s3 + 1) & _mask32;
-        if (_s3 == 0) {
-          _s2 = (_s2 + 1) & _mask32;
-        }
+    for (i = start; i < end;) {
+      while (_pos < 16 && i < end) {
+        output[p++] = _block[_pos] ^ data[i];
+        _pos++;
+        i++;
       }
-      output[p++] = _block[_pos] ^ data[i];
-      _pos = (_pos + 1) & 15;
+      if (_pos == 16) {
+        _process();
+        _pos = 0;
+      }
     }
 
     return output;

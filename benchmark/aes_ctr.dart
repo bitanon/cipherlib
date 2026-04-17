@@ -73,7 +73,7 @@ class CryptographyBenchmark extends AsyncBenchmark {
             : crypto.AesCtr.with256bits(
                 macAlgorithm: crypto.MacAlgorithm.empty,
               );
-    instance.encrypt(
+    await instance.encrypt(
       input,
       secretKey: crypto.SecretKey(key),
       nonce: iv,

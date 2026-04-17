@@ -67,7 +67,7 @@ class CryptographyBenchmark extends AsyncBenchmark {
         : key.length == 24
             ? crypto.AesGcm.with192bits(nonceLength: iv.length)
             : crypto.AesGcm.with256bits(nonceLength: iv.length);
-    instance.encrypt(
+    await instance.encrypt(
       input,
       secretKey: crypto.SecretKey(key),
       nonce: iv,

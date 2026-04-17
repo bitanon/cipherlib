@@ -35,24 +35,32 @@ class ChaCha20Sink extends CipherSink {
     _iv32[1] = _nonce32[1];
     _iv32[2] = _nonce32[2];
     _iv32[3] = _nonce32[3];
+    _nextBlock();
   }
 
   @override
   @pragma('vm:prefer-inline')
   Uint8List $add(List<int> data, int start, int end) {
     var result = Uint8List(end - start);
-    for (int i = start; i < end; i++) {
-      if (_pos == 0) {
-        _process(_state32, _key32, _iv32);
-        ++_iv32[0];
-        if (_iv32[0] == 0 && _counterBytes == 8) {
-          ++_iv32[1];
-        }
+    for (int i = start; i < end;) {
+      for (; _pos < 64 && i < end; ++_pos, ++i) {
+        result[i - start] = data[i] ^ _state[_pos];
       }
-      result[i - start] = data[i] ^ _state[_pos];
-      _pos = (_pos + 1) & 63;
+      if (_pos == 64) {
+        _nextBlock();
+        _pos = 0;
+      }
     }
     return result;
+  }
+
+  @pragma('vm:prefer-inline')
+  void _nextBlock() {
+    _process(_state32, _key32, _iv32);
+    ++_iv32[0];
+    if (_iv32[0] == 0 && _counterBytes == 8) {
+      ++_iv32[1];
+    }
   }
 
   @pragma('vm:prefer-inline')

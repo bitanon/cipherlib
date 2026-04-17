@@ -51,14 +51,15 @@ class AESInPCBCModeEncryptSink extends CipherSink {
       n += 16 - (n & 15);
     }
     var output = Uint8List(n);
-    for (i = start; i < end; ++i) {
-      _block[_pos] = data[i] ^ _salt[_pos];
-      _history[_pos] = data[i];
-      _pos++;
+    for (i = start; i < end;) {
+      for (; _pos < 16 && i < end; ++_pos, ++i) {
+        _block[_pos] = data[i] ^ _salt[_pos];
+        _history[_pos] = data[i];
+      }
       if (_pos == 16) {
         AESCore.$encryptLE(_block32, _xkey32);
-        for (j = 0; j < 16; ++j) {
-          output[p++] = _block[j];
+        for (j = 0; j < 16; ++j, ++p) {
+          output[p] = _block[j];
           _salt[j] = _block[j] ^ _history[j];
         }
         _pos = 0;
@@ -71,8 +72,8 @@ class AESInPCBCModeEncryptSink extends CipherSink {
           _block[_pos] ^= _salt[_pos];
         }
         AESCore.$encryptLE(_block32, _xkey32);
-        for (j = 0; j < 16; ++j) {
-          output[p++] = _block[j];
+        for (j = 0; j < 16; ++j, ++p) {
+          output[p] = _block[j];
         }
         _pos = 0;
       }
@@ -131,22 +132,21 @@ class AESInPCBCModeDecryptSink extends CipherSink {
     p = 0;
     n = _rpos + end - start;
     var output = Uint8List(n);
-    for (i = start; i < end; ++i) {
-      _block[_pos] = data[i];
-      _nextIV[_pos] = data[i];
-      _pos++;
+    for (i = start; i < end;) {
+      for (; _pos < 16 && i < end; ++_pos, ++i) {
+        _block[_pos] = _nextIV[_pos] = data[i];
+      }
       if (_pos == 16) {
         AESCore.$decryptLE(_block32, _xkey32);
-        for (j = 0; j < 16; ++j) {
+        for (j = 0; j < 16; ++j, ++_rpos) {
           if (_rpos == 16) {
-            for (k = 0; k < 16; ++k) {
-              output[p++] = _residue[k];
+            for (k = 0; k < 16; ++k, ++p) {
+              output[p] = _residue[k];
             }
             _rpos = 0;
           }
           _residue[_rpos] = _block[j] ^ _salt[j];
           _salt[j] = _nextIV[j] ^ _residue[_rpos];
-          _rpos++;
         }
         _pos = 0;
       }
@@ -154,8 +154,8 @@ class AESInPCBCModeDecryptSink extends CipherSink {
 
     if (closed) {
       if (_rpos == 16) {
-        for (k = 0; k < 16; ++k) {
-          output[p++] = _residue[k];
+        for (k = 0; k < 16; ++k, ++p) {
+          output[p] = _residue[k];
         }
         _rpos = 0;
       }

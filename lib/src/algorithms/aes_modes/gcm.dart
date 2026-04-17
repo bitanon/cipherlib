@@ -81,13 +81,13 @@ abstract class _AESInGCMModeSinkBase extends CipherSink {
 
   @override
   void reset() {
+    super.reset();
     int i, n;
 
     _pos = 0;
     _rpos = 0;
     _aadLength = 0;
     _msgLength = 0;
-    super.reset();
 
     // GHASH init
     for (i = 0; i < 16; ++i) {
@@ -150,8 +150,11 @@ abstract class _AESInGCMModeSinkBase extends CipherSink {
         _aadLength += n;
       }
     }
+
+    _nextBlock();
   }
 
+  @pragma('vm:prefer-inline')
   void _nextBlock() {
     int i;
     for (i = 15; i >= 12; i--) {
@@ -164,6 +167,7 @@ abstract class _AESInGCMModeSinkBase extends CipherSink {
     AESCore.$encryptLE(_block32, _xkey32);
   }
 
+  @pragma('vm:prefer-inline')
   void _serialize64(int a, int b) {
     a <<= 3;
     b <<= 3;
@@ -219,7 +223,7 @@ abstract class _AESInGCMModeSinkBase extends CipherSink {
     t3 = 0;
     for (x in _tag32) {
       for (i = 0; i < 32; i++) {
-        if (x & _pow2[i] != 0) {
+        if ((x & _pow2[i]) != 0) {
           t0 ^= _hcache32[p++];
           t1 ^= _hcache32[p++];
           t2 ^= _hcache32[p++];
@@ -267,15 +271,14 @@ class AESInGCMModeEncryptSink extends _AESInGCMModeSinkBase {
     if (closed) n += _tagSize;
     var output = Uint8List(n);
     p = 0;
-    for (i = start; i < end; ++i) {
-      if (_pos == 0) {
-        _nextBlock();
+    for (i = start; i < end;) {
+      for (; _pos < 16 && i < end; ++_pos, ++i, ++p) {
+        output[p] = _block[_pos] ^ data[i];
+        _tag[_pos] ^= output[p];
       }
-      output[p] = _block[_pos] ^ data[i];
-      _tag[_pos] ^= output[p++];
-      _pos++;
       if (_pos == 16) {
         _multiply128();
+        _nextBlock();
         _pos = 0;
       }
     }
@@ -324,14 +327,12 @@ class AESInGCMModeDecryptSink extends _AESInGCMModeSinkBase {
     p = 0;
     for (i = start; i < end; ++i) {
       if (_msgLength >= _tagSize) {
-        if (_pos == 0) {
-          _nextBlock();
-        }
         output[p++] = _block[_pos] ^ _residue[_rpos];
         _tag[_pos] ^= _residue[_rpos];
         _pos++;
         if (_pos == 16) {
           _multiply128();
+          _nextBlock();
           _pos = 0;
         }
       }

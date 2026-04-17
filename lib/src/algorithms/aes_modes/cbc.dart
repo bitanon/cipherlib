@@ -52,13 +52,14 @@ class AESInCBCModeEncryptSink extends CipherSink {
     var output = Uint8List(n);
 
     p = 0;
-    for (i = start; i < end; ++i) {
-      _block[_pos] ^= data[i];
-      _pos++;
+    for (i = start; i < end;) {
+      for (; _pos < 16 && i < end; ++_pos, ++i) {
+        _block[_pos] ^= data[i];
+      }
       if (_pos == 16) {
         AESCore.$encryptLE(_block32, _xkey32);
-        for (j = 0; j < 16; ++j) {
-          output[p++] = _block[j];
+        for (j = 0; j < 16; ++j, ++p) {
+          output[p] = _block[j];
         }
         _pos = 0;
       }
@@ -134,10 +135,13 @@ class AESInCBCModeDecryptSink extends CipherSink {
     var output = Uint8List(n);
 
     p = 0;
-    for (i = start; i < end; ++i) {
-      _block[_pos] = data[i];
-      _nextSalt[_pos] = _block[_pos];
-      _pos++;
+    for (i = start; i < end;) {
+      while (_pos < 16 && i < end) {
+        _block[_pos] = data[i];
+        _nextSalt[_pos] = _block[_pos];
+        _pos++;
+        i++;
+      }
       if (_pos == 16) {
         AESCore.$decryptLE(_block32, _xkey32);
         for (j = 0; j < 16; ++j) {
