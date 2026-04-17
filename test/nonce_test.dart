@@ -35,6 +35,12 @@ void main() {
       var nonce2 = Nonce.bytes(bytes);
       expect(nonce1.hashCode == nonce2.hashCode, isTrue);
     });
+
+    test('Nonce equality should compare by byte values', () {
+      final nonce1 = Nonce.bytes(Uint8List.fromList([1, 2, 3, 4]));
+      final nonce2 = Nonce.bytes(Uint8List.fromList([1, 2, 3, 4]));
+      expect(nonce1 == nonce2, isTrue);
+    });
   });
 
   group('Nonce tests', () {

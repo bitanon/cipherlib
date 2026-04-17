@@ -247,7 +247,19 @@ void main() {
 
       sink.reset(true);
       expect(sink.add(sample, true), equals(cipher));
-      expect(sink.digest().hex(), '67a0fa25b34192a2844b8bbde2e76c92');
+      expect(sink.digest().hex(), '661e943467edb1963bfe9015190609f0');
+    });
+
+    test('sink reset keeps AAD framing consistent', () {
+      final sink = algo.createSink();
+      sink.add(sample, true);
+      final first = sink.digest().hex();
+
+      sink.reset();
+      sink.add(sample, true);
+      final second = sink.digest().hex();
+
+      expect(second, equals(first));
     });
   });
 }

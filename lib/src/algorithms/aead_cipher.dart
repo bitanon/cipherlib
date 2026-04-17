@@ -57,6 +57,11 @@ class AEADCipherSink<C extends CipherSink, H extends HashDigestSink>
     this._verifyMode = false,
   ]) {
     _cipher.reset();
+    _addAAD();
+  }
+
+  @pragma('vm:prefer-inline')
+  void _addAAD() {
     if (_aad != null) {
       _sink.add(_aad!);
       // pad with zero
@@ -77,7 +82,9 @@ class AEADCipherSink<C extends CipherSink, H extends HashDigestSink>
   void reset([bool forVerification = false]) {
     _sink.reset();
     _cipher.reset();
+    _dataLength = 0;
     _verifyMode = forVerification;
+    _addAAD();
   }
 
   @override

@@ -32,6 +32,7 @@ void main() {
     test('throws error on invalid salt size', () {
       var aes = AES(Uint8List(16));
       expect(() => aes.ctr(Uint8List(15)).encrypt([0]), throwsStateError);
+      expect(() => aes.ctr(Uint8List(17)).encrypt([0]), throwsStateError);
       expect(() => aes.ctr(Uint8List(8)).decrypt([0]), throwsStateError);
     });
     test('sink test (no add after close)', () {

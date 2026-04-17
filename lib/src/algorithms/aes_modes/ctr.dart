@@ -146,8 +146,8 @@ class AESInCTRMode extends CollateCipher with SaltedCipher {
   /// - [iv] 128-bit random initialization vector or salt
   factory AESInCTRMode(List<int> key, [List<int>? iv]) {
     iv ??= randomBytes(16);
-    if (iv.length < 16) {
-      throw StateError('IV must be at least 16-bytes');
+    if (iv.length != 16) {
+      throw StateError('IV must be exactly 16-bytes');
     }
     var iv8 = iv is Uint8List ? iv : Uint8List.fromList(iv);
     var key8 = key is Uint8List ? key : Uint8List.fromList(key);

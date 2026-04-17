@@ -43,14 +43,25 @@ abstract class _NonceBase {
   _NonceBase reverse();
 
   @override
-  int get hashCode => bytes.hashCode;
+  int get hashCode => Object.hashAll(bytes);
 
   @override
   bool operator ==(other) {
     if (other is! Nonce) {
       return false;
     }
-    return other.bytes == bytes;
+    if (identical(other.bytes, bytes)) {
+      return true;
+    }
+    if (other.bytes.length != bytes.length) {
+      return false;
+    }
+    for (int i = 0; i < bytes.length; ++i) {
+      if (other.bytes[i] != bytes[i]) {
+        return false;
+      }
+    }
+    return true;
   }
 }
 
