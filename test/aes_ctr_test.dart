@@ -17,7 +17,7 @@ void main() {
       expect(AES(key).ctr(iv).name, "AES/CTR/NoPadding");
     });
     test("accepts null IV", () {
-      AESInCTRMode(key).encrypt(input);
+      expect(() => AESInCTRMode(key).encrypt(input), returnsNormally);
     });
     test("encryptor and decryptor is the same", () {
       var aes = AES(key).ctr(iv);

@@ -26,7 +26,7 @@ void main() {
       expect(AES.pkcs7(key).cbc(iv).padding, Padding.pkcs7);
     });
     test("accepts null IV", () {
-      AESInCBCMode(key).encrypt(input);
+      expect(() => AESInCBCMode(key).encrypt(input), returnsNormally);
     });
     test("encryptor name is correct", () {
       expect(AES.noPadding(key).cbc(iv).encryptor.name,

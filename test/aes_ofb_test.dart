@@ -17,7 +17,7 @@ void main() {
       expect(AES(key).ofb(iv).name, "AES/OFB/NoPadding");
     });
     test("accepts null IV", () {
-      AESInOFBMode(key).encrypt(input);
+      expect(() => AESInOFBMode(key).encrypt(input), returnsNormally);
     });
     test("encryptor and decryptor is the same", () {
       var aes = AES(key).ofb(iv);

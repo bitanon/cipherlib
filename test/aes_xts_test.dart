@@ -17,7 +17,7 @@ void main() {
       expect(AES(key).xts(iv).name, "AES/XTS/NoPadding");
     });
     test("accepts null IV", () {
-      AESInXTSMode(key).encrypt(input);
+      expect(() => AESInXTSMode(key).encrypt(input), returnsNormally);
     });
     test("encryptor name is correct", () {
       expect(AES(key).xts(iv).encryptor.name, "AES#encrypt/XTS/NoPadding");

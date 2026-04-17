@@ -107,6 +107,32 @@ void main() {
     });
   });
 
+  group('CipherSink.add range checks', () {
+    test('throws when start is negative', () {
+      final sink = MockCipherSink();
+      expect(
+        () => sink.add([1, 2, 3], false, -1),
+        throwsA(isA<RangeError>()),
+      );
+    });
+
+    test('throws when end exceeds data length', () {
+      final sink = MockCipherSink();
+      expect(
+        () => sink.add([1, 2, 3], false, 0, 10),
+        throwsA(isA<RangeError>()),
+      );
+    });
+
+    test('throws when start is greater than end', () {
+      final sink = MockCipherSink();
+      expect(
+        () => sink.add([1, 2, 3], false, 2, 1),
+        throwsA(isA<ArgumentError>()),
+      );
+    });
+  });
+
   group('Cipher Tests', () {
     test('convert transforms message correctly', () {
       final cipher = TestCipher();

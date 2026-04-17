@@ -17,7 +17,7 @@ void main() {
       expect(AES(key).gcm(iv).name, "AES/GCM/NoPadding");
     });
     test("accepts null IV", () {
-      AESInGCMMode(key).encrypt(input);
+      expect(() => AESInGCMMode(key).encrypt(input), returnsNormally);
     });
     test("encryptor name is correct", () {
       expect(AES(key).gcm(iv).encryptor.name, "AES#encrypt/GCM/NoPadding");

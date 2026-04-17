@@ -22,7 +22,7 @@ void main() {
       for (int i = 0; i < 100; ++i) {
         void cb() => xsalsa20([1], Uint8List(i));
         if (i == 16 || i == 32) {
-          cb();
+          expect(() => cb(), returnsNormally, reason: 'length: $i');
         } else {
           expect(cb, throwsArgumentError, reason: 'length: $i');
         }
@@ -38,7 +38,7 @@ void main() {
       for (int i = 0; i < 100; ++i) {
         void cb() => xsalsa20([1], key, nonce: Uint8List(i));
         if (i == 24 || i == 32) {
-          cb();
+          expect(() => cb(), returnsNormally, reason: 'length: $i');
         } else {
           expect(cb, throwsArgumentError, reason: 'length: $i');
         }

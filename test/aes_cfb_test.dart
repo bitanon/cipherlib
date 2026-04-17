@@ -26,7 +26,7 @@ void main() {
       }
     });
     test("accepts null IV", () {
-      AESInCFBMode(key).encrypt(input);
+      expect(() => AESInCFBMode(key).encrypt(input), returnsNormally);
     });
     test("encryptor name is correct", () {
       expect(AES(key).cfb(iv).encryptor.name, "AES#encrypt/CFB/NoPadding");

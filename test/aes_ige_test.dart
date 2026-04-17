@@ -26,7 +26,7 @@ void main() {
       expect(AES.pkcs7(key).ige(iv).padding, Padding.pkcs7);
     });
     test("accepts null IV", () {
-      AESInIGEMode(key).encrypt(input);
+      expect(() => AESInIGEMode(key).encrypt(input), returnsNormally);
     });
     test("encryptor name is correct", () {
       expect(AES.noPadding(key).ige(iv).encryptor.name,
