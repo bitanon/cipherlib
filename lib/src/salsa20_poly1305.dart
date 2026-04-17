@@ -3,11 +3,12 @@
 
 import 'dart:typed_data';
 
-import 'package:cipherlib/src/algorithms/aead_cipher.dart';
-import 'package:cipherlib/src/algorithms/salsa20.dart';
-import 'package:cipherlib/src/core/cipher.dart';
-import 'package:cipherlib/src/utils/nonce.dart';
 import 'package:hashlib/hashlib.dart' show Poly1305;
+
+import 'algorithms/aead_cipher.dart';
+import 'algorithms/salsa20.dart';
+import 'core/cipher.dart';
+import 'utils/nonce.dart';
 
 /// Salsa20-Poly1305 is a cryptographic algorithm combining the [Salsa20]
 /// stream cipher for encryption and the [Poly1305] for generating message

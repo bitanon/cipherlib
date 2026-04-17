@@ -4,7 +4,7 @@
 import 'dart:math';
 import 'dart:typed_data';
 
-import 'package:cipherlib/src/algorithms/aes/_core.dart';
+import 'package:cipherlib/src/algorithms/aes.dart';
 import 'package:cryptography/cryptography.dart' as crypto;
 import 'package:cryptography/src/dart/aes_impl.dart';
 import 'package:pointycastle/block/aes.dart' as aes;

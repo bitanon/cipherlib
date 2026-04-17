@@ -3,13 +3,13 @@
 
 import 'dart:typed_data';
 
-import 'package:cipherlib/src/core/cipher.dart';
-import 'package:cipherlib/src/core/cipher_sink.dart';
-import 'package:cipherlib/src/core/collate_cipher.dart';
 import 'package:hashlib/random.dart' show randomBytes;
 
+import '../../core/cipher.dart';
+import '../../core/cipher_sink.dart';
+import '../../core/collate_cipher.dart';
+import '../aes.dart';
 import '../padding.dart';
-import '_core.dart';
 
 const List<int> _pow2 = <int>[
   0x80,

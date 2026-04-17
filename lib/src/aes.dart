@@ -1,26 +1,27 @@
 // Copyright (c) 2024, Sudipto Chandra
 // All rights reserved. Check LICENSE file for details.
 
-import 'package:cipherlib/src/algorithms/aes/cbc.dart';
-import 'package:cipherlib/src/algorithms/aes/cfb.dart';
-import 'package:cipherlib/src/algorithms/aes/ctr.dart';
-import 'package:cipherlib/src/algorithms/aes/ecb.dart';
-import 'package:cipherlib/src/algorithms/aes/gcm.dart';
-import 'package:cipherlib/src/algorithms/aes/ige.dart';
-import 'package:cipherlib/src/algorithms/aes/ofb.dart';
-import 'package:cipherlib/src/algorithms/aes/pcbc.dart';
-import 'package:cipherlib/src/algorithms/aes/xts.dart';
-import 'package:cipherlib/src/algorithms/padding.dart';
+import 'algorithms/aes_modes/cbc.dart';
+import 'algorithms/aes_modes/cfb.dart';
+import 'algorithms/aes_modes/ctr.dart';
+import 'algorithms/aes_modes/ecb.dart';
+import 'algorithms/aes_modes/gcm.dart';
+import 'algorithms/aes_modes/ige.dart';
+import 'algorithms/aes_modes/ofb.dart';
+import 'algorithms/aes_modes/pcbc.dart';
+import 'algorithms/aes_modes/xts.dart';
+import 'algorithms/padding.dart';
 
-export 'package:cipherlib/src/algorithms/aes/cbc.dart';
-export 'package:cipherlib/src/algorithms/aes/cfb.dart';
-export 'package:cipherlib/src/algorithms/aes/ctr.dart';
-export 'package:cipherlib/src/algorithms/aes/ecb.dart';
-export 'package:cipherlib/src/algorithms/aes/gcm.dart';
-export 'package:cipherlib/src/algorithms/aes/ige.dart';
-export 'package:cipherlib/src/algorithms/aes/ofb.dart';
-export 'package:cipherlib/src/algorithms/aes/pcbc.dart';
-export 'package:cipherlib/src/algorithms/aes/xts.dart';
+export 'algorithms/aes.dart';
+export 'algorithms/aes_modes/cbc.dart';
+export 'algorithms/aes_modes/cfb.dart';
+export 'algorithms/aes_modes/ctr.dart';
+export 'algorithms/aes_modes/ecb.dart';
+export 'algorithms/aes_modes/gcm.dart';
+export 'algorithms/aes_modes/ige.dart';
+export 'algorithms/aes_modes/ofb.dart';
+export 'algorithms/aes_modes/pcbc.dart';
+export 'algorithms/aes_modes/xts.dart';
 
 /// AES (Advanced Encryption Standard) is a symmetric encryption algorithm used
 /// for securing data. It operates on fixed-size blocks of data (128 bits) using

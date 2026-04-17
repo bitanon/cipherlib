@@ -3,8 +3,8 @@
 
 import 'dart:typed_data';
 
-import 'package:cipherlib/src/core/cipher.dart';
-import 'package:cipherlib/src/core/cipher_sink.dart';
+import '../core/cipher.dart';
+import '../core/cipher_sink.dart';
 
 /// This sink is used by the [XOR] algorithm.
 class XORSink implements CipherSink {

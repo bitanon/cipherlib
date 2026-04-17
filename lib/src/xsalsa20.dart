@@ -3,8 +3,8 @@
 
 import 'dart:typed_data';
 
-import 'package:cipherlib/src/algorithms/salsa20.dart';
-import 'package:cipherlib/src/utils/nonce.dart';
+import 'algorithms/salsa20.dart';
+import 'utils/nonce.dart';
 
 export 'algorithms/salsa20.dart' show XSalsa20;
 

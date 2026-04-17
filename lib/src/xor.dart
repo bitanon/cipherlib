@@ -3,7 +3,7 @@
 
 import 'dart:typed_data';
 
-import 'package:cipherlib/src/algorithms/xor.dart';
+import 'algorithms/xor.dart';
 
 export 'algorithms/xor.dart' show XOR;
 

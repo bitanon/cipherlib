@@ -124,10 +124,13 @@ void main() {
     var iv = [...x.iv];
     var key1 = [...x.cipher.key];
     var key2 = [...x.mac.keypair];
+    var tag1 = x.sign(const [1, 2, 3, 4]).tag.bytes;
     x.resetIV();
     expect(iv, isNot(equals(x.iv)));
     expect(key1, equals(x.cipher.key));
     expect(key2, isNot(equals(x.mac.keypair)));
+    var tag2 = x.sign(const [1, 2, 3, 4]).tag.bytes;
+    expect(tag1, isNot(equals(tag2)));
   });
 
   group('functionality tests', () {

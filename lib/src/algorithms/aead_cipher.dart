@@ -4,10 +4,11 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:cipherlib/src/core/cipher.dart';
-import 'package:cipherlib/src/core/cipher_sink.dart';
 import 'package:hashlib/hashlib.dart'
     show HashDigest, HashDigestSink, MACHashBase;
+
+import '../core/cipher.dart';
+import '../core/cipher_sink.dart';
 
 /// The result from AEAD ciphers
 class AEADResult {

@@ -3,8 +3,8 @@
 
 import 'dart:typed_data';
 
-import 'package:cipherlib/src/algorithms/chacha20.dart';
-import 'package:cipherlib/src/utils/nonce.dart';
+import 'algorithms/chacha20.dart';
+import 'utils/nonce.dart';
 
 export 'algorithms/chacha20.dart' show ChaCha20, ChaCha20Sink;
 

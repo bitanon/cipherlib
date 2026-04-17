@@ -4,7 +4,6 @@
 import 'dart:typed_data';
 
 import 'package:cipherlib/cipherlib.dart';
-import 'package:cipherlib/src/cipherlib_base.dart';
 import 'package:test/test.dart';
 
 import 'utils.dart';
@@ -67,12 +66,15 @@ void main() {
       var iv = [...x.iv];
       var key1 = [...x.cipher.key];
       var key2 = [...x.mac.keypair];
+      var tag1 = x.sign(const [1, 2, 3, 4]).tag.bytes;
       var activeIV = [...x.cipher.activeIV];
       x.resetIV();
       expect(iv, isNot(equals(x.iv)));
       expect(key1, isNot(equals(x.cipher.key)));
       expect(key2, isNot(equals(x.mac.keypair)));
       expect(activeIV, isNot(equals(x.cipher.activeIV)));
+      var tag2 = x.sign(const [1, 2, 3, 4]).tag.bytes;
+      expect(tag1, isNot(equals(tag2)));
     });
   });
 

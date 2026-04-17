@@ -3,10 +3,11 @@
 
 import 'dart:typed_data';
 
-import 'package:cipherlib/src/core/cipher.dart';
-import 'package:cipherlib/src/core/cipher_sink.dart';
-import 'package:cipherlib/src/utils/nonce.dart';
 import 'package:hashlib/random.dart' show randomBytes;
+
+import '../core/cipher.dart';
+import '../core/cipher_sink.dart';
+import '../utils/nonce.dart';
 
 const int _mask32 = 0xFFFFFFFF;
 

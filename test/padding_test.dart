@@ -3,7 +3,7 @@
 
 import 'dart:typed_data';
 
-import 'package:cipherlib/src/algorithms/padding.dart';
+import 'package:cipherlib/cipherlib.dart';
 import 'package:test/test.dart';
 
 void main() {

@@ -4,7 +4,6 @@
 import 'dart:typed_data';
 
 import 'package:cipherlib/cipherlib.dart';
-import 'package:cipherlib/src/cipherlib_base.dart';
 import 'package:hashlib/codecs.dart';
 import 'package:test/test.dart';
 

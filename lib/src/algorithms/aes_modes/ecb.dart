@@ -3,19 +3,16 @@
 
 import 'dart:typed_data';
 
-import 'package:cipherlib/src/core/cipher.dart';
-import 'package:cipherlib/src/core/cipher_sink.dart';
-import 'package:cipherlib/src/core/collate_cipher.dart';
-import 'package:hashlib/random.dart' show randomBytes;
-
+import '../../core/cipher.dart';
+import '../../core/cipher_sink.dart';
+import '../../core/collate_cipher.dart';
+import '../aes.dart';
 import '../padding.dart';
-import '_core.dart';
 
-/// The sink used for encryption by the [AESInPCBCModeEncrypt] algorithm.
-class AESInPCBCModeEncryptSink implements CipherSink {
-  AESInPCBCModeEncryptSink(
+/// The sink used for encryption by the [AESInECBModeEncrypt] algorithm.
+class AESInECBModeEncryptSink implements CipherSink {
+  AESInECBModeEncryptSink(
     this._key,
-    this._iv,
     this._padding,
   ) {
     reset();
@@ -24,12 +21,9 @@ class AESInPCBCModeEncryptSink implements CipherSink {
   int _pos = 0;
   bool _closed = false;
   final Uint8List _key;
-  final Uint8List _iv;
   final Padding _padding;
-  late final Uint32List _key32 = Uint32List.view(_key.buffer);
-  final _salt = Uint8List(16);
   final _block = Uint8List(16); // 128-bit
-  final _history = Uint8List(16);
+  late final _key32 = Uint32List.view(_key.buffer);
   late final _block32 = Uint32List.view(_block.buffer);
   late final _xkey32 = AESCore.$expandEncryptionKey(_key32);
 
@@ -40,9 +34,6 @@ class AESInPCBCModeEncryptSink implements CipherSink {
   void reset() {
     _pos = 0;
     _closed = false;
-    for (int i = 0; i < 16; ++i) {
-      _salt[i] = _iv[i];
-    }
   }
 
   @override
@@ -59,21 +50,20 @@ class AESInPCBCModeEncryptSink implements CipherSink {
     end ??= data.length;
 
     int i, j, p, n;
-    p = 0;
     n = _pos + end - start;
     if (last) {
       n += 16 - (n & 15);
     }
     var output = Uint8List(n);
+
+    p = 0;
     for (i = start; i < end; ++i) {
-      _block[_pos] = data[i] ^ _salt[_pos];
-      _history[_pos] = data[i];
+      _block[_pos] = data[i];
       _pos++;
       if (_pos == 16) {
         AESCore.$encryptLE(_block32, _xkey32);
         for (j = 0; j < 16; ++j) {
           output[p++] = _block[j];
-          _salt[j] = _block[j] ^ _history[j];
         }
         _pos = 0;
       }
@@ -81,9 +71,6 @@ class AESInPCBCModeEncryptSink implements CipherSink {
 
     if (last) {
       if (_padding.pad(_block, _pos)) {
-        for (; _pos < 16; ++_pos) {
-          _block[_pos] ^= _salt[_pos];
-        }
         AESCore.$encryptLE(_block32, _xkey32);
         for (j = 0; j < 16; ++j) {
           output[p++] = _block[j];
@@ -109,11 +96,10 @@ class AESInPCBCModeEncryptSink implements CipherSink {
   Uint8List close() => add([], true);
 }
 
-/// The sink used for decryption by the [AESInPCBCModeDecrypt] algorithm.
-class AESInPCBCModeDecryptSink implements CipherSink {
-  AESInPCBCModeDecryptSink(
+/// The sink used for decryption by the [AESInECBModeDecrypt] algorithm.
+class AESInECBModeDecryptSink implements CipherSink {
+  AESInECBModeDecryptSink(
     this._key,
-    this._iv,
     this._padding,
   ) {
     reset();
@@ -123,13 +109,10 @@ class AESInPCBCModeDecryptSink implements CipherSink {
   int _rpos = 0;
   bool _closed = false;
   final Uint8List _key;
-  final Uint8List _iv;
   final Padding _padding;
-  late final Uint32List _key32 = Uint32List.view(_key.buffer);
   final _block = Uint8List(16); // 128-bit
-  final _salt = Uint8List(16);
-  final _nextIV = Uint8List(16);
   final _residue = Uint8List(16);
+  late final _key32 = Uint32List.view(_key.buffer);
   late final _block32 = Uint32List.view(_block.buffer);
   late final _xkey32 = AESCore.$expandDecryptionKey(_key32);
 
@@ -141,9 +124,6 @@ class AESInPCBCModeDecryptSink implements CipherSink {
     _pos = 0;
     _rpos = 0;
     _closed = false;
-    for (int i = 0; i < 16; ++i) {
-      _salt[i] = _iv[i];
-    }
   }
 
   @override
@@ -165,7 +145,6 @@ class AESInPCBCModeDecryptSink implements CipherSink {
     var output = Uint8List(n);
     for (i = start; i < end; ++i) {
       _block[_pos] = data[i];
-      _nextIV[_pos] = data[i];
       _pos++;
       if (_pos == 16) {
         AESCore.$decryptLE(_block32, _xkey32);
@@ -176,9 +155,7 @@ class AESInPCBCModeDecryptSink implements CipherSink {
             }
             _rpos = 0;
           }
-          _residue[_rpos] = _block[j] ^ _salt[j];
-          _salt[j] = _nextIV[j] ^ _residue[_rpos];
-          _rpos++;
+          _residue[_rpos++] = _block[j];
         }
         _pos = 0;
       }
@@ -213,97 +190,77 @@ class AESInPCBCModeDecryptSink implements CipherSink {
   Uint8List close() => add([], true);
 }
 
-/// Provides encryption for AES cipher in PCBC mode.
-class AESInPCBCModeEncrypt extends Cipher with SaltedCipher {
+/// Provides encryption for AES cipher in ECB mode.
+class AESInECBModeEncrypt extends Cipher {
   @override
-  String get name => "AES#encrypt/PCBC/${padding.name}";
+  String get name => "AES#encrypt/ECB/${padding.name}";
 
   /// Key for the cipher
   final Uint8List key;
-
-  @override
-  final Uint8List iv;
 
   /// Padding scheme for the input message
   final Padding padding;
 
-  const AESInPCBCModeEncrypt(
-    this.key,
-    this.iv, [
+  const AESInECBModeEncrypt(
+    this.key, [
     this.padding = Padding.pkcs7,
   ]);
 
   @override
   @pragma('vm:prefer-inline')
-  AESInPCBCModeEncryptSink createSink() =>
-      AESInPCBCModeEncryptSink(key, iv, padding);
+  AESInECBModeEncryptSink createSink() => AESInECBModeEncryptSink(key, padding);
 }
 
-/// Provides decryption for AES cipher in PCBC mode.
-class AESInPCBCModeDecrypt extends Cipher with SaltedCipher {
+/// Provides decryption for AES cipher in ECB mode.
+class AESInECBModeDecrypt extends Cipher {
   @override
-  String get name => "AES#decrypt/PCBC/${padding.name}";
+  String get name => "AES#decrypt/ECB/${padding.name}";
 
   /// Key for the cipher
   final Uint8List key;
 
-  @override
-  final Uint8List iv;
-
   /// Padding scheme for the output message
   final Padding padding;
 
-  const AESInPCBCModeDecrypt(
-    this.key,
-    this.iv, [
+  const AESInECBModeDecrypt(
+    this.key, [
     this.padding = Padding.pkcs7,
   ]);
 
   @override
   @pragma('vm:prefer-inline')
-  AESInPCBCModeDecryptSink createSink() =>
-      AESInPCBCModeDecryptSink(key, iv, padding);
+  AESInECBModeDecryptSink createSink() => AESInECBModeDecryptSink(key, padding);
 }
 
-/// Provides encryption and decryption for AES cipher in PCBC mode.
-class AESInPCBCMode extends CollateCipher with SaltedCipher {
+/// Provides encryption and decryption for AES cipher in ECB mode.
+class AESInECBMode extends CollateCipher {
   @override
-  String get name => "AES/PCBC/${padding.name}";
+  String get name => "AES/ECB/${padding.name}";
 
   @override
-  final AESInPCBCModeEncrypt encryptor;
+  final AESInECBModeEncrypt encryptor;
 
   @override
-  final AESInPCBCModeDecrypt decryptor;
+  final AESInECBModeDecrypt decryptor;
 
-  const AESInPCBCMode._({
+  const AESInECBMode._({
     required this.encryptor,
     required this.decryptor,
   });
 
-  @override
-  Uint8List get iv => encryptor.iv;
-
-  /// Creates AES cipher in PCBC mode.
+  /// Creates AES cipher in ECB mode.
   ///
   /// Parameters:
   /// - [key] The key for encryption and decryption
-  /// - [iv] 128-bit random initialization vector or salt
   /// - [padding] The padding scheme for the messages
-  factory AESInPCBCMode(
-    List<int> key, {
-    List<int>? iv,
+  factory AESInECBMode(
+    List<int> key, [
     Padding padding = Padding.pkcs7,
-  }) {
-    iv ??= randomBytes(16);
-    if (iv.length < 16) {
-      throw StateError('IV must be at least 16-bytes');
-    }
-    var iv8 = iv is Uint8List ? iv : Uint8List.fromList(iv);
+  ]) {
     var key8 = key is Uint8List ? key : Uint8List.fromList(key);
-    return AESInPCBCMode._(
-      encryptor: AESInPCBCModeEncrypt(key8, iv8, padding),
-      decryptor: AESInPCBCModeDecrypt(key8, iv8, padding),
+    return AESInECBMode._(
+      encryptor: AESInECBModeEncrypt(key8, padding),
+      decryptor: AESInECBModeDecrypt(key8, padding),
     );
   }
 
