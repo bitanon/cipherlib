@@ -12,13 +12,12 @@ import '../utils/nonce.dart';
 const int _mask32 = 0xFFFFFFFF;
 
 /// This sink is used by the [Salsa20] algorithm.
-class Salsa20Sink implements CipherSink {
+class Salsa20Sink extends CipherSink {
   Salsa20Sink(this._key, this._nonce) {
     reset();
   }
 
   int _pos = 0;
-  bool _closed = false;
   final Uint8List _key;
   final Uint8List _nonce;
   final _iv32 = Uint32List(4);
@@ -28,12 +27,9 @@ class Salsa20Sink implements CipherSink {
   late final _nonce32 = Uint32List.view(_nonce.buffer);
 
   @override
-  bool get closed => _closed;
-
-  @override
   void reset() {
+    super.reset();
     _pos = 0;
-    _closed = false;
     _iv32[0] = _nonce32[0];
     _iv32[1] = _nonce32[1];
     _iv32[2] = _nonce32[2];
@@ -41,18 +37,8 @@ class Salsa20Sink implements CipherSink {
   }
 
   @override
-  Uint8List add(
-    List<int> data, [
-    bool last = false,
-    int start = 0,
-    int? end,
-  ]) {
-    if (_closed) {
-      throw StateError('The sink is closed');
-    }
-    _closed = last;
-    end ??= data.length;
-
+  @pragma('vm:prefer-inline')
+  Uint8List $add(List<int> data, int start, int end) {
     var result = Uint8List(end - start);
     for (int i = start; i < end; i++) {
       if (_pos == 0) {
@@ -62,17 +48,10 @@ class Salsa20Sink implements CipherSink {
           ++_iv32[3];
         }
       }
-      result[i] = data[i] ^ _state[_pos];
+      result[i - start] = data[i] ^ _state[_pos];
       _pos = (_pos + 1) & 63;
     }
     return result;
-  }
-
-  @override
-  @pragma('vm:prefer-inline')
-  Uint8List close() {
-    _closed = true;
-    return Uint8List(0);
   }
 
   @pragma('vm:prefer-inline')

@@ -51,29 +51,12 @@ class TestCollateCipher extends CollateCipher {
 }
 
 // Mock implementation of CipherSink for testing
-class MockCipherSink implements CipherSink {
-  bool _closed = false;
-
+class MockCipherSink extends CipherSink {
   @override
-  add(List<int> data, [bool last = false, int start = 0, int? end]) {
-    _closed = last;
+  Uint8List $add(List<int> data, int start, int end) {
     return Uint8List.fromList(
       data.sublist(start, end).map((e) => e + 1).toList(),
     );
-  }
-
-  @override
-  get closed => _closed;
-
-  @override
-  close() {
-    _closed = true;
-    return Uint8List(0);
-  }
-
-  @override
-  reset() {
-    _closed = false;
   }
 }
 

@@ -10,7 +10,7 @@ import '../aes.dart';
 import '../padding.dart';
 
 /// The sink used for encryption by the [AESInECBModeEncrypt] algorithm.
-class AESInECBModeEncryptSink implements CipherSink {
+class AESInECBModeEncryptSink extends CipherSink {
   AESInECBModeEncryptSink(
     this._key,
     this._padding,
@@ -19,7 +19,6 @@ class AESInECBModeEncryptSink implements CipherSink {
   }
 
   int _pos = 0;
-  bool _closed = false;
   final Uint8List _key;
   final Padding _padding;
   final _block = Uint8List(16); // 128-bit
@@ -28,30 +27,17 @@ class AESInECBModeEncryptSink implements CipherSink {
   late final _xkey32 = AESCore.$expandEncryptionKey(_key32);
 
   @override
-  bool get closed => _closed;
-
-  @override
   void reset() {
+    super.reset();
     _pos = 0;
-    _closed = false;
   }
 
   @override
-  Uint8List add(
-    List<int> data, [
-    bool last = false,
-    int start = 0,
-    int? end,
-  ]) {
-    if (_closed) {
-      throw StateError('The sink is closed');
-    }
-    _closed = last;
-    end ??= data.length;
-
+  @pragma('vm:prefer-inline')
+  Uint8List $add(List<int> data, int start, int end) {
     int i, j, p, n;
     n = _pos + end - start;
-    if (last) {
+    if (closed) {
       n += 16 - (n & 15);
     }
     var output = Uint8List(n);
@@ -69,7 +55,7 @@ class AESInECBModeEncryptSink implements CipherSink {
       }
     }
 
-    if (last) {
+    if (closed) {
       if (_padding.pad(_block, _pos)) {
         AESCore.$encryptLE(_block32, _xkey32);
         for (j = 0; j < 16; ++j) {
@@ -90,14 +76,10 @@ class AESInECBModeEncryptSink implements CipherSink {
       return output.sublist(0, p);
     }
   }
-
-  @override
-  @pragma('vm:prefer-inline')
-  Uint8List close() => add([], true);
 }
 
 /// The sink used for decryption by the [AESInECBModeDecrypt] algorithm.
-class AESInECBModeDecryptSink implements CipherSink {
+class AESInECBModeDecryptSink extends CipherSink {
   AESInECBModeDecryptSink(
     this._key,
     this._padding,
@@ -107,7 +89,6 @@ class AESInECBModeDecryptSink implements CipherSink {
 
   int _pos = 0;
   int _rpos = 0;
-  bool _closed = false;
   final Uint8List _key;
   final Padding _padding;
   final _block = Uint8List(16); // 128-bit
@@ -117,28 +98,15 @@ class AESInECBModeDecryptSink implements CipherSink {
   late final _xkey32 = AESCore.$expandDecryptionKey(_key32);
 
   @override
-  bool get closed => _closed;
-
-  @override
   void reset() {
+    super.reset();
     _pos = 0;
     _rpos = 0;
-    _closed = false;
   }
 
   @override
-  Uint8List add(
-    List<int> data, [
-    bool last = false,
-    int start = 0,
-    int? end,
-  ]) {
-    if (_closed) {
-      throw StateError('The sink is closed');
-    }
-    _closed = last;
-    end ??= data.length;
-
+  @pragma('vm:prefer-inline')
+  Uint8List $add(List<int> data, int start, int end) {
     int i, j, k, p, n;
     p = 0;
     n = _rpos + end - start;
@@ -161,7 +129,7 @@ class AESInECBModeDecryptSink implements CipherSink {
       }
     }
 
-    if (last) {
+    if (closed) {
       if (_rpos == 16) {
         for (k = 0; k < 16; ++k) {
           output[p++] = _residue[k];
@@ -184,10 +152,6 @@ class AESInECBModeDecryptSink implements CipherSink {
       return output.sublist(0, p);
     }
   }
-
-  @override
-  @pragma('vm:prefer-inline')
-  Uint8List close() => add([], true);
 }
 
 /// Provides encryption for AES cipher in ECB mode.

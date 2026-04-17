@@ -12,7 +12,7 @@ import '../aes.dart';
 import '../padding.dart';
 
 /// The sink used for encryption by the [AESInIGEModeEncrypt] algorithm.
-class AESInIGEModeEncryptSink implements CipherSink {
+class AESInIGEModeEncryptSink extends CipherSink {
   AESInIGEModeEncryptSink(
     this._key,
     this._iv,
@@ -22,7 +22,6 @@ class AESInIGEModeEncryptSink implements CipherSink {
   }
 
   int _pos = 0;
-  bool _closed = false;
   final Uint8List _iv;
   final Uint8List _key;
   final Padding _padding;
@@ -33,12 +32,9 @@ class AESInIGEModeEncryptSink implements CipherSink {
   late final _xkey32 = AESCore.$expandEncryptionKey(_key32);
 
   @override
-  bool get closed => _closed;
-
-  @override
   void reset() {
+    super.reset();
     _pos = 0;
-    _closed = false;
     for (int i = 0; i < 16; ++i) {
       _block[i] = _iv[i]; // iv1
       _salt[i] = 0;
@@ -50,22 +46,12 @@ class AESInIGEModeEncryptSink implements CipherSink {
   }
 
   @override
-  Uint8List add(
-    List<int> data, [
-    bool last = false,
-    int start = 0,
-    int? end,
-  ]) {
-    if (_closed) {
-      throw StateError('The sink is closed');
-    }
-    _closed = last;
-    end ??= data.length;
-
+  @pragma('vm:prefer-inline')
+  Uint8List $add(List<int> data, int start, int end) {
     int i, j, p, n;
 
     n = _pos + end - start;
-    if (last) {
+    if (closed) {
       n += 16 - (n & 15);
     }
     var output = Uint8List(n);
@@ -85,7 +71,7 @@ class AESInIGEModeEncryptSink implements CipherSink {
       }
     }
 
-    if (last) {
+    if (closed) {
       if (_padding.pad(_salt, _pos + 16)) {
         for (; _pos < 16; _pos++) {
           _block[_pos] ^= _salt[_pos + 16];
@@ -109,14 +95,10 @@ class AESInIGEModeEncryptSink implements CipherSink {
       return output.sublist(0, p);
     }
   }
-
-  @override
-  @pragma('vm:prefer-inline')
-  Uint8List close() => add([], true);
 }
 
 /// The sink used for decryption by the [AESInIGEModeDecrypt] algorithm.
-class AESInIGEModeDecryptSink implements CipherSink {
+class AESInIGEModeDecryptSink extends CipherSink {
   AESInIGEModeDecryptSink(
     this._key,
     this._iv,
@@ -127,7 +109,6 @@ class AESInIGEModeDecryptSink implements CipherSink {
 
   int _pos = 0;
   int _rpos = 0;
-  bool _closed = false;
   final Uint8List _key;
   final Uint8List _iv;
   final Padding _padding;
@@ -139,13 +120,10 @@ class AESInIGEModeDecryptSink implements CipherSink {
   late final _xkey32 = AESCore.$expandDecryptionKey(_key32);
 
   @override
-  bool get closed => _closed;
-
-  @override
   void reset() {
+    super.reset();
     _pos = 0;
     _rpos = 0;
-    _closed = false;
     for (int i = 0; i < 16; ++i) {
       _block[i] = 0;
       _salt[i] = _iv[i]; // iv1
@@ -157,18 +135,8 @@ class AESInIGEModeDecryptSink implements CipherSink {
   }
 
   @override
-  Uint8List add(
-    List<int> data, [
-    bool last = false,
-    int start = 0,
-    int? end,
-  ]) {
-    if (_closed) {
-      throw StateError('The sink is closed');
-    }
-    _closed = last;
-    end ??= data.length;
-
+  @pragma('vm:prefer-inline')
+  Uint8List $add(List<int> data, int start, int end) {
     int i, j, k, p, n;
 
     n = _rpos + end - start;
@@ -195,7 +163,7 @@ class AESInIGEModeDecryptSink implements CipherSink {
       }
     }
 
-    if (last) {
+    if (closed) {
       if (_rpos == 16) {
         for (k = 0; k < 16; ++k) {
           output[p++] = _residue[k];
@@ -218,10 +186,6 @@ class AESInIGEModeDecryptSink implements CipherSink {
       return output.sublist(0, p);
     }
   }
-
-  @override
-  @pragma('vm:prefer-inline')
-  Uint8List close() => add([], true);
 }
 
 /// Provides encryption for AES cipher in IGE mode.

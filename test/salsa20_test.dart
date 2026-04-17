@@ -61,7 +61,7 @@ void main() {
     test('random nonce is used if nonce is null, ', () {
       var key = randomNumbers(32);
       var text = randomBytes(100);
-      chacha20(text, key);
+      salsa20(text, key);
     });
   });
 

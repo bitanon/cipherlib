@@ -11,20 +11,20 @@ import 'utils.dart';
 void main() {
   group('Functionality test', () {
     test('name', () {
-      expect(XSalsa20Poly1305(Uint8List(32)).name, "XSalsa20/Poly1305");
+      expect(Salsa20Poly1305(Uint8List(32)).name, "Salsa20/Poly1305");
     });
     test('accepts empty message', () {
       final key = randomNumbers(32);
-      final res = xsalsa20poly1305([], key);
+      final res = salsa20poly1305([], key);
       expect(res.data, equals([]));
       expect(res.tag.bytes.length, equals(16));
-      final out = xsalsa20poly1305([], key, nonce: res.iv, mac: res.tag.bytes);
+      final out = salsa20poly1305([], key, nonce: res.iv, mac: res.tag.bytes);
       expect(out.data, equals([]));
       expect(out.tag.hex(), equals(res.tag.hex()));
     });
     test('The key should be either 16 or 32 bytes', () {
       for (int i = 0; i < 100; ++i) {
-        void cb() => xsalsa20poly1305([1], Uint8List(i));
+        void cb() => salsa20poly1305([1], Uint8List(i));
         if (i == 16 || i == 32) {
           cb();
         } else {
@@ -36,14 +36,14 @@ void main() {
       final key = Uint8List(32);
       final iv = Uint8List(32);
       final c = Nonce64.zero();
-      expect(() => XSalsa20Poly1305(key, nonce: iv, counter: c),
+      expect(() => Salsa20Poly1305(key, nonce: iv, counter: c),
           throwsArgumentError);
     });
-    test('The nonce should be either 24 or 32 bytes', () {
+    test('The nonce should be either 8 or 16 bytes', () {
       var key = Uint8List(32);
       for (int i = 0; i < 100; ++i) {
-        void cb() => xsalsa20poly1305([1], key, nonce: Uint8List(i));
-        if (i == 24 || i == 32) {
+        void cb() => salsa20poly1305([1], key, nonce: Uint8List(i));
+        if (i == 8 || i == 16) {
           cb();
         } else {
           expect(cb, throwsArgumentError, reason: 'length: $i');
@@ -52,26 +52,27 @@ void main() {
     });
     test('returns the original nonce', () {
       final key = Uint8List(32);
-      final nonce = List.filled(32, 1);
-      final algo = XSalsa20Poly1305(key, nonce: nonce);
+      final nonce = List.filled(16, 1);
+      final algo = Salsa20Poly1305(key, nonce: nonce);
       expect(algo.cipher.iv, equals(nonce));
     });
     test('random nonce is used if nonce is null, ', () {
       var key = randomNumbers(32);
       var text = randomBytes(100);
-      xsalsa20poly1305(text, key);
+      salsa20poly1305(text, key);
     });
     test('reset iv', () {
-      var x = XSalsa20Poly1305(Uint8List(32));
+      var x = Salsa20Poly1305(Uint8List(32));
       var iv = [...x.iv];
       var key1 = [...x.cipher.key];
       var key2 = [...x.mac.keypair];
-      var activeIV = [...x.cipher.activeIV];
+      var tag1 = x.sign(const [1, 2, 3, 4]).tag.bytes;
       x.resetIV();
       expect(iv, isNot(equals(x.iv)));
-      expect(key1, isNot(equals(x.cipher.key)));
+      expect(key1, equals(x.cipher.key));
       expect(key2, isNot(equals(x.mac.keypair)));
-      expect(activeIV, isNot(equals(x.cipher.activeIV)));
+      var tag2 = x.sign(const [1, 2, 3, 4]).tag.bytes;
+      expect(tag1, isNot(equals(tag2)));
     });
   });
 

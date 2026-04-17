@@ -7,7 +7,7 @@ import '../core/cipher.dart';
 import '../core/cipher_sink.dart';
 
 /// This sink is used by the [XOR] algorithm.
-class XORSink implements CipherSink {
+class XORSink extends CipherSink {
   XORSink(this._key) {
     if (_key.isEmpty) {
       throw ArgumentError('The key must not be empty');
@@ -15,45 +15,25 @@ class XORSink implements CipherSink {
   }
 
   int _pos = 0;
-  bool _closed = false;
   final Uint8List _key;
 
   @override
-  bool get closed => _closed;
-
-  @override
   void reset() {
+    super.reset();
     _pos = 0;
-    _closed = false;
   }
 
   @override
-  Uint8List add(
-    List<int> data, [
-    bool last = false,
-    int start = 0,
-    int? end,
-  ]) {
-    if (_closed) {
-      throw StateError('The sink is closed');
-    }
-    _closed = last;
-    end ??= data.length;
-
+  @pragma('vm:prefer-inline')
+  Uint8List $add(List<int> data, int start, int end) {
     var result = Uint8List(end - start);
     for (int i = start; i < end; i++) {
       if (_pos == _key.length) {
         _pos = 0;
       }
-      result[i] = data[i] ^ _key[_pos++];
+      result[i - start] = data[i] ^ _key[_pos++];
     }
     return result;
-  }
-
-  @override
-  Uint8List close() {
-    _closed = true;
-    return Uint8List(0);
   }
 }
 

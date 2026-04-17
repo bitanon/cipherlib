@@ -12,7 +12,7 @@ import '../aes.dart';
 import '../padding.dart';
 
 /// The sink used for encryption by the [AESInOFBModeCipher] algorithm.
-class AESInOFBModeSink implements CipherSink {
+class AESInOFBModeSink extends CipherSink {
   AESInOFBModeSink(
     this._key,
     this._iv,
@@ -22,7 +22,6 @@ class AESInOFBModeSink implements CipherSink {
   }
 
   int _pos = 0;
-  bool _closed = false;
   final Uint8List _key;
   final Uint8List _iv;
   final int _sbyte;
@@ -33,30 +32,17 @@ class AESInOFBModeSink implements CipherSink {
   late final _xkey32 = AESCore.$expandEncryptionKey(_key32);
 
   @override
-  bool get closed => _closed;
-
-  @override
   void reset() {
+    super.reset();
     _pos = 0;
-    _closed = false;
     for (int i = 0; i < 16; ++i) {
       _salt[i] = _iv[i];
     }
   }
 
   @override
-  Uint8List add(
-    List<int> data, [
-    bool last = false,
-    int start = 0,
-    int? end,
-  ]) {
-    if (_closed) {
-      throw StateError('The sink is closed');
-    }
-    _closed = last;
-    end ??= data.length;
-
+  @pragma('vm:prefer-inline')
+  Uint8List $add(List<int> data, int start, int end) {
     int i, j, p;
     var output = Uint8List(end - start);
 
@@ -82,10 +68,6 @@ class AESInOFBModeSink implements CipherSink {
 
     return output;
   }
-
-  @override
-  @pragma('vm:prefer-inline')
-  Uint8List close() => add([], true);
 }
 
 /// Provides encryption for AES cipher in OFB mode.

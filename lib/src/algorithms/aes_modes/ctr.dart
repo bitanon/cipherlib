@@ -23,7 +23,7 @@ int _swap32(int x) =>
 
 /// The sink used for both encryption and decryption by the
 /// [AESInCTRModeCipher] algorithm.
-class AESInCTRModeSink implements CipherSink {
+class AESInCTRModeSink extends CipherSink {
   AESInCTRModeSink(
     this._key,
     this._iv,
@@ -32,7 +32,6 @@ class AESInCTRModeSink implements CipherSink {
   }
 
   int _pos = 0;
-  bool _closed = false;
   final Uint8List _key;
   final Uint8List _iv;
   late int _s0, _s1, _s2, _s3;
@@ -42,12 +41,9 @@ class AESInCTRModeSink implements CipherSink {
   late final _xkey32 = AESCore.$expandEncryptionKey(_key32);
 
   @override
-  bool get closed => _closed;
-
-  @override
   void reset() {
+    super.reset();
     _pos = 0;
-    _closed = false;
     _s0 = (_iv[0] << 24) | (_iv[1] << 16) | (_iv[2] << 8) | (_iv[3]);
     _s1 = (_iv[4] << 24) | (_iv[5] << 16) | (_iv[6] << 8) | (_iv[7]);
     _s2 = (_iv[8] << 24) | (_iv[9] << 16) | (_iv[10] << 8) | (_iv[11]);
@@ -55,18 +51,8 @@ class AESInCTRModeSink implements CipherSink {
   }
 
   @override
-  Uint8List add(
-    List<int> data, [
-    bool last = false,
-    int start = 0,
-    int? end,
-  ]) {
-    if (_closed) {
-      throw StateError('The sink is closed');
-    }
-    _closed = last;
-    end ??= data.length;
-
+  @pragma('vm:prefer-inline')
+  Uint8List $add(List<int> data, int start, int end) {
     int i, p;
     var output = Uint8List(end - start);
 
@@ -93,10 +79,6 @@ class AESInCTRModeSink implements CipherSink {
 
     return output;
   }
-
-  @override
-  @pragma('vm:prefer-inline')
-  Uint8List close() => add([], true);
 }
 
 /// Provides AES cipher in CTR mode.

@@ -5,11 +5,21 @@ import 'dart:typed_data';
 
 /// Template for Cipher algorithm sink.
 abstract class CipherSink implements Sink<List<int>> {
+  bool _closed = false;
+
   /// Returns true if the sink is closed, false otherwise
-  bool get closed;
+  bool get closed => _closed;
 
   /// Resets the sink to make it ready to be used again.
-  void reset();
+  void reset() {
+    _closed = false;
+  }
+
+  /// Closes the sink and returns the last converted result.
+  ///
+  /// Same as calling `add([], true)`.
+  @override
+  Uint8List close() => add([], true);
 
   /// Adds [data] to the sink to returns the converted result.
   ///
@@ -19,13 +29,30 @@ abstract class CipherSink implements Sink<List<int>> {
   Uint8List add(
     List<int> data, [
     bool last = false,
-    int start,
+    int start = 0,
     int? end,
-  ]);
+  ]) {
+    if (start < 0) {
+      throw RangeError.range(start, 0, data.length);
+    }
+    if (_closed) {
+      throw StateError('The sink is closed');
+    }
+    _closed = last;
+    end ??= data.length;
+    if (end > data.length) {
+      throw RangeError.range(end, 0, data.length);
+    }
+    if (start > end) {
+      throw ArgumentError('start must be less than end');
+    }
+    return $add(data, start, end);
+  }
 
-  /// Closes the sink and returns the last converted result.
+  /// Processes the data and returns the converted result.
   ///
-  /// Same as calling `add([], true)`.
-  @override
-  Uint8List close();
+  /// This method is used by the [add] method to process the data.
+  /// It is implemented by the concrete cipher sink classes.
+  @pragma('vm:prefer-inline')
+  Uint8List $add(List<int> data, int start, int end);
 }

@@ -29,7 +29,7 @@ void _multiplyAlpha(Uint8List T) {
 /// Cryptographic Protection of Data on Block-Oriented Storage Devices][spec].
 ///
 /// [spec]: https://ieeexplore.ieee.org/document/8637988
-class AESInXTSModeEncryptSink implements CipherSink {
+class AESInXTSModeEncryptSink extends CipherSink {
   AESInXTSModeEncryptSink(
     this._ekey,
     this._tkey,
@@ -40,7 +40,6 @@ class AESInXTSModeEncryptSink implements CipherSink {
 
   int _pos = 0;
   int _rpos = 0;
-  bool _closed = false;
   bool _firstBlockAvailable = false;
   final Uint8List _ekey;
   final Uint8List _tkey;
@@ -56,13 +55,10 @@ class AESInXTSModeEncryptSink implements CipherSink {
   late final _xtkey32 = AESCore.$expandEncryptionKey(_tkey32);
 
   @override
-  bool get closed => _closed;
-
-  @override
   void reset() {
+    super.reset();
     _pos = 0;
     _rpos = 0;
-    _closed = false;
     _firstBlockAvailable = false;
     for (int i = 0; i < 16; ++i) {
       _tweak[i] = _iv[i];
@@ -71,24 +67,14 @@ class AESInXTSModeEncryptSink implements CipherSink {
   }
 
   @override
-  Uint8List add(
-    List<int> data, [
-    bool last = false,
-    int start = 0,
-    int? end,
-  ]) {
-    if (_closed) {
-      throw StateError('The sink is closed');
-    }
-    _closed = last;
-    end ??= data.length;
-
+  @pragma('vm:prefer-inline')
+  Uint8List $add(List<int> data, int start, int end) {
     int i, j, p, n;
 
     n = _pos + end - start;
-    if (!last) n -= 16;
+    if (!closed) n -= 16;
     n += _firstBlockAvailable ? 16 : _rpos;
-    if (!last) n -= (n & 15);
+    if (!closed) n -= (n & 15);
     if (n < 0) n = 0;
     var output = Uint8List(n);
 
@@ -116,7 +102,7 @@ class AESInXTSModeEncryptSink implements CipherSink {
       }
     }
 
-    if (last) {
+    if (closed) {
       if (!_firstBlockAvailable) {
         throw StateError('The message length must be at least 16-bytes');
       }
@@ -170,17 +156,13 @@ class AESInXTSModeEncryptSink implements CipherSink {
       return output.sublist(0, p);
     }
   }
-
-  @override
-  @pragma('vm:prefer-inline')
-  Uint8List close() => add([], true);
 }
 
 /// This implementation is derived from [1619-2018 - IEEE Standard for
 /// Cryptographic Protection of Data on Block-Oriented Storage Devices][spec].
 ///
 /// [spec]: https://ieeexplore.ieee.org/document/8637988
-class AESInXTSModeDecryptSink implements CipherSink {
+class AESInXTSModeDecryptSink extends CipherSink {
   AESInXTSModeDecryptSink(
     this._dkey,
     this._tkey,
@@ -191,7 +173,6 @@ class AESInXTSModeDecryptSink implements CipherSink {
 
   int _pos = 0;
   int _rpos = 0;
-  bool _closed = false;
   bool _firstBlockAvailable = false;
   final Uint8List _dkey;
   final Uint8List _tkey;
@@ -208,13 +189,10 @@ class AESInXTSModeDecryptSink implements CipherSink {
   late final _xtkey32 = AESCore.$expandEncryptionKey(_tkey32);
 
   @override
-  bool get closed => _closed;
-
-  @override
   void reset() {
+    super.reset();
     _pos = 0;
     _rpos = 0;
-    _closed = false;
     _firstBlockAvailable = false;
     for (int i = 0; i < 16; ++i) {
       _tweak[i] = _iv[i];
@@ -223,24 +201,14 @@ class AESInXTSModeDecryptSink implements CipherSink {
   }
 
   @override
-  Uint8List add(
-    List<int> data, [
-    bool last = false,
-    int start = 0,
-    int? end,
-  ]) {
-    if (_closed) {
-      throw StateError('The sink is closed');
-    }
-    _closed = last;
-    end ??= data.length;
-
+  @pragma('vm:prefer-inline')
+  Uint8List $add(List<int> data, int start, int end) {
     int i, j, p, n;
 
     n = _pos + end - start;
-    if (!last) n -= 16;
+    if (!closed) n -= 16;
     n += _firstBlockAvailable ? 16 : _rpos;
-    if (!last) n -= (n & 15);
+    if (!closed) n -= (n & 15);
     if (n < 0) n = 0;
     var output = Uint8List(n);
 
@@ -268,7 +236,7 @@ class AESInXTSModeDecryptSink implements CipherSink {
       }
     }
 
-    if (last) {
+    if (closed) {
       if (!_firstBlockAvailable) {
         throw StateError('The message length must be at least 16-bytes');
       }
@@ -322,10 +290,6 @@ class AESInXTSModeDecryptSink implements CipherSink {
       return output.sublist(0, p);
     }
   }
-
-  @override
-  @pragma('vm:prefer-inline')
-  Uint8List close() => add([], true);
 }
 
 /// Provides encryption for AES cipher in XTS mode.

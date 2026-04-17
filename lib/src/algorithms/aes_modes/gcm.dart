@@ -49,7 +49,7 @@ const List<int> _pow2 = <int>[
 /// This implementation is derived from [NIST GCM Specification][spec].
 ///
 /// [spec]: https://csrc.nist.rip/groups/ST/toolkit/BCM/documents/proposedmodes/gcm/gcm-spec.pdf
-abstract class _AESInGCMModeSinkBase implements CipherSink {
+abstract class _AESInGCMModeSinkBase extends CipherSink {
   _AESInGCMModeSinkBase(
     this._key,
     this._iv,
@@ -60,7 +60,6 @@ abstract class _AESInGCMModeSinkBase implements CipherSink {
 
   int _pos = 0;
   int _rpos = 0;
-  bool _closed = false;
   int _aadLength = 0;
   int _msgLength = 0;
   final Uint8List _key;
@@ -81,9 +80,6 @@ abstract class _AESInGCMModeSinkBase implements CipherSink {
   late final _xkey32 = AESCore.$expandEncryptionKey(_key32);
 
   @override
-  bool get closed => _closed;
-
-  @override
   void reset() {
     int i, n;
 
@@ -91,7 +87,7 @@ abstract class _AESInGCMModeSinkBase implements CipherSink {
     _rpos = 0;
     _aadLength = 0;
     _msgLength = 0;
-    _closed = false;
+    super.reset();
 
     // GHASH init
     for (i = 0; i < 16; ++i) {
@@ -263,24 +259,13 @@ class AESInGCMModeEncryptSink extends _AESInGCMModeSinkBase {
   final int _tagSize;
 
   @override
-  Uint8List add(
-    List<int> data, [
-    bool last = false,
-    int start = 0,
-    int? end,
-  ]) {
-    if (_closed) {
-      throw StateError('The sink is closed');
-    }
-    _closed = last;
-    end ??= data.length;
+  @pragma('vm:prefer-inline')
+  Uint8List $add(List<int> data, int start, int end) {
     _msgLength += end - start;
-
     int i, j, n, p;
     n = end - start;
-    if (last) n += _tagSize;
+    if (closed) n += _tagSize;
     var output = Uint8List(n);
-
     p = 0;
     for (i = start; i < end; ++i) {
       if (_pos == 0) {
@@ -295,7 +280,7 @@ class AESInGCMModeEncryptSink extends _AESInGCMModeSinkBase {
       }
     }
 
-    if (last) {
+    if (closed) {
       if (_pos > 0) {
         _multiply128();
       }
@@ -331,18 +316,8 @@ class AESInGCMModeDecryptSink extends _AESInGCMModeSinkBase {
   late final _residue = Uint8List(_tagSize);
 
   @override
-  Uint8List add(
-    List<int> data, [
-    bool last = false,
-    int start = 0,
-    int? end,
-  ]) {
-    if (_closed) {
-      throw StateError('The sink is closed');
-    }
-    _closed = last;
-    end ??= data.length;
-
+  @pragma('vm:prefer-inline')
+  Uint8List $add(List<int> data, int start, int end) {
     int i, j, p;
     var output = Uint8List(end - start);
 
@@ -367,7 +342,7 @@ class AESInGCMModeDecryptSink extends _AESInGCMModeSinkBase {
       }
     }
 
-    if (last) {
+    if (closed) {
       _msgLength -= _tagSize;
       if (_msgLength < 0) {
         throw StateError('Invalid message size');

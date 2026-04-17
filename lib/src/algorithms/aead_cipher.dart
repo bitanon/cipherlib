@@ -56,20 +56,7 @@ class AEADCipherSink<C extends CipherSink, H extends HashDigestSink>
     this._aad,
     this._verifyMode = false,
   ]) {
-    _cipher.reset();
-    _addAAD();
-  }
-
-  @pragma('vm:prefer-inline')
-  void _addAAD() {
-    if (_aad != null) {
-      _sink.add(_aad!);
-      // pad with zero
-      int n = _aad!.length;
-      if (n & 15 != 0) {
-        _sink.add(Uint8List(16 - (n & 15)));
-      }
-    }
+    reset(_verifyMode);
   }
 
   /// The length of generated hash in bytes
@@ -84,7 +71,14 @@ class AEADCipherSink<C extends CipherSink, H extends HashDigestSink>
     _cipher.reset();
     _dataLength = 0;
     _verifyMode = forVerification;
-    _addAAD();
+    if (_aad != null) {
+      _sink.add(_aad!);
+      // pad with zero
+      int n = _aad!.length;
+      if (n & 15 != 0) {
+        _sink.add(Uint8List(16 - (n & 15)));
+      }
+    }
   }
 
   @override
@@ -129,6 +123,11 @@ class AEADCipherSink<C extends CipherSink, H extends HashDigestSink>
       ]);
     }
     return cipher;
+  }
+
+  @override
+  Uint8List $add(List<int> data, int start, int end) {
+    throw UnimplementedError();
   }
 
   @override
