@@ -1,3 +1,9 @@
+# 0.1.0
+
+- ![dart support](https://img.shields.io/badge/dart-%3e%3d%202.19.0-39f?logo=dart)
+- Bump dependency: hashlib
+- Refactor internal files
+
 ## 0.0.14
 
 - `AES` in ECB, CBC, CTR, CFB, OFB, GCM, XTS, IGE, PCBC modes.

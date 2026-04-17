@@ -59,8 +59,8 @@ Examples can be found inside the `example` folder.
 
 ```dart
 import 'package:cipherlib/cipherlib.dart';
-import 'package:hashlib/hashlib.dart';
-import 'package:hashlib/codecs.dart';
+import 'package:cipherlib/hashlib.dart';
+import 'package:cipherlib/codecs.dart';
 
 void main() {
   print('----- AES -----');
