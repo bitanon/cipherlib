@@ -136,7 +136,7 @@ String formatDecimal(double value, [int precision = 2]) {
 String formatSize(num value) {
   int i;
   double size = value.toDouble();
-  const suffix = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
+  const suffix = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
   for (i = 0; size >= 1024; i++) {
     size /= 1024;
   }
@@ -146,7 +146,17 @@ String formatSize(num value) {
 String formatSpeed(num value) {
   int i;
   double size = (value * 8).toDouble();
-  const suffix = ['', ' kbps', ' Mbps', ' Gbps', ' Tbps'];
+  const suffix = [
+    '',
+    ' kbps',
+    ' Mbps',
+    ' Gbps',
+    ' Tbps',
+    ' Pbps',
+    ' Ebps',
+    ' Zbps',
+    ' Ybps'
+  ];
   size /= 1000;
   for (i = 1; size >= 1000; i++) {
     size /= 1000;
