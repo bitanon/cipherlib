@@ -40,13 +40,13 @@ void main() {
       cipher.data,
       key,
       nonce: nonce,
-      mac: cipher.tag.bytes,
+      mac: cipher.mac.bytes,
     );
     print('  Text: $text');
     print('   Key: ${toHex(key)}');
     print(' Nonce: ${toHex(nonce)}');
     print('Cipher: ${toHex(cipher.data)}');
-    print('   Tag: ${cipher.tag.hex()}');
+    print('   Tag: ${cipher.mac.hex()}');
     print(' Plain: ${fromUtf8(plain.data)}');
   }
   print('');

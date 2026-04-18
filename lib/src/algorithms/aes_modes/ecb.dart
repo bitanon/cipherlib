@@ -5,8 +5,7 @@ import 'dart:typed_data';
 
 import '../../core/cipher.dart';
 import '../../core/cipher_sink.dart';
-import '../../core/collate_cipher.dart';
-import '../aes.dart';
+import '../../core/aes.dart';
 import '../padding.dart';
 
 /// The sink used for encryption by the [AESInECBModeEncrypt] algorithm.
@@ -173,8 +172,9 @@ class AESInECBModeEncrypt extends Cipher {
   ]);
 
   @override
-  @pragma('vm:prefer-inline')
-  AESInECBModeEncryptSink createSink() => AESInECBModeEncryptSink(key, padding);
+  Uint8List convert(List<int> message) {
+    return AESInECBModeEncryptSink(key, padding).add(message, true);
+  }
 }
 
 /// Provides decryption for AES cipher in ECB mode.
@@ -194,8 +194,9 @@ class AESInECBModeDecrypt extends Cipher {
   ]);
 
   @override
-  @pragma('vm:prefer-inline')
-  AESInECBModeDecryptSink createSink() => AESInECBModeDecryptSink(key, padding);
+  Uint8List convert(List<int> message) {
+    return AESInECBModeDecryptSink(key, padding).add(message, true);
+  }
 }
 
 /// Provides encryption and decryption for AES cipher in ECB mode.

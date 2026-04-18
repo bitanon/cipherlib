@@ -5,11 +5,10 @@ import 'dart:typed_data';
 
 import 'package:hashlib/random.dart' show randomBytes;
 
+import '../../core/aes.dart';
 import '../../core/cipher.dart';
 import '../../core/cipher_sink.dart';
-import '../../core/collate_cipher.dart';
 import '../../utils/nonce.dart';
-import '../aes.dart';
 import '../padding.dart';
 
 /// Multiply [T] by `alpha` = `0x87` in 128-bit Galois Field
@@ -313,9 +312,9 @@ class AESInXTSModeEncrypt extends Cipher with SaltedCipher {
   );
 
   @override
-  @pragma('vm:prefer-inline')
-  AESInXTSModeEncryptSink createSink() =>
-      AESInXTSModeEncryptSink(ekey, tkey, iv);
+  Uint8List convert(List<int> message) {
+    return AESInXTSModeEncryptSink(ekey, tkey, iv).add(message, true);
+  }
 }
 
 /// Provides decryption for AES cipher in XTS mode.
@@ -339,9 +338,9 @@ class AESInXTSModeDecrypt extends Cipher with SaltedCipher {
   );
 
   @override
-  @pragma('vm:prefer-inline')
-  AESInXTSModeDecryptSink createSink() =>
-      AESInXTSModeDecryptSink(ekey, tkey, iv);
+  Uint8List convert(List<int> message) {
+    return AESInXTSModeDecryptSink(ekey, tkey, iv).add(message, true);
+  }
 }
 
 /// Provides encryption and decryption for AES cipher in XTS mode.

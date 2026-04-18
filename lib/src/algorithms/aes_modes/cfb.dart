@@ -5,10 +5,9 @@ import 'dart:typed_data';
 
 import 'package:hashlib/random.dart' show randomBytes;
 
+import '../../core/aes.dart';
 import '../../core/cipher.dart';
 import '../../core/cipher_sink.dart';
-import '../../core/collate_cipher.dart';
-import '../aes.dart';
 import '../padding.dart';
 
 /// The sink used for encryption by the [AESInCFBModeEncrypt] algorithm.
@@ -149,9 +148,9 @@ class AESInCFBModeEncrypt extends Cipher with SaltedCipher {
   );
 
   @override
-  @pragma('vm:prefer-inline')
-  AESInCFBModeEncryptSink createSink() =>
-      AESInCFBModeEncryptSink(key, iv, sbyte);
+  Uint8List convert(List<int> message) {
+    return AESInCFBModeEncryptSink(key, iv, sbyte).add(message, true);
+  }
 }
 
 /// Provides decryption for AES cipher in CFB mode.
@@ -175,9 +174,9 @@ class AESInCFBModeDecrypt extends Cipher with SaltedCipher {
   );
 
   @override
-  @pragma('vm:prefer-inline')
-  AESInCFBModeDecryptSink createSink() =>
-      AESInCFBModeDecryptSink(key, iv, sbyte);
+  Uint8List convert(List<int> message) {
+    return AESInCFBModeDecryptSink(key, iv, sbyte).add(message, true);
+  }
 }
 
 /// Provides encryption and decryption for AES cipher in CFB mode.

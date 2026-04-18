@@ -223,8 +223,9 @@ class Salsa20 extends Cipher with SaltedCipher {
   Uint8List get iv => _nonce;
 
   @override
-  @pragma('vm:prefer-inline')
-  Salsa20Sink createSink() => Salsa20Sink(key, _nonce);
+  Uint8List convert(List<int> message) {
+    return Salsa20Sink(key, _nonce).add(message, true);
+  }
 
   /// Creates an instance with a [key], [nonce], and [counter] containing a
   /// list of bytes.

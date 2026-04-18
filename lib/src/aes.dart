@@ -12,7 +12,6 @@ import 'algorithms/aes_modes/pcbc.dart';
 import 'algorithms/aes_modes/xts.dart';
 import 'algorithms/padding.dart';
 
-export 'algorithms/aes.dart';
 export 'algorithms/aes_modes/cbc.dart';
 export 'algorithms/aes_modes/cfb.dart';
 export 'algorithms/aes_modes/ctr.dart';
@@ -22,6 +21,7 @@ export 'algorithms/aes_modes/ige.dart';
 export 'algorithms/aes_modes/ofb.dart';
 export 'algorithms/aes_modes/pcbc.dart';
 export 'algorithms/aes_modes/xts.dart';
+export 'core/aes.dart';
 
 /// AES (Advanced Encryption Standard) is a symmetric encryption algorithm used
 /// for securing data. It operates on fixed-size blocks of data (128 bits) using

@@ -19,10 +19,10 @@ void main() {
       final key = randomNumbers(32);
       final res = xchacha20poly1305([], key);
       expect(res.data, equals([]));
-      expect(res.tag.bytes.length, equals(16));
-      final out = xchacha20poly1305([], key, nonce: res.iv, mac: res.tag.bytes);
+      expect(res.mac.bytes.length, equals(16));
+      final out = xchacha20poly1305([], key, nonce: res.iv, mac: res.mac.bytes);
       expect(out.data, equals([]));
-      expect(out.tag.hex(), equals(res.tag.hex()));
+      expect(out.mac.hex(), equals(res.mac.hex()));
     });
     test('The key should be either 16 or 32 bytes', () {
       for (int i = 0; i < 100; ++i) {
@@ -66,15 +66,15 @@ void main() {
       var x = XChaCha20Poly1305(Uint8List(32));
       var iv = [...x.iv];
       var key1 = [...x.cipher.key];
-      var key2 = [...x.mac.keypair];
-      var tag1 = x.sign(const [1, 2, 3, 4]).tag.bytes;
+      var key2 = [...x.this.mac.keypair];
+      var tag1 = x.sign(const [1, 2, 3, 4]).mac.bytes;
       var activeIV = [...x.cipher.activeIV];
       x.resetIV();
       expect(iv, isNot(equals(x.iv)));
       expect(key1, isNot(equals(x.cipher.key)));
-      expect(key2, isNot(equals(x.mac.keypair)));
+      expect(key2, isNot(equals(x.this.mac.keypair)));
       expect(activeIV, isNot(equals(x.cipher.activeIV)));
-      var tag2 = x.sign(const [1, 2, 3, 4]).tag.bytes;
+      var tag2 = x.sign(const [1, 2, 3, 4]).mac.bytes;
       expect(tag1, isNot(equals(tag2)));
     });
   });
@@ -96,17 +96,17 @@ void main() {
         key,
         nonce: iv,
         aad: aad,
-        mac: res.tag.bytes,
+        mac: res.mac.bytes,
       );
       expect(verify.data, equals(message));
-      expect(res.tag.hex(), isNot(equals(verify.tag.hex())));
+      expect(res.mac.hex(), isNot(equals(verify.mac.hex())));
       expect(
           () => xchacha20poly1305(
                 res.data,
                 key,
                 nonce: iv,
                 aad: aad,
-                mac: verify.tag.bytes,
+                mac: verify.mac.bytes,
               ),
           throwsA(isA<AssertionError>()));
     }
@@ -147,7 +147,7 @@ void main() {
         aad: aad,
       );
       expect(output.data, equals(cipher));
-      expect(output.tag.bytes, equals(tag));
+      expect(output.mac.bytes, equals(tag));
     });
     test('decrypt', () {
       final output = xchacha20poly1305(
@@ -172,7 +172,7 @@ void main() {
       final tag = fromHex(item['out']!).skip(inp.length).toList();
       final res = xchacha20poly1305(inp, key, nonce: iv, aad: aad);
       expect(toHex(res.data), equals(toHex(out)));
-      expect(res.tag.hex(), equals(toHex(tag)));
+      expect(res.mac.hex(), equals(toHex(tag)));
     }
   });
 }

@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'package:cipherlib/cipherlib.dart';
 import 'package:cipherlib/codecs.dart';
 import 'package:cipherlib/random.dart';
+import 'package:cipherlib/src/aes.dart';
 import 'package:test/test.dart';
 
 void main() {

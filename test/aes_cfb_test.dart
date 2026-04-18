@@ -3,9 +3,9 @@
 
 import 'dart:typed_data';
 
-import 'package:cipherlib/cipherlib.dart';
 import 'package:cipherlib/codecs.dart';
 import 'package:cipherlib/random.dart';
+import 'package:cipherlib/src/aes.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -14,7 +14,7 @@ void main() {
     final iv = Uint8List(16);
     final input = Uint8List(64);
     test("name is correct", () {
-      expect(AES(key).cfb(iv).name, "AES/CFB/NoPadding");
+      expect(AES(key)(key).cfb(iv).name, "AES/CFB/NoPadding");
     });
     test("sbyte must be between 1 and 16", () {
       for (int i = -10; i < 20; ++i) {

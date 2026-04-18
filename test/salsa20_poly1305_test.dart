@@ -17,10 +17,10 @@ void main() {
       final key = randomNumbers(32);
       final res = salsa20poly1305([], key);
       expect(res.data, equals([]));
-      expect(res.tag.bytes.length, equals(16));
-      final out = salsa20poly1305([], key, nonce: res.iv, mac: res.tag.bytes);
+      expect(res.mac.bytes.length, equals(16));
+      final out = salsa20poly1305([], key, nonce: res.iv, mac: res.mac.bytes);
       expect(out.data, equals([]));
-      expect(out.tag.hex(), equals(res.tag.hex()));
+      expect(out.mac.hex(), equals(res.mac.hex()));
     });
     test('The key should be either 16 or 32 bytes', () {
       for (int i = 0; i < 100; ++i) {
@@ -65,13 +65,13 @@ void main() {
       var x = Salsa20Poly1305(Uint8List(32));
       var iv = [...x.iv];
       var key1 = [...x.cipher.key];
-      var key2 = [...x.mac.keypair];
-      var tag1 = x.sign(const [1, 2, 3, 4]).tag.bytes;
+      var key2 = [...x.this.mac.keypair];
+      var tag1 = x.sign(const [1, 2, 3, 4]).mac.bytes;
       x.resetIV();
       expect(iv, isNot(equals(x.iv)));
       expect(key1, equals(x.cipher.key));
-      expect(key2, isNot(equals(x.mac.keypair)));
-      var tag2 = x.sign(const [1, 2, 3, 4]).tag.bytes;
+      expect(key2, isNot(equals(x.this.mac.keypair)));
+      var tag2 = x.sign(const [1, 2, 3, 4]).mac.bytes;
       expect(tag1, isNot(equals(tag2)));
     });
   });
@@ -95,7 +95,7 @@ void main() {
       final message = randomBytes(i);
       final instance = Salsa20Poly1305(key, nonce: iv, aad: aad);
       final res = instance.sign(message);
-      expect(instance.verify(res.data, res.tag.bytes), isTrue);
+      expect(instance.verify(res.data, res.mac.bytes), isTrue);
     }
   });
 
@@ -103,11 +103,11 @@ void main() {
     var x = Salsa20Poly1305(Uint8List(32));
     var iv = [...x.iv];
     var key1 = [...x.cipher.key];
-    var key2 = [...x.mac.keypair];
+    var key2 = [...x.this.mac.keypair];
     x.resetIV();
     expect(iv, isNot(equals(x.iv)));
     expect(key1, equals(x.cipher.key));
-    expect(key2, isNot(equals(x.mac.keypair)));
+    expect(key2, isNot(equals(x.this.mac.keypair)));
   });
 
   test('decrypt with invalid mac', () {

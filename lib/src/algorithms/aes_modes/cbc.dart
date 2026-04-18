@@ -5,10 +5,9 @@ import 'dart:typed_data';
 
 import 'package:hashlib/random.dart' show randomBytes;
 
+import '../../core/aes.dart';
 import '../../core/cipher.dart';
 import '../../core/cipher_sink.dart';
-import '../../core/collate_cipher.dart';
-import '../aes.dart';
 import '../padding.dart';
 
 /// The sink used for encryption by the [AESInCBCModeEncrypt] algorithm.
@@ -204,9 +203,9 @@ class AESInCBCModeEncrypt extends Cipher with SaltedCipher {
   ]);
 
   @override
-  @pragma('vm:prefer-inline')
-  AESInCBCModeEncryptSink createSink() =>
-      AESInCBCModeEncryptSink(key, iv, padding);
+  Uint8List convert(List<int> message) {
+    return AESInCBCModeEncryptSink(key, iv, padding).add(message, true);
+  }
 }
 
 /// Provides decryption for AES cipher in CBC mode.
@@ -230,9 +229,9 @@ class AESInCBCModeDecrypt extends Cipher with SaltedCipher {
   ]);
 
   @override
-  @pragma('vm:prefer-inline')
-  AESInCBCModeDecryptSink createSink() =>
-      AESInCBCModeDecryptSink(key, iv, padding);
+  Uint8List convert(List<int> message) {
+    return AESInCBCModeDecryptSink(key, iv, padding).add(message, true);
+  }
 }
 
 /// Provides encryption and decryption for AES cipher in CBC mode.

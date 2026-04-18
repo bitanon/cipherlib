@@ -104,7 +104,7 @@ void main() {
 
         expect(out.cipherText, equals(result.data),
             reason: '[text: $j, aad: ${key[0]}]');
-        expect(out.mac.bytes, equals(result.tag.bytes),
+        expect(out.mac.bytes, equals(result.mac.bytes),
             reason: '[text: $j, aad: ${key[0]}]]');
       }
     });

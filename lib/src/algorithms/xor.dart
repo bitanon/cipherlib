@@ -4,40 +4,7 @@
 import 'dart:typed_data';
 
 import '../core/cipher.dart';
-import '../core/cipher_sink.dart';
-
-/// This sink is used by the [XOR] algorithm.
-class XORSink extends CipherSink {
-  XORSink(this._key) {
-    if (_key.isEmpty) {
-      throw ArgumentError('The key must not be empty');
-    }
-  }
-
-  int _pos = 0;
-  final Uint8List _key;
-
-  @override
-  void reset() {
-    super.reset();
-    _pos = 0;
-  }
-
-  @override
-  @pragma('vm:prefer-inline')
-  Uint8List $add(List<int> data, int start, int end) {
-    var result = Uint8List(end - start);
-    for (int i = start; i < end;) {
-      for (; _pos < _key.length && i < end; ++_pos, ++i) {
-        result[i - start] = data[i] ^ _key[_pos];
-      }
-      if (_pos == _key.length) {
-        _pos = 0;
-      }
-    }
-    return result;
-  }
-}
+import '../utils/typed_data.dart';
 
 /// XOR (exclusive or) cipher is a simple and lightweight method of encrypting
 /// data. It is often used for basic data obfuscation.
@@ -54,14 +21,24 @@ class XOR extends Cipher {
   /// Key for the cipher
   final Uint8List key;
 
-  const XOR(this.key);
+  const XOR._(this.key);
 
   /// Creates a [XOR] with `List<int>` [key], transforming every elements to
   /// unsigned 8-bit numbers.
-  factory XOR.fromList(List<int> key) =>
-      XOR(key is Uint8List ? key : Uint8List.fromList(key));
+  factory XOR(List<int> key) => XOR._(toUint8List(key));
 
   @override
-  @pragma('vm:prefer-inline')
-  XORSink createSink() => XORSink(key);
+  Uint8List convert(List<int> message) {
+    if (key.isEmpty && message.isNotEmpty) {
+      throw ArgumentError.value(key, 'key', 'must not be empty');
+    }
+    final output = Uint8List(message.length);
+    for (int i = 0, k = 0; i < output.length; ++i, ++k) {
+      if (k == key.length) {
+        k = 0;
+      }
+      output[i] = message[i] ^ key[k];
+    }
+    return output;
+  }
 }

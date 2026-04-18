@@ -7,9 +7,8 @@ import 'package:hashlib/random.dart' show randomBytes;
 
 import '../../core/cipher.dart';
 import '../../core/cipher_sink.dart';
-import '../../core/collate_cipher.dart';
 import '../../utils/nonce.dart';
-import '../aes.dart';
+import '../../core/aes.dart';
 import '../padding.dart';
 
 const int _mask32 = 0xFFFFFFFF;
@@ -105,8 +104,9 @@ class AESInCTRModeCipher extends Cipher with SaltedCipher {
   const AESInCTRModeCipher(this.key, this.iv);
 
   @override
-  @pragma('vm:prefer-inline')
-  AESInCTRModeSink createSink() => AESInCTRModeSink(key, iv);
+  Uint8List convert(List<int> message) {
+    return AESInCTRModeSink(key, iv).add(message, true);
+  }
 }
 
 /// Provides encryption and decryption for AES cipher in CTR mode.

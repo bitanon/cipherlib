@@ -259,8 +259,9 @@ class ChaCha20 extends Cipher with SaltedCipher {
   Uint8List get iv => _nonce;
 
   @override
-  @pragma('vm:prefer-inline')
-  CipherSink createSink() => ChaCha20Sink(key, _nonce, _counterBytes);
+  Uint8List convert(List<int> message) {
+    return ChaCha20Sink(key, _nonce, _counterBytes).add(message, true);
+  }
 
   /// Creates an instance with a [key], [nonce], and [counter] containing a
   /// list of bytes.

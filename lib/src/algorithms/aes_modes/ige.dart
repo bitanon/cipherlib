@@ -7,8 +7,7 @@ import 'package:hashlib/random.dart' show randomBytes;
 
 import '../../core/cipher.dart';
 import '../../core/cipher_sink.dart';
-import '../../core/collate_cipher.dart';
-import '../aes.dart';
+import '../../core/aes.dart';
 import '../padding.dart';
 
 /// The sink used for encryption by the [AESInIGEModeEncrypt] algorithm.
@@ -213,9 +212,9 @@ class AESInIGEModeEncrypt extends Cipher with SaltedCipher {
   ]);
 
   @override
-  @pragma('vm:prefer-inline')
-  AESInIGEModeEncryptSink createSink() =>
-      AESInIGEModeEncryptSink(key, iv, padding);
+  Uint8List convert(List<int> message) {
+    return AESInIGEModeEncryptSink(key, iv, padding).add(message, true);
+  }
 }
 
 /// Provides decryption for AES cipher in IGE mode.
@@ -239,9 +238,9 @@ class AESInIGEModeDecrypt extends Cipher with SaltedCipher {
   ]);
 
   @override
-  @pragma('vm:prefer-inline')
-  AESInIGEModeDecryptSink createSink() =>
-      AESInIGEModeDecryptSink(key, iv, padding);
+  Uint8List convert(List<int> message) {
+    return AESInIGEModeDecryptSink(key, iv, padding).add(message, true);
+  }
 }
 
 /// Provides encryption and decryption for AES cipher in IGE mode.

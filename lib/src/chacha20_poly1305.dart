@@ -23,7 +23,7 @@ class ChaCha20Poly1305 extends AEADCipher<ChaCha20, Poly1305>
     with SaltedCipher {
   const ChaCha20Poly1305._(
     super.cipher,
-    super.mac,
+    super.algo,
     super.aad,
   );
 
@@ -43,17 +43,17 @@ class ChaCha20Poly1305 extends AEADCipher<ChaCha20, Poly1305>
       ChaCha20(key, nonce, counter).poly1305(aad);
 
   @override
+  Uint8List get iv => cipher.iv;
+
+  @override
   @pragma('vm:prefer-inline')
   AEADResultWithIV sign(List<int> message) =>
       super.sign(message).withIV(cipher.iv);
 
   @override
-  Uint8List get iv => cipher.iv;
-
-  @override
   void resetIV() {
     cipher.resetIV();
-    mac.keypair.setAll(0, cipher.$otk());
+    algo.keypair.setAll(0, cipher.$otk());
   }
 }
 

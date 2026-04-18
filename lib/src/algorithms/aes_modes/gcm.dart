@@ -7,8 +7,7 @@ import 'package:hashlib/random.dart' show randomBytes;
 
 import '../../core/cipher.dart';
 import '../../core/cipher_sink.dart';
-import '../../core/collate_cipher.dart';
-import '../aes.dart';
+import '../../core/aes.dart';
 import '../padding.dart';
 
 const List<int> _pow2 = <int>[
@@ -401,9 +400,9 @@ class AESInGCMModeEncrypt extends Cipher with SaltedCipher {
   });
 
   @override
-  @pragma('vm:prefer-inline')
-  AESInGCMModeEncryptSink createSink() =>
-      AESInGCMModeEncryptSink(key, iv, aad, tagSize);
+  Uint8List convert(List<int> message) {
+    return AESInGCMModeEncryptSink(key, iv, aad, tagSize).add(message, true);
+  }
 }
 
 /// Provides AES cipher in GCM mode for decryption.
@@ -431,9 +430,9 @@ class AESInGCMModeDecrypt extends Cipher with SaltedCipher {
   });
 
   @override
-  @pragma('vm:prefer-inline')
-  AESInGCMModeDecryptSink createSink() =>
-      AESInGCMModeDecryptSink(key, iv, aad, tagSize);
+  Uint8List convert(List<int> message) {
+    return AESInGCMModeDecryptSink(key, iv, aad, tagSize).add(message, true);
+  }
 }
 
 /// Provides encryption and decryption for AES cipher in GCM mode.

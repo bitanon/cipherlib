@@ -7,8 +7,7 @@ import 'package:hashlib/random.dart' show randomBytes;
 
 import '../../core/cipher.dart';
 import '../../core/cipher_sink.dart';
-import '../../core/collate_cipher.dart';
-import '../aes.dart';
+import '../../core/aes.dart';
 import '../padding.dart';
 
 /// The sink used for encryption by the [AESInOFBModeCipher] algorithm.
@@ -98,8 +97,9 @@ class AESInOFBModeCipher extends Cipher with SaltedCipher {
   );
 
   @override
-  @pragma('vm:prefer-inline')
-  AESInOFBModeSink createSink() => AESInOFBModeSink(key, iv, sbyte);
+  Uint8List convert(List<int> message) {
+    return AESInOFBModeSink(key, iv, sbyte).add(message, true);
+  }
 }
 
 /// Provides encryption and decryption for AES cipher in OFB mode.

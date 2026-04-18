@@ -5,7 +5,7 @@ import 'dart:async';
 import 'dart:math';
 import 'dart:typed_data';
 
-import 'package:cipherlib/cipherlib.dart' as cipher;
+import 'package:cipherlib/src/xor.dart' as cipher;
 
 import 'base.dart';
 
@@ -40,8 +40,8 @@ class CipherlibStreamBenchmark extends AsyncBenchmark {
 void main() async {
   print('--------- XOR ----------');
   final conditions = [
-    [5 << 20, 10],
-    [1 << 10, 5000],
+    [1 << 20, 10],
+    [5 << 10, 5000],
     [16, 100000],
   ];
   for (var condition in conditions) {

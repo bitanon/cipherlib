@@ -40,7 +40,7 @@ void main() {
         aad: aad,
       );
       expect(res.data, equals(cipher));
-      expect(res.tag.bytes, equals(tag));
+      expect(res.mac.bytes, equals(tag));
       expect(res.verify(tag), true);
     });
     test('convert without aad', () {
@@ -49,7 +49,7 @@ void main() {
         key,
         nonce: nonce,
       );
-      expect(res.tag.hex(), equals('6a23a4681fd59456aea1d29f82477216'));
+      expect(res.mac.hex(), equals('6a23a4681fd59456aea1d29f82477216'));
     });
     test('verify and decrypt', () {
       var res = chacha20poly1305(
@@ -61,7 +61,7 @@ void main() {
       var verified = chacha20poly1305(
         res.data,
         key,
-        mac: res.tag.bytes,
+        mac: res.mac.bytes,
         nonce: nonce,
         aad: aad,
       );
@@ -100,7 +100,7 @@ void main() {
       var verified = chacha20poly1305(
         res.data,
         key,
-        mac: res.tag.bytes,
+        mac: res.mac.bytes,
         nonce: nonce,
       );
       expect(verified.data, equals(text), reason: '[text size: $j]');
@@ -115,7 +115,7 @@ void main() {
       final message = randomBytes(i);
       final instance = ChaCha20Poly1305(key, nonce: iv, aad: aad);
       final res = instance.sign(message);
-      expect(instance.verify(res.data, res.tag.bytes), isTrue);
+      expect(instance.verify(res.data, res.mac.bytes), isTrue);
     }
   });
 
@@ -123,13 +123,13 @@ void main() {
     var x = ChaCha20Poly1305(Uint8List(32));
     var iv = [...x.iv];
     var key1 = [...x.cipher.key];
-    var key2 = [...x.mac.keypair];
-    var tag1 = x.sign(const [1, 2, 3, 4]).tag.bytes;
+    var key2 = [...x.this.mac.keypair];
+    var tag1 = x.sign(const [1, 2, 3, 4]).mac.bytes;
     x.resetIV();
     expect(iv, isNot(equals(x.iv)));
     expect(key1, equals(x.cipher.key));
-    expect(key2, isNot(equals(x.mac.keypair)));
-    var tag2 = x.sign(const [1, 2, 3, 4]).tag.bytes;
+    expect(key2, isNot(equals(x.this.mac.keypair)));
+    var tag2 = x.sign(const [1, 2, 3, 4]).mac.bytes;
     expect(tag1, isNot(equals(tag2)));
   });
 

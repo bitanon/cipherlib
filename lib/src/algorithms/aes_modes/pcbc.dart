@@ -7,8 +7,7 @@ import 'package:hashlib/random.dart' show randomBytes;
 
 import '../../core/cipher.dart';
 import '../../core/cipher_sink.dart';
-import '../../core/collate_cipher.dart';
-import '../aes.dart';
+import '../../core/aes.dart';
 import '../padding.dart';
 
 /// The sink used for encryption by the [AESInPCBCModeEncrypt] algorithm.
@@ -198,9 +197,9 @@ class AESInPCBCModeEncrypt extends Cipher with SaltedCipher {
   ]);
 
   @override
-  @pragma('vm:prefer-inline')
-  AESInPCBCModeEncryptSink createSink() =>
-      AESInPCBCModeEncryptSink(key, iv, padding);
+  Uint8List convert(List<int> message) {
+    return AESInPCBCModeEncryptSink(key, iv, padding).add(message, true);
+  }
 }
 
 /// Provides decryption for AES cipher in PCBC mode.
@@ -224,9 +223,9 @@ class AESInPCBCModeDecrypt extends Cipher with SaltedCipher {
   ]);
 
   @override
-  @pragma('vm:prefer-inline')
-  AESInPCBCModeDecryptSink createSink() =>
-      AESInPCBCModeDecryptSink(key, iv, padding);
+  Uint8List convert(List<int> message) {
+    return AESInPCBCModeDecryptSink(key, iv, padding).add(message, true);
+  }
 }
 
 /// Provides encryption and decryption for AES cipher in PCBC mode.
