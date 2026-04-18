@@ -67,8 +67,8 @@ class CipherlibStreamBenchmark extends AsyncBenchmark {
 void main() async {
   print('--------- Salsa20 ----------');
   final conditions = [
-    [5 << 20, 10],
-    [1 << 10, 5000],
+    [1 << 20, 10],
+    [5 << 10, 5000],
     [16, 100000],
   ];
   for (var condition in conditions) {
