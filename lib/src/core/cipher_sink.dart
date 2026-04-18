@@ -4,6 +4,7 @@
 import 'dart:typed_data';
 
 /// Template for Cipher algorithm sink.
+@Deprecated('will be removed soon')
 abstract class CipherSink implements Sink<List<int>> {
   bool _closed = false;
 

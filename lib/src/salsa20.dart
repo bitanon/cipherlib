@@ -6,7 +6,7 @@ import 'dart:typed_data';
 import 'algorithms/salsa20.dart';
 import 'utils/nonce.dart';
 
-export 'algorithms/salsa20.dart' show Salsa20, Salsa20Sink;
+export 'algorithms/salsa20.dart' show Salsa20;
 
 /// Apply [Salsa20] cipher with the follwing parameters:
 ///

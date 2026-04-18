@@ -6,60 +6,113 @@ import 'dart:typed_data';
 import 'package:hashlib/random.dart' show randomBytes;
 
 import '../core/cipher.dart';
-import '../core/cipher_sink.dart';
 import '../utils/nonce.dart';
 
 const int _mask32 = 0xFFFFFFFF;
 
-/// This sink is used by the [Salsa20] algorithm.
-class Salsa20Sink extends CipherSink {
-  Salsa20Sink(this._key, this._nonce) {
-    reset();
-  }
-
-  int _pos = 0;
-  final Uint8List _key;
+/// Salsa20 is a stream cipher that uses a 256-bit key and a 64-bit nonce to
+/// generate a unique cipher stream for each messages.
+///
+/// This implementation is based on the [Snuffle 2005 specification][spec]
+///
+/// [spec]: https://cr.yp.to/snuffle/spec.pdf
+///
+/// See also:
+/// - [XSalsa20] for better security with 192-bit nonce
+class Salsa20 extends Cipher with SaltedCipher {
   final Uint8List _nonce;
-  final _iv32 = Uint32List(4);
-  final _state32 = Uint32List(16);
-  late final _state = Uint8List.view(_state32.buffer);
-  late final _key32 = Uint32List.view(_key.buffer);
-  late final _nonce32 = Uint32List.view(_nonce.buffer);
+
+  /// Key for the cipher
+  final Uint8List key;
 
   @override
-  void reset() {
-    super.reset();
-    _pos = 0;
-    _iv32[0] = _nonce32[0];
-    _iv32[1] = _nonce32[1];
-    _iv32[2] = _nonce32[2];
-    _iv32[3] = _nonce32[3];
-    _nextBlock();
-  }
+  String get name => "Salsa20";
+
+  const Salsa20._(
+    this.key,
+    this._nonce,
+  );
 
   @override
-  @pragma('vm:prefer-inline')
-  Uint8List $add(List<int> data, int start, int end) {
-    var result = Uint8List(end - start);
-    for (int i = start; i < end;) {
-      for (; _pos < 64 && i < end; ++_pos, ++i) {
-        result[i - start] = data[i] ^ _state[_pos];
+  Uint8List get iv => _nonce;
+
+  @override
+  Uint8List convert(List<int> message) {
+    final iv32 = Uint32List(4);
+    final state32 = Uint32List(16);
+    final state = Uint8List.view(state32.buffer);
+    final key32 = Uint32List.view(key.buffer);
+    final nonce32 = Uint32List.view(_nonce.buffer);
+    final result = Uint8List(message.length);
+
+    iv32[0] = nonce32[0];
+    iv32[1] = nonce32[1];
+    iv32[2] = nonce32[2];
+    iv32[3] = nonce32[3];
+    _process(state32, key32, iv32);
+    ++iv32[2];
+    if (iv32[2] == 0) {
+      ++iv32[3];
+    }
+
+    for (int i = 0, p = 0; i < message.length;) {
+      for (; p < 64 && i < message.length; ++p, ++i) {
+        result[i] = message[i] ^ state[p];
       }
-      if (_pos == 64) {
-        _nextBlock();
-        _pos = 0;
+      if (p == 64) {
+        _process(state32, key32, iv32);
+        ++iv32[2];
+        if (iv32[2] == 0) {
+          ++iv32[3];
+        }
+        p = 0;
       }
     }
     return result;
   }
 
-  @pragma('vm:prefer-inline')
-  void _nextBlock() {
-    _process(_state32, _key32, _iv32);
-    ++_iv32[2];
-    if (_iv32[2] == 0) {
-      ++_iv32[3];
+  /// Creates an instance with a [key], [nonce], and [counter] containing a
+  /// list of bytes.
+  factory Salsa20(
+    List<int> key, [
+    List<int>? nonce,
+    Nonce64? counter,
+  ]) {
+    // validate key
+    if (key.length != 16 && key.length != 32) {
+      throw ArgumentError('The key should be either 16 or 32 bytes');
     }
+    var key8 = key is Uint8List ? key : Uint8List.fromList(key);
+
+    // validate nonce
+    Uint8List nonce8;
+    nonce ??= randomBytes(16);
+    if (nonce.length == 8) {
+      nonce8 = Uint8List(16);
+      nonce8.setAll(0, nonce);
+      if (counter != null) {
+        nonce8.setAll(8, counter.bytes);
+      }
+    } else if (nonce.length == 16) {
+      if (counter != null) {
+        throw ArgumentError('Counter is not expected with 16-byte nonce');
+      }
+      nonce8 = nonce is Uint8List ? nonce : Uint8List.fromList(nonce);
+    } else {
+      throw ArgumentError('The nonce should be either 8 or 16 bytes');
+    }
+
+    return Salsa20._(key8, nonce8);
+  }
+
+  /// The One-Time-Key used for AEAD cipher
+  Uint8List $otk() {
+    var state32 = Uint32List(16);
+    var state = Uint8List.view(state32.buffer);
+    var key32 = Uint32List.view(key.buffer);
+    var nonce32 = Uint32List.view(_nonce.buffer);
+    _process(state32, key32, nonce32);
+    return state.sublist(0, 32);
   }
 
   @pragma('vm:prefer-inline')
@@ -196,82 +249,6 @@ class Salsa20Sink extends CipherSink {
   }
 }
 
-/// Salsa20 is a stream cipher that uses a 256-bit key and a 64-bit nonce to
-/// generate a unique cipher stream for each messages.
-///
-/// This implementation is based on the [Snuffle 2005 specification][spec]
-///
-/// [spec]: https://cr.yp.to/snuffle/spec.pdf
-///
-/// See also:
-/// - [XSalsa20] for better security with 192-bit nonce
-class Salsa20 extends Cipher with SaltedCipher {
-  final Uint8List _nonce;
-
-  /// Key for the cipher
-  final Uint8List key;
-
-  @override
-  String get name => "Salsa20";
-
-  const Salsa20._(
-    this.key,
-    this._nonce,
-  );
-
-  @override
-  Uint8List get iv => _nonce;
-
-  @override
-  Uint8List convert(List<int> message) {
-    return Salsa20Sink(key, _nonce).add(message, true);
-  }
-
-  /// Creates an instance with a [key], [nonce], and [counter] containing a
-  /// list of bytes.
-  factory Salsa20(
-    List<int> key, [
-    List<int>? nonce,
-    Nonce64? counter,
-  ]) {
-    // validate key
-    if (key.length != 16 && key.length != 32) {
-      throw ArgumentError('The key should be either 16 or 32 bytes');
-    }
-    var key8 = key is Uint8List ? key : Uint8List.fromList(key);
-
-    // validate nonce
-    Uint8List nonce8;
-    nonce ??= randomBytes(16);
-    if (nonce.length == 8) {
-      nonce8 = Uint8List(16);
-      nonce8.setAll(0, nonce);
-      if (counter != null) {
-        nonce8.setAll(8, counter.bytes);
-      }
-    } else if (nonce.length == 16) {
-      if (counter != null) {
-        throw ArgumentError('Counter is not expected with 16-byte nonce');
-      }
-      nonce8 = nonce is Uint8List ? nonce : Uint8List.fromList(nonce);
-    } else {
-      throw ArgumentError('The nonce should be either 8 or 16 bytes');
-    }
-
-    return Salsa20._(key8, nonce8);
-  }
-
-  /// The One-Time-Key used for AEAD cipher
-  Uint8List $otk() {
-    var state32 = Uint32List(16);
-    var state = Uint8List.view(state32.buffer);
-    var key32 = Uint32List.view(key.buffer);
-    var nonce32 = Uint32List.view(_nonce.buffer);
-    Salsa20Sink._process(state32, key32, nonce32);
-    return state.sublist(0, 32);
-  }
-}
-
 /// XSalsa20 is a stream cipher that uses a 256-bit key and a 256-bit nonce
 /// to generate a unique cipher stream for each messages.
 ///
@@ -351,7 +328,7 @@ class XSalsa20 extends Salsa20 {
     var state32 = Uint32List(16);
     var key32 = Uint32List.view(_xkey.buffer);
     var nonce32 = Uint32List.view(_xnonce.buffer);
-    Salsa20Sink._process(state32, key32, nonce32, true);
+    Salsa20._process(state32, key32, nonce32, true);
 
     // Take first 128-bit and last 128-bit from state as subkey
     var subkey32 = Uint32List.fromList([

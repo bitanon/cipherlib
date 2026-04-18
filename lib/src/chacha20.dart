@@ -6,7 +6,7 @@ import 'dart:typed_data';
 import 'algorithms/chacha20.dart';
 import 'utils/nonce.dart';
 
-export 'algorithms/chacha20.dart' show ChaCha20, ChaCha20Sink;
+export 'algorithms/chacha20.dart' show ChaCha20;
 
 /// Apply [ChaCha20] cipher with the follwing parameters:
 ///
