@@ -148,8 +148,8 @@ void main() {
         var text = randomNumbers(j);
         var bytes = Uint8List.fromList(text);
         var stream = Stream.fromIterable(text);
-        var cipherStream = chacha20Stream(stream, key, nonce: nonce);
-        var plainStream = chacha20Stream(cipherStream, key, nonce: nonce);
+        var cipherStream = ChaCha20(key, nonce).stream(stream);
+        var plainStream = ChaCha20(key, nonce).stream(cipherStream);
         var plain = await plainStream.toList();
         expect(bytes, equals(plain), reason: '[text: $j]');
       }

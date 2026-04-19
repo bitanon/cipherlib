@@ -118,8 +118,8 @@ void main() {
         var text = randomNumbers(j);
         var bytes = Uint8List.fromList(text);
         var stream = Stream.fromIterable(text);
-        var cipherStream = salsa20Stream(stream, key, nonce: nonce);
-        var plainStream = salsa20Stream(cipherStream, key, nonce: nonce);
+        var cipherStream = Salsa20(key, nonce).stream(stream);
+        var plainStream = Salsa20(key, nonce).stream(cipherStream);
         var plain = await plainStream.toList();
         expect(plain, equals(bytes), reason: '[text: $j]');
       }

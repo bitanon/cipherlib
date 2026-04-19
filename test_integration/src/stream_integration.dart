@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:typed_data';
 
 import 'package:cipherlib/cipherlib.dart';
 import 'package:cipherlib/codecs.dart';
@@ -34,94 +33,38 @@ void xorApis() {
   print('');
 }
 
+Future<void> checkStream(Cipher cipher, List<int> message) async {
+  final direct = cipher.convert(message);
+  final out = await cipher
+      .stream(Stream<int>.fromIterable(message))
+      .fold<List<int>>(<int>[], (p, e) => p..add(e));
+  if (!bytesEq(out, direct)) {
+    throw StateError('${cipher.name} stream counter vs buffer mismatch');
+  }
+  print('  ${cipher.name}: ok');
+}
+
 Future<void> streamCipherStreams() async {
   print('----- stream APIs (chunked) -----');
+  final key = randomBytes(32);
   final message = List<int>.generate(500, (i) => i & 255);
-
-  Future<void> checkStream(
-    String label,
-    Stream<int> Function(Stream<int>, List<int>, {List<int>? nonce}) streamFn,
-    Uint8List Function(List<int>, List<int>, {List<int>? nonce}) bufFn,
-    List<int> key,
-    List<int> nonce,
-  ) async {
-    final direct = bufFn(message, key, nonce: nonce);
-    final out = await streamFn(
-      Stream<int>.fromIterable(message),
-      key,
-      nonce: nonce,
-    ).fold<List<int>>(<int>[], (p, e) => p..add(e));
-    if (!bytesEq(out, direct)) {
-      throw StateError('$label stream vs buffer mismatch');
-    }
-    print('  $label: ok');
-  }
-
-  await checkStream(
-    'ChaCha20',
-    chacha20Stream,
-    chacha20,
-    randomBytes(32),
-    randomBytes(12),
-  );
-  await checkStream(
-    'XChaCha20',
-    xchacha20Stream,
-    xchacha20,
-    randomBytes(32),
-    randomBytes(24),
-  );
-  await checkStream(
-    'Salsa20',
-    salsa20Stream,
-    salsa20,
-    randomBytes(32),
-    randomBytes(8),
-  );
-  await checkStream(
-    'XSalsa20',
-    xsalsa20Stream,
-    xsalsa20,
-    randomBytes(32),
-    randomBytes(24),
-  );
+  await checkStream(ChaCha20(key, randomBytes(12)), message);
+  await checkStream(XChaCha20(key, randomBytes(24)), message);
+  await checkStream(Salsa20(key, randomBytes(8)), message);
+  await checkStream(XSalsa20(key, randomBytes(24)), message);
   print('');
 }
 
 /// Stream helpers honor Nonce64 counter (matches buffer API).
 Future<void> streamCipherWithCounter() async {
   print('----- stream APIs + Nonce64 counter -----');
-  final message = List<int>.generate(300, (i) => i & 255);
   final key = randomBytes(32);
   final ctr = Nonce64.int64(11);
-
-  Future<void> check(
-    String label,
-    List<int> nonce,
-    Stream<int> Function(Stream<int>, List<int>,
-            {List<int>? nonce, Nonce64? counter})
-        streamFn,
-    Uint8List Function(List<int>, List<int>,
-            {List<int>? nonce, Nonce64? counter})
-        bufFn,
-  ) async {
-    final direct = bufFn(message, key, nonce: nonce, counter: ctr);
-    final out = await streamFn(
-      Stream<int>.fromIterable(message),
-      key,
-      nonce: nonce,
-      counter: ctr,
-    ).fold<List<int>>(<int>[], (p, e) => p..add(e));
-    if (!bytesEq(out, direct)) {
-      throw StateError('$label stream counter vs buffer mismatch');
-    }
-    print('  $label: ok');
-  }
-
-  await check('ChaCha20', randomBytes(12), chacha20Stream, chacha20);
-  await check('XChaCha20', randomBytes(24), xchacha20Stream, xchacha20);
-  await check('Salsa20', randomBytes(8), salsa20Stream, salsa20);
-  await check('XSalsa20', randomBytes(24), xsalsa20Stream, xsalsa20);
+  final message = List<int>.generate(300, (i) => i & 255);
+  await checkStream(ChaCha20(key, randomBytes(12), ctr), message);
+  await checkStream(XChaCha20(key, randomBytes(24), ctr), message);
+  await checkStream(Salsa20(key, randomBytes(8), ctr), message);
+  await checkStream(XSalsa20(key, randomBytes(24), ctr), message);
   print('');
 }
 

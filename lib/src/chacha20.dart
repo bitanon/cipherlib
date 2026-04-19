@@ -25,21 +25,3 @@ Uint8List chacha20(
   Nonce64? counter,
 }) =>
     ChaCha20(key, nonce, counter).convert(message);
-
-/// Apply [ChaCha20] cipher with the follwing parameters:
-///
-/// Parameters:
-/// - [stream] : arbitrary length plain-text.
-/// - [key] : 16 or 32 bytes key.
-/// - [nonce] : 8 or 12 bytes nonce. (Default: random)
-/// - [counter] : 64-bit counter. (Default: 1)
-///
-/// Both the encryption and decryption can be done using this same method.
-@pragma('vm:prefer-inline')
-Stream<int> chacha20Stream(
-  Stream<int> stream,
-  List<int> key, {
-  List<int>? nonce,
-  Nonce64? counter,
-}) =>
-    ChaCha20(key, nonce, counter).stream(stream);

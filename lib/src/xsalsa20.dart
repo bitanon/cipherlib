@@ -25,21 +25,3 @@ Uint8List xsalsa20(
   Nonce64? counter,
 }) =>
     XSalsa20(key, nonce, counter).convert(message);
-
-/// Apply [XSalsa20] cipher with the follwing parameters:
-///
-/// Parameters:
-/// - [stream] : arbitrary length plain-text.
-/// - [key] : 32 bytes key.
-/// - [nonce] : 24 bytes nonce. (Default: random)
-/// - [counter] : 64-bit counter. (Default: 0)
-///
-/// Both the encryption and decryption can be done using this same method.
-@pragma('vm:prefer-inline')
-Stream<int> xsalsa20Stream(
-  Stream<int> stream,
-  List<int> key, {
-  List<int>? nonce,
-  Nonce64? counter,
-}) =>
-    XSalsa20(key, nonce, counter).stream(stream);
