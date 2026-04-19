@@ -151,6 +151,7 @@ class _ZeroPadding extends Padding {
   @override
   bool pad(List<int> block, int pos, [int? size]) {
     size ??= block.length;
+    block.fillRange(pos, size, 0);
     for (; pos < size; pos++) {
       block[pos] = 0;
     }

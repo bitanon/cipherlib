@@ -8,11 +8,11 @@ import 'package:cipherlib/cipherlib.dart' as cipher;
 import 'package:pointycastle/pointycastle.dart' as pc;
 import 'package:cryptography/cryptography.dart' as crypto;
 
-import 'base.dart';
+import '_base.dart';
 
 Random random = Random();
 
-class CipherlibBenchmark extends Benchmark {
+class CipherlibBenchmark extends InputBenchmark {
   final Uint8List key;
   final Uint8List nonce;
 
@@ -27,7 +27,7 @@ class CipherlibBenchmark extends Benchmark {
   }
 }
 
-class CryptographyBenchmark extends AsyncBenchmark {
+class CryptographyBenchmark extends AsyncInputBenchmark {
   final Uint8List key;
   final Uint8List nonce;
 
@@ -46,7 +46,7 @@ class CryptographyBenchmark extends AsyncBenchmark {
   }
 }
 
-class PointyCastleBenchmark extends Benchmark {
+class PointyCastleBenchmark extends InputBenchmark {
   final Uint8List key;
   final Uint8List nonce;
 

@@ -38,43 +38,6 @@ class ChaCha20 extends Cipher with SaltedCipher {
   @override
   Uint8List get iv => _nonce;
 
-  @override
-  Uint8List convert(List<int> message) {
-    final iv32 = Uint32List(4);
-    final state32 = Uint32List(16);
-    final state = Uint8List.view(state32.buffer);
-    final key32 = Uint32List.view(key.buffer);
-    final nonce32 = Uint32List.view(_nonce.buffer);
-    final result = Uint8List(message.length);
-
-    iv32[0] = nonce32[0];
-    iv32[1] = nonce32[1];
-    iv32[2] = nonce32[2];
-    iv32[3] = nonce32[3];
-
-    _process(state32, key32, iv32);
-    ++iv32[0];
-    if (iv32[0] == 0 && _counterBytes == 8) {
-      ++iv32[1];
-    }
-
-    for (int i = 0, p = 0; i < message.length;) {
-      for (; p < 64 && i < message.length; ++p, ++i) {
-        result[i] = message[i] ^ state[p];
-      }
-      if (p == 64) {
-        _process(state32, key32, iv32);
-        ++iv32[0];
-        if (iv32[0] == 0 && _counterBytes == 8) {
-          ++iv32[1];
-        }
-        p = 0;
-      }
-    }
-
-    return result;
-  }
-
   /// Creates an instance with a [key], [nonce], and [counter] containing a
   /// list of bytes.
   factory ChaCha20(
@@ -97,7 +60,7 @@ class ChaCha20 extends Cipher with SaltedCipher {
       if (counter == null) {
         nonce8[0] = 1;
       } else {
-        nonce8.setAll(0, counter.bytes);
+        nonce8.setRange(0, counter.length, counter.bytes);
       }
       nonce8.setAll(8, nonce);
     } else if (nonce.length == 12) {
@@ -135,6 +98,43 @@ class ChaCha20 extends Cipher with SaltedCipher {
     nonce32[3] = iv32[3];
     _process(state32, key32, nonce32);
     return state.sublist(0, 32);
+  }
+
+  @override
+  Uint8List convert(List<int> message) {
+    final iv32 = Uint32List(4);
+    final state32 = Uint32List(16);
+    final state = Uint8List.view(state32.buffer);
+    final key32 = Uint32List.view(key.buffer);
+    final nonce32 = Uint32List.view(_nonce.buffer);
+    final result = Uint8List(message.length);
+
+    iv32[0] = nonce32[0];
+    iv32[1] = nonce32[1];
+    iv32[2] = nonce32[2];
+    iv32[3] = nonce32[3];
+
+    _process(state32, key32, iv32);
+    ++iv32[0];
+    if (iv32[0] == 0 && _counterBytes == 8) {
+      ++iv32[1];
+    }
+
+    for (int i = 0, p = 0; i < message.length;) {
+      for (; p < 64 && i < message.length; ++p, ++i) {
+        result[i] = message[i] ^ state[p];
+      }
+      if (p == 64) {
+        _process(state32, key32, iv32);
+        ++iv32[0];
+        if (iv32[0] == 0 && _counterBytes == 8) {
+          ++iv32[1];
+        }
+        p = 0;
+      }
+    }
+
+    return result;
   }
 
   @pragma('vm:prefer-inline')

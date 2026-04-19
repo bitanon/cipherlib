@@ -2,18 +2,17 @@
 // All rights reserved. Check LICENSE file for details.
 
 import "dart:io";
-import 'dart:math';
 
+import '_base.dart';
 import 'aes_cbc.dart' as aes_cbc;
-import 'aes_pcbc.dart' as aes_pcbc;
-import 'aes_ecb.dart' as aes_ecb;
 import 'aes_cfb.dart' as aes_cfb;
 import 'aes_ctr.dart' as aes_ctr;
+import 'aes_ecb.dart' as aes_ecb;
 import 'aes_gcm.dart' as aes_gcm;
-import 'aes_ofb.dart' as aes_ofb;
 import 'aes_ige.dart' as aes_ige;
+import 'aes_ofb.dart' as aes_ofb;
+import 'aes_pcbc.dart' as aes_pcbc;
 import 'aes_xts.dart' as aes_xts;
-import 'base.dart';
 import 'chacha20.dart' as chacha20;
 import 'chacha20_poly1305.dart' as chacha20poly1305;
 import 'salsa20.dart' as salsa20;
@@ -22,6 +21,12 @@ import 'xor.dart' as xor;
 
 IOSink sink = stdout;
 RandomAccessFile? raf;
+
+const conditions = [
+  [1 << 20, 10],
+  [5 << 10, 5000],
+  [16, 100000],
+];
 
 void dump(String message) {
   raf?.writeStringSync('$message\n');
@@ -32,15 +37,9 @@ void dump(String message) {
 // Symmetric Cipher benchmarks
 // ---------------------------------------------------------------------
 Future<void> measureSymmetricCiphers() async {
-  final conditions = [
-    [1 << 20, 10],
-    [5 << 10, 5000],
-    [16, 100000],
-  ];
   for (var condition in conditions) {
     var size = condition[0];
     var iter = condition[1];
-
     var algorithms = {
       "XOR": [
         xor.CipherlibBenchmark(size, iter),
@@ -51,8 +50,8 @@ Future<void> measureSymmetricCiphers() async {
       ],
       "ChaCha20/Poly1305": [
         chacha20poly1305.CipherlibBenchmark(size, iter),
-        chacha20poly1305.CryptographyBenchmark(size, iter),
         chacha20poly1305.PointyCastleBenchmark(size, iter),
+        chacha20poly1305.CryptographyBenchmark(size, iter),
       ],
       "Salsa20": [
         salsa20.CipherlibBenchmark(size, iter),
@@ -191,46 +190,39 @@ Future<void> measureSymmetricCiphers() async {
     dump('|------------|${separator.join('|')}|');
 
     for (var entry in algorithms.entries) {
+      var best = 0.0;
       var diff = <String, double>{};
-      var rate = <String, String>{};
       for (var benchmark in entry.value.reversed) {
-        double runtime;
-        if (benchmark is AsyncBenchmark) {
-          runtime = await benchmark.measure();
-        } else if (benchmark is Benchmark) {
-          runtime = benchmark.measure();
-        } else {
-          continue;
+        var runtime = await measure(benchmark);
+        var speed = 1e6 * iter * size / runtime;
+        diff[benchmark.name] = speed;
+        if (speed > best) {
+          best = speed;
         }
-        var hashRate = 1e6 * iter * size / runtime;
-        diff[benchmark.name] = runtime;
-        rate[benchmark.name] = formatSpeed(hashRate);
       }
-      if (rate.isEmpty) continue;
-
-      var me = entry.value.first;
-      var mine = diff[me.name]!;
-      var best = diff.values.fold(mine, min);
+      if (diff.isEmpty) continue;
+      var mine = diff.values.last;
 
       var message = '| ${entry.key}     ';
       for (var name in names) {
         message += " | ";
         if (!diff.containsKey(name)) {
-          // message += "    \u2796    ";
           continue;
         }
-        var value = diff[name]!;
-        if (value == best) {
-          message += '**${rate[name]}**';
+
+        var speed = diff[name]!;
+        if (speed == best) {
+          message += '**${formatSpeed(speed)}**';
         } else {
-          message += '${rate[name]}';
+          message += formatSpeed(speed);
         }
-        if (mine < value) {
-          var p = formatDecimal(value / mine);
-          message += ' <br> `${p}x slow`';
-        } else if (mine > value) {
-          var p = formatDecimal(mine / value);
+
+        if (mine < speed) {
+          var p = formatDecimal(speed / mine);
           message += ' <br> `${p}x fast`';
+        } else if (mine > speed) {
+          var p = formatDecimal(mine / speed);
+          message += ' <br> `${p}x slow`';
         }
       }
       message += " |";

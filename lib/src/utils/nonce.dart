@@ -3,80 +3,41 @@
 
 import 'dart:typed_data';
 
-import 'package:hashlib/codecs.dart' show fromHex;
+import 'package:hashlib/codecs.dart' show ByteCollector, fromHex;
 import 'package:hashlib/random.dart' show randomBytes;
 
+@pragma('vm:prefer-inline')
 Uint8List _copyBytes(int size, List<int> data) {
-  int n = data.length;
-  if (n == size) {
-    if (data is Uint8List) {
-      return data;
-    }
-    return Uint8List.fromList(data);
+  final result = Uint8List(size);
+  if (data.length < size) {
+    size = data.length;
   }
-  if (n > size) {
-    n = size;
+  for (int i = 0; i < size; i++) {
+    result[i] = data[i];
   }
-  var bytes = Uint8List(size);
-  for (int i = 0; i < n; i++) {
-    bytes[i] = data[i];
-  }
-  return bytes;
+  return result;
 }
 
+@pragma('vm:prefer-inline')
 Uint8List _reverseBytes(List<int> data) {
-  int n = data.length;
-  var bytes = Uint8List(n);
-  for (int i = 0, j = n - 1; i < n; i++, j--) {
-    bytes[i] = data[j];
+  int size = data.length;
+  final result = Uint8List(size);
+  for (int i = 0; i < size; i++) {
+    result[i] = data[size - i - 1];
   }
-  return bytes;
+  return result;
 }
 
-abstract class _NonceBase {
+abstract class _NonceBase extends ByteCollector {
   const _NonceBase();
-
-  /// The list of bytes representing this Nonce
-  Uint8List get bytes;
 
   /// Gets a nonce with reverse order of the underlying bytes
   _NonceBase reverse();
-
-  @override
-  int get hashCode => Object.hashAll(bytes);
-
-  @override
-  bool operator ==(other) {
-    if (other is! Nonce) {
-      return false;
-    }
-    if (identical(other.bytes, bytes)) {
-      return true;
-    }
-    if (other.bytes.length != bytes.length) {
-      return false;
-    }
-    for (int i = 0; i < bytes.length; ++i) {
-      if (other.bytes[i] != bytes[i]) {
-        return false;
-      }
-    }
-    return true;
-  }
 }
 
 /// Random initialization vector builder.
 class Nonce extends _NonceBase {
-  @override
-  final Uint8List bytes;
-
   const Nonce._(this.bytes);
-
-  /// Get the size of this nonce
-  int get size => bytes.length;
-
-  /// Get the size of this nonce in bits
-  int get sizeInBits => bytes.length << 3;
 
   /// Create a nonce with zeros
   factory Nonce.zero(int size) => Nonce._(Uint8List(size));
@@ -88,33 +49,41 @@ class Nonce extends _NonceBase {
   factory Nonce.bytes(List<int> data, [int? size]) =>
       Nonce._(_copyBytes(size ?? data.length, data));
 
+  /// Create a nonce from a list of bytes
+  factory Nonce(List<int> data, [int? size]) => Nonce.bytes(data, size);
+
   /// Create a nonce from a Base-16 encoded string
   factory Nonce.hex(String data, [int? size]) =>
       Nonce.bytes(fromHex(data), size);
 
   @override
+  final Uint8List bytes;
+
+  /// Get the size of this nonce in bits
+  int get lengthInBits => bytes.length << 3;
+
+  @override
   Nonce reverse() => Nonce._(_reverseBytes(bytes));
 
-  /// Adds [padLength] bytes at the start filled with zeros, and returns a new
-  /// [Nonce].
+  /// Adds [padLength] bytes at the start filled with zeros.
   Nonce padLeft(int padLength) {
-    int i;
-    var result = Uint8List(size + padLength);
-    for (i = 0; i < size; i++) {
-      result[i + padLength] = bytes[i];
-    }
-    return Nonce.bytes(result);
+    final result = Uint8List(length + padLength);
+    result.setRange(padLength, length + padLength, bytes);
+    return Nonce._(result);
   }
 
-  /// Adds [padLength] bytes at the end filled with zeros, and returns a new
-  /// [Nonce].
+  /// Adds [padLength] bytes at the end filled with zeros.
   Nonce padRight(int padLength) {
-    int i;
-    var result = Uint8List(size + padLength);
-    for (i = 0; i < size; i++) {
-      result[i] = bytes[i];
-    }
-    return Nonce.bytes(result);
+    final result = Uint8List(length + padLength);
+    result.setRange(0, length, bytes);
+    return Nonce._(result);
+  }
+
+  /// Adds [padLength] bytes at the start and end filled with zeros.
+  Nonce pad(int padLength) {
+    final result = Uint8List(length + padLength + padLength);
+    result.setRange(padLength, length + padLength, bytes);
+    return Nonce._(result);
   }
 }
 
@@ -130,6 +99,9 @@ class Nonce64 extends Nonce {
 
   /// Create a 64-bit nonce from a list of bytes
   factory Nonce64.bytes(List<int> data) => Nonce64._(_copyBytes(8, data));
+
+  /// Create a 64-bit nonce from a list of bytes
+  factory Nonce64(List<int> data) => Nonce64.bytes(data);
 
   /// Create a 64-bit nonce from a Base-16 string sequence
   factory Nonce64.hex(String data) => Nonce64.bytes(fromHex(data));
@@ -193,6 +165,9 @@ class Nonce128 extends Nonce {
 
   /// Create a 128-bit nonce from a list of bytes
   factory Nonce128.bytes(List<int> data) => Nonce128._(_copyBytes(16, data));
+
+  /// Create a 128-bit nonce from a list of bytes
+  factory Nonce128(List<int> data) => Nonce128.bytes(data);
 
   /// Create a 128-bit nonce from a Base-16 string sequence
   factory Nonce128.hex(String data) => Nonce128.bytes(fromHex(data));

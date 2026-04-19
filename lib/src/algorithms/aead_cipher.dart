@@ -59,8 +59,40 @@ class AEADCipher<C extends Cipher, M extends MACHashBase> implements Cipher {
     this.aad,
   ]);
 
+  /// Signs the [message] with an authentication tag.
+  AEADResult sign(List<int> message) {
+    final output = cipher.convert(message);
+    return AEADResult._(output, $mac(output));
+  }
+
+  /// Returns true if input [message] can be verified by the given message
+  /// authentication code [mac].
+  @pragma('vm:prefer-inline')
+  bool verify(List<int> message, List<int> mac) {
+    return $mac(message).isEqual(mac);
+  }
+
+  @override
+  @pragma('vm:prefer-inline')
+  Uint8List convert(List<int> message) => cipher.convert(message);
+
+  @override
+  @pragma('vm:prefer-inline')
+  Stream<Uint8List> bind(Stream<List<int>> stream) =>
+      stream.map(cipher.convert);
+
+  @override
+  @pragma('vm:prefer-inline')
+  Stream<int> stream(Stream<int> stream, [int chunkSize = 1024]) =>
+      cipher.stream(stream, chunkSize);
+
+  @override
+  StreamTransformer<RS, RT> cast<RS, RT>() {
+    throw UnsupportedError('AEADCipher does not allow casting');
+  }
+
   /// Generates a message authentication code for the [data].
-  HashDigest generateMAC(List<int> data) {
+  HashDigest $mac(List<int> data) {
     int aadLength = 0;
     int dataLength = data.length;
     final sink = algo.createSink();
@@ -99,37 +131,5 @@ class AEADCipher<C extends Cipher, M extends MACHashBase> implements Cipher {
 
     sink.close();
     return sink.digest();
-  }
-
-  /// Signs the [message] with an authentication tag.
-  AEADResult sign(List<int> message) {
-    final output = cipher.convert(message);
-    return AEADResult._(output, generateMAC(output));
-  }
-
-  /// Returns true if input [message] can be verified by the given message
-  /// authentication code [mac].
-  @pragma('vm:prefer-inline')
-  bool verify(List<int> message, List<int> mac) {
-    return generateMAC(message).isEqual(mac);
-  }
-
-  @override
-  @pragma('vm:prefer-inline')
-  Uint8List convert(List<int> message) => cipher.convert(message);
-
-  @override
-  @pragma('vm:prefer-inline')
-  Stream<Uint8List> bind(Stream<List<int>> stream) =>
-      stream.map(cipher.convert);
-
-  @override
-  @pragma('vm:prefer-inline')
-  Stream<int> stream(Stream<int> stream, [int chunkSize = 1024]) =>
-      cipher.stream(stream, chunkSize);
-
-  @override
-  StreamTransformer<RS, RT> cast<RS, RT>() {
-    throw UnsupportedError('AEADCipher does not allow casting');
   }
 }

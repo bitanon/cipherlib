@@ -7,11 +7,11 @@ import 'dart:typed_data';
 import 'package:cipherlib/cipherlib.dart';
 import 'package:pointycastle/pointycastle.dart' as pc;
 
-import 'base.dart';
+import '_base.dart';
 
 Random random = Random();
 
-class CipherlibBenchmark extends Benchmark {
+class CipherlibBenchmark extends InputBenchmark {
   final Uint8List key;
 
   CipherlibBenchmark(int size, int iter, int keySize)
@@ -24,7 +24,7 @@ class CipherlibBenchmark extends Benchmark {
   }
 }
 
-class PointyCastleBenchmark extends Benchmark {
+class PointyCastleBenchmark extends InputBenchmark {
   final Uint8List key;
 
   PointyCastleBenchmark(int size, int iter, int keySize)

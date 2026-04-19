@@ -10,11 +10,11 @@ import 'package:cryptography/src/dart/aes_impl.dart';
 import 'package:pointycastle/block/aes.dart' as aes;
 import 'package:pointycastle/pointycastle.dart' as pc;
 
-import 'base.dart';
+import '_base.dart';
 
 Random random = Random();
 
-class CipherlibBenchmark extends Benchmark {
+class CipherlibBenchmark extends InputBenchmark {
   late final Uint8List key = Uint8List.fromList(input);
 
   CipherlibBenchmark(int size, int iter) : super('cipherlib', size, iter);
@@ -25,7 +25,7 @@ class CipherlibBenchmark extends Benchmark {
   }
 }
 
-class PointyCastleBenchmark extends Benchmark {
+class PointyCastleBenchmark extends InputBenchmark {
   late final Uint8List key = Uint8List.fromList(input);
 
   PointyCastleBenchmark(int size, int iter) : super('PointyCastle', size, iter);
@@ -37,7 +37,7 @@ class PointyCastleBenchmark extends Benchmark {
   }
 }
 
-class CryptographyBenchmark extends Benchmark {
+class CryptographyBenchmark extends InputBenchmark {
   late final Uint8List key = Uint8List.fromList(input);
 
   CryptographyBenchmark(int size, int iter) : super('cryptography', size, iter);

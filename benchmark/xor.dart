@@ -7,11 +7,11 @@ import 'dart:typed_data';
 
 import 'package:cipherlib/src/xor.dart' as cipher;
 
-import 'base.dart';
+import '_base.dart';
 
 Random random = Random();
 
-class CipherlibBenchmark extends Benchmark {
+class CipherlibBenchmark extends InputBenchmark {
   final Uint8List key;
 
   CipherlibBenchmark(int size, int iter)
@@ -24,7 +24,7 @@ class CipherlibBenchmark extends Benchmark {
   }
 }
 
-class CipherlibStreamBenchmark extends AsyncBenchmark {
+class CipherlibStreamBenchmark extends AsyncInputBenchmark {
   final Uint8List key;
 
   CipherlibStreamBenchmark(int size, int iter)
@@ -48,7 +48,7 @@ void main() async {
     int size = condition[0];
     int iter = condition[1];
     print('---- message: ${formatSize(size)} | iterations: $iter ----');
-    CipherlibBenchmark(size, iter).measureRate();
+    await CipherlibBenchmark(size, iter).measureRate();
     print('---- stream: ${formatSize(size)} | iterations: $iter ----');
     await CipherlibStreamBenchmark(size, iter).measureRate();
     print('');
