@@ -5,7 +5,7 @@ import 'package:test/test.dart';
 import 'package:cipherlib/cipherlib.dart';
 
 void main() {
-  group('AES Tests', () {
+  group('correctness', () {
     // Sample key (32 bytes for AES-256)
     final key = List<int>.generate(32, (i) => i);
 

@@ -9,7 +9,7 @@ import 'package:test/test.dart';
 import 'utils.dart';
 
 void main() {
-  group('Functionality test', () {
+  group('validation', () {
     test('name', () {
       expect(XSalsa20Poly1305(Uint8List(32)).name, "XSalsa20/Poly1305");
     });
@@ -65,49 +65,51 @@ void main() {
       var x = XSalsa20Poly1305(Uint8List(32));
       var iv = [...x.iv];
       var key1 = [...x.cipher.key];
-      var key2 = [...x.this.mac.keypair];
+      var key2 = [...x.algo.keypair];
       var tag1 = x.sign(const [1, 2, 3, 4]).mac.bytes;
       var activeIV = [...x.cipher.activeIV];
       x.resetIV();
       expect(iv, isNot(equals(x.iv)));
       expect(key1, isNot(equals(x.cipher.key)));
-      expect(key2, isNot(equals(x.this.mac.keypair)));
+      expect(key2, isNot(equals(x.algo.keypair)));
       expect(activeIV, isNot(equals(x.cipher.activeIV)));
       var tag2 = x.sign(const [1, 2, 3, 4]).mac.bytes;
       expect(tag1, isNot(equals(tag2)));
     });
   });
 
-  test('sign and verify', () {
-    for (int i = 1; i < 100; ++i) {
-      final key = randomBytes(32);
-      final iv = randomBytes(24);
-      final aad = randomBytes(key[0]);
-      final message = randomBytes(i);
-      final res = xsalsa20poly1305(
-        message,
-        key,
-        nonce: iv,
-        aad: aad,
-      );
-      final verify = xsalsa20poly1305(
-        res.data,
-        key,
-        nonce: iv,
-        aad: aad,
-        mac: res.mac.bytes,
-      );
-      expect(verify.data, equals(message));
-      expect(res.mac.hex(), isNot(equals(verify.mac.hex())));
-      expect(
-          () => xsalsa20poly1305(
-                res.data,
-                key,
-                nonce: iv,
-                aad: aad,
-                mac: verify.mac.bytes,
-              ),
-          throwsA(isA<AssertionError>()));
-    }
+  group('correctness', () {
+    test('sign and verify', () {
+      for (int i = 1; i < 100; ++i) {
+        final key = randomBytes(32);
+        final iv = randomBytes(24);
+        final aad = randomBytes(key[0]);
+        final message = randomBytes(i);
+        final res = xsalsa20poly1305(
+          message,
+          key,
+          nonce: iv,
+          aad: aad,
+        );
+        final verify = xsalsa20poly1305(
+          res.data,
+          key,
+          nonce: iv,
+          aad: aad,
+          mac: res.mac.bytes,
+        );
+        expect(verify.data, equals(message));
+        expect(res.mac.hex(), isNot(equals(verify.mac.hex())));
+        expect(
+            () => xsalsa20poly1305(
+                  res.data,
+                  key,
+                  nonce: iv,
+                  aad: aad,
+                  mac: verify.mac.bytes,
+                ),
+            throwsA(isA<AssertionError>()));
+      }
+    });
   });
 }

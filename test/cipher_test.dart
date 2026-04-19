@@ -21,7 +21,8 @@ class TestCipher extends Cipher {
   String get name => 'TestCipher';
 
   @override
-  CipherSink createSink() => MockCipherSink();
+  Uint8List convert(List<int> message) =>
+      Uint8List.fromList(message.map((e) => e + 1).toList());
 }
 
 // Concrete implementation of SaltedCipher for testing
@@ -35,7 +36,8 @@ class TestSaltedCipher extends Cipher with SaltedCipher {
   const TestSaltedCipher(this.iv);
 
   @override
-  CipherSink createSink() => MockCipherSink();
+  Uint8List convert(List<int> message) =>
+      Uint8List.fromList(message.map((e) => e + 1).toList());
 }
 
 // Concrete implementation of SaltedCipher for testing
@@ -50,18 +52,8 @@ class TestCollateCipher extends CollateCipher {
   String get name => 'TestCollateCipher';
 }
 
-// Mock implementation of CipherSink for testing
-class MockCipherSink extends CipherSink {
-  @override
-  Uint8List $add(List<int> data, int start, int end) {
-    return Uint8List.fromList(
-      data.sublist(start, end).map((e) => e + 1).toList(),
-    );
-  }
-}
-
 void main() {
-  group('CipherBase Tests', () {
+  group('validation', () {
     test('name should return the correct algorithm name', () {
       final cipher = TestCipherBase();
       expect(cipher.name, equals('TestCipherBase'));
@@ -77,167 +69,134 @@ void main() {
     });
   });
 
-  group('StreamCipherBase Tests', () {
-    // Test the bind method for StreamCipherBase
-    test('bind transforms stream correctly', () async {
-      final cipher = TestCipher();
-      final input = [
-        [1, 2, 3],
-        [4, 5, 6],
-      ];
-      final expected = input.map((e) => e.map((e) => e + 1).toList()).toList();
-      final inputStream = Stream.fromIterable(input);
-      final resultStream = cipher.bind(inputStream);
-      final result = await resultStream.toList();
-      expect(result, equals(expected));
+  group('correctness', () {
+    group('StreamCipherBase', () {
+      test('bind transforms stream correctly', () async {
+        final cipher = TestCipher();
+        final input = [
+          [1, 2, 3],
+          [4, 5, 6],
+        ];
+        final expected =
+            input.map((e) => e.map((e) => e + 1).toList()).toList();
+        final inputStream = Stream.fromIterable(input);
+        final resultStream = cipher.bind(inputStream);
+        final result = await resultStream.toList();
+        expect(result, equals(expected));
+      });
+
+      test('cast method should cast StreamTransformer correctly', () {
+        final cipher = TestCipher();
+        expect(() => cipher.cast<String, String>(), throwsUnsupportedError);
+      });
     });
 
-    // Test the stream method for StreamCipherBase
-    test('stream transforms stream of integers correctly', () async {
-      final cipher = TestCipher();
-      final inputStream = Stream.fromIterable([1, 2, 3, 4, 5, 6]);
-      final resultStream = cipher.stream(inputStream);
-      final result = await resultStream.toList();
-      expect(result, Uint8List.fromList([2, 3, 4, 5, 6, 7]));
+    group('Cipher Tests', () {
+      test('convert transforms message correctly', () {
+        final cipher = TestCipher();
+        expect(cipher.name, 'TestCipher');
+        final message = [1, 2, 3, 4, 5, 6];
+        final result = cipher.convert(message);
+        expect(result, Uint8List.fromList([2, 3, 4, 5, 6, 7]));
+      });
+
+      test('bind with empty stream yields no output', () async {
+        final cipher = TestCipher();
+        final inputStream = Stream<List<int>>.empty();
+        final resultStream = cipher.bind(inputStream);
+        final result = await resultStream.toList();
+        expect(result, []);
+      });
+
+      test('stream with empty stream returns empty list', () async {
+        final cipher = TestCipher();
+        final inputStream = Stream<int>.empty();
+        final resultStream = cipher.stream(inputStream);
+        final result = await resultStream.toList();
+        expect(result, []);
+      });
+
+      test('stream transforms stream of integers correctly', () async {
+        final cipher = TestCipher();
+        final input = List.generate(2500, (index) => index % 256);
+        final outout = List.generate(2500, (index) => (index + 1) % 256);
+        final inputStream = Stream.fromIterable(input);
+        final resultStream = cipher.stream(inputStream);
+        final result = await resultStream.toList();
+        expect(result, equals(outout));
+      });
     });
 
-    test('cast method should cast StreamTransformer correctly', () {
-      final cipher = TestCipher();
-      expect(() => cipher.cast<String, String>(), throwsUnsupportedError);
-    });
-  });
-
-  group('CipherSink.add range checks', () {
-    test('throws when start is negative', () {
-      final sink = MockCipherSink();
-      expect(
-        () => sink.add([1, 2, 3], false, -1),
-        throwsA(isA<RangeError>()),
-      );
+    group('SaltedCipher Tests', () {
+      test('resetIV replaces the IV with a new one', () {
+        var iv = Uint8List(16);
+        final cipher = TestSaltedCipher(iv);
+        expect(cipher.name, 'TestSaltedCipher');
+        expect(cipher.iv, iv);
+        cipher.resetIV();
+        expect(cipher.iv, iv);
+        expect(cipher.iv, isNot(Uint8List(16)));
+      });
     });
 
-    test('throws when end exceeds data length', () {
-      final sink = MockCipherSink();
-      expect(
-        () => sink.add([1, 2, 3], false, 0, 10),
-        throwsA(isA<RangeError>()),
-      );
-    });
+    group('CollateCipher Tests', () {
+      final cipher = TestCollateCipher();
 
-    test('throws when start is greater than end', () {
-      final sink = MockCipherSink();
-      expect(
-        () => sink.add([1, 2, 3], false, 2, 1),
-        throwsA(isA<ArgumentError>()),
-      );
-    });
-  });
+      test('name is correct', () {
+        expect(cipher.name, 'TestCollateCipher');
+      });
 
-  group('Cipher Tests', () {
-    test('convert transforms message correctly', () {
-      final cipher = TestCipher();
-      expect(cipher.name, 'TestCipher');
-      final message = [1, 2, 3, 4, 5, 6];
-      final result = cipher.convert(message);
-      expect(result, Uint8List.fromList([2, 3, 4, 5, 6, 7]));
-    });
+      test('encrypt method should encrypt data correctly', () {
+        final message = [1, 2, 3];
+        final encrypted = cipher.encrypt(message);
+        expect(encrypted, [2, 3, 4]);
+      });
 
-    test('bind with empty stream returns empty Uint8List', () async {
-      final cipher = TestCipher();
-      final inputStream = Stream<List<int>>.empty();
-      final resultStream = cipher.bind(inputStream);
-      final result = await resultStream.toList();
-      expect(result, [Uint8List(0)]);
-    });
+      test('decrypt method should decrypt data correctly', () {
+        final message = [2, 3, 4];
+        final decrypted = cipher.decrypt(message);
+        expect(decrypted, [3, 4, 5]);
+      });
 
-    test('stream with empty stream returns empty list', () async {
-      final cipher = TestCipher();
-      final inputStream = Stream<int>.empty();
-      final resultStream = cipher.stream(inputStream);
-      final result = await resultStream.toList();
-      expect(result, []);
-    });
+      test('encryptStream method should encrypt stream correctly', () async {
+        final stream = Stream.fromIterable([1, 2, 3]);
+        final encryptedStream = cipher.encryptor.stream(stream);
+        final encrypted = await encryptedStream.toList();
+        expect(encrypted, [2, 3, 4]);
+      });
 
-    test('stream transforms stream of integers correctly', () async {
-      final cipher = TestCipher();
-      final input = List.generate(2500, (index) => index % 256);
-      final outout = List.generate(2500, (index) => (index + 1) % 256);
-      final inputStream = Stream.fromIterable(input);
-      final resultStream = cipher.stream(inputStream);
-      final result = await resultStream.toList();
-      expect(result, equals(outout));
-    });
-  });
+      test('decryptStream method should decrypt stream correctly', () async {
+        final stream = Stream.fromIterable([2, 3, 4]);
+        final decryptedStream = cipher.decryptor.stream(stream);
+        final decrypted = await decryptedStream.toList();
+        expect(decrypted, [3, 4, 5]);
+      });
 
-  group('SaltedCipher Tests', () {
-    test('resetIV replaces the IV with a new one', () {
-      var iv = Uint8List(16);
-      final cipher = TestSaltedCipher(iv);
-      expect(cipher.name, 'TestSaltedCipher');
-      expect(cipher.iv, iv);
-      cipher.resetIV();
-      expect(cipher.iv, iv);
-      expect(cipher.iv, isNot(Uint8List(16)));
-    });
-  });
+      test('encryptString method should encrypt string correctly', () {
+        final message = 'abc';
+        final encrypted = cipher.encryptString(message);
+        expect(encrypted, [98, 99, 100]); // 'bcd'
+      });
 
-  group('CollateCipher Tests', () {
-    final cipher = TestCollateCipher();
+      test('decryptString method should decrypt string correctly', () {
+        final message = 'abc';
+        final decrypted = cipher.decryptString(message);
+        expect(decrypted, [98, 99, 100]); // 'bcd'
+      });
 
-    test('name is correct', () {
-      expect(cipher.name, 'TestCollateCipher');
-    });
+      test('encryptString method with encoding should encrypt string correctly',
+          () {
+        final message = 'abc';
+        final encrypted = cipher.encryptString(message, utf8);
+        expect(encrypted, [98, 99, 100]); // 'bcd'
+      });
 
-    test('encrypt method should encrypt data correctly', () {
-      final message = [1, 2, 3];
-      final encrypted = cipher.encrypt(message);
-      expect(encrypted, [2, 3, 4]);
-    });
-
-    test('decrypt method should decrypt data correctly', () {
-      final message = [2, 3, 4];
-      final decrypted = cipher.decrypt(message);
-      expect(decrypted, [3, 4, 5]);
-    });
-
-    test('encryptStream method should encrypt stream correctly', () async {
-      final stream = Stream.fromIterable([1, 2, 3]);
-      final encryptedStream = cipher.encryptStream(stream);
-      final encrypted = await encryptedStream.toList();
-      expect(encrypted, [2, 3, 4]);
-    });
-
-    test('decryptStream method should decrypt stream correctly', () async {
-      final stream = Stream.fromIterable([2, 3, 4]);
-      final decryptedStream = cipher.decryptStream(stream);
-      final decrypted = await decryptedStream.toList();
-      expect(decrypted, [3, 4, 5]);
-    });
-
-    test('encryptString method should encrypt string correctly', () {
-      final message = 'abc';
-      final encrypted = cipher.encryptString(message);
-      expect(encrypted, [98, 99, 100]); // 'bcd'
-    });
-
-    test('decryptString method should decrypt string correctly', () {
-      final message = 'abc';
-      final decrypted = cipher.decryptString(message);
-      expect(decrypted, [98, 99, 100]); // 'bcd'
-    });
-
-    test('encryptString method with encoding should encrypt string correctly',
-        () {
-      final message = 'abc';
-      final encrypted = cipher.encryptString(message, utf8);
-      expect(encrypted, [98, 99, 100]); // 'bcd'
-    });
-
-    test('decryptString method with encoding should decrypt string correctly',
-        () {
-      final message = 'abc';
-      final decrypted = cipher.decryptString(message, utf8);
-      expect(decrypted, [98, 99, 100]); // 'bcd'
+      test('decryptString method with encoding should decrypt string correctly',
+          () {
+        final message = 'abc';
+        final decrypted = cipher.decryptString(message, utf8);
+        expect(decrypted, [98, 99, 100]); // 'bcd'
+      });
     });
   });
 }

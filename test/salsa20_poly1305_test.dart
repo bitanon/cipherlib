@@ -9,7 +9,7 @@ import 'package:test/test.dart';
 import 'utils.dart';
 
 void main() {
-  group('Functionality test', () {
+  group('validation', () {
     test('name', () {
       expect(Salsa20Poly1305(Uint8List(32)).name, "Salsa20/Poly1305");
     });
@@ -65,71 +65,64 @@ void main() {
       var x = Salsa20Poly1305(Uint8List(32));
       var iv = [...x.iv];
       var key1 = [...x.cipher.key];
-      var key2 = [...x.this.mac.keypair];
+      var key2 = [...x.algo.keypair];
       var tag1 = x.sign(const [1, 2, 3, 4]).mac.bytes;
       x.resetIV();
       expect(iv, isNot(equals(x.iv)));
       expect(key1, equals(x.cipher.key));
-      expect(key2, isNot(equals(x.this.mac.keypair)));
+      expect(key2, isNot(equals(x.algo.keypair)));
       var tag2 = x.sign(const [1, 2, 3, 4]).mac.bytes;
       expect(tag1, isNot(equals(tag2)));
     });
   });
 
-  test('encryption <-> decryption (convert)', () {
-    var key = randomNumbers(32);
-    var nonce = randomBytes(16);
-    for (int j = 0; j < 100; ++j) {
-      var text = randomBytes(j);
-      var res = Salsa20Poly1305(key, nonce: nonce).convert(text);
-      var verified = Salsa20Poly1305(key, nonce: nonce).convert(res);
-      expect(verified, equals(text), reason: '[text size: $j]');
-    }
+  group('correctness', () {
+    test('encryption <-> decryption (convert)', () {
+      var key = randomNumbers(32);
+      var nonce = randomBytes(16);
+      for (int j = 0; j < 100; ++j) {
+        var text = randomBytes(j);
+        var res = Salsa20Poly1305(key, nonce: nonce).convert(text);
+        var verified = Salsa20Poly1305(key, nonce: nonce).convert(res);
+        expect(verified, equals(text), reason: '[text size: $j]');
+      }
+    });
+
+    test('sign and verify', () {
+      for (int i = 0; i < 100; ++i) {
+        final key = randomBytes(32);
+        final iv = randomBytes(16);
+        final aad = randomBytes(key[0]);
+        final message = randomBytes(i);
+        final instance = Salsa20Poly1305(key, nonce: iv, aad: aad);
+        final res = instance.sign(message);
+        expect(instance.verify(res.data, res.mac.bytes), isTrue);
+      }
+    });
   });
 
-  test('sign and verify', () {
-    for (int i = 0; i < 100; ++i) {
-      final key = randomBytes(32);
-      final iv = randomBytes(16);
-      final aad = randomBytes(key[0]);
-      final message = randomBytes(i);
-      final instance = Salsa20Poly1305(key, nonce: iv, aad: aad);
-      final res = instance.sign(message);
-      expect(instance.verify(res.data, res.mac.bytes), isTrue);
-    }
-  });
-
-  test('reset iv', () {
-    var x = Salsa20Poly1305(Uint8List(32));
-    var iv = [...x.iv];
-    var key1 = [...x.cipher.key];
-    var key2 = [...x.this.mac.keypair];
-    x.resetIV();
-    expect(iv, isNot(equals(x.iv)));
-    expect(key1, equals(x.cipher.key));
-    expect(key2, isNot(equals(x.this.mac.keypair)));
-  });
-
-  test('decrypt with invalid mac', () {
-    var key = Uint8List(32);
-    var nonce = Uint8List(16);
-    var sample = Uint8List(150);
-    var aad = Uint8List(16);
-    var res = salsa20poly1305(
-      sample,
-      key,
-      nonce: nonce,
-      aad: aad,
-    );
-    expect(
-      () => salsa20poly1305(
-        res.data,
+  group('critical inputs', () {
+    test('decrypt with invalid mac', () {
+      var key = Uint8List(32);
+      var nonce = Uint8List(16);
+      var sample = Uint8List(150);
+      var aad = Uint8List(16);
+      var res = salsa20poly1305(
+        sample,
         key,
-        mac: Uint8List(16),
         nonce: nonce,
         aad: aad,
-      ),
-      throwsA((e) => e is AssertionError),
-    );
+      );
+      expect(
+        () => salsa20poly1305(
+          res.data,
+          key,
+          mac: Uint8List(16),
+          nonce: nonce,
+          aad: aad,
+        ),
+        throwsA((e) => e is AssertionError),
+      );
+    });
   });
 }
