@@ -14,9 +14,9 @@ Random random = Random();
 class CipherlibBenchmark extends InputBenchmark {
   final Uint8List key;
 
-  CipherlibBenchmark(int size, int iter)
+  CipherlibBenchmark(int size)
       : key = Uint8List.fromList(List.filled(100, 0x9f)),
-        super('cipherlib', size, iter);
+        super('cipherlib', size);
 
   @override
   void run() {
@@ -27,9 +27,9 @@ class CipherlibBenchmark extends InputBenchmark {
 class CipherlibStreamBenchmark extends AsyncInputBenchmark {
   final Uint8List key;
 
-  CipherlibStreamBenchmark(int size, int iter)
+  CipherlibStreamBenchmark(int size)
       : key = Uint8List.fromList(List.filled(100, 0x9f)),
-        super('cipherlib', size, iter);
+        super('cipherlib', size);
 
   @override
   Future<void> run() async {
@@ -39,18 +39,10 @@ class CipherlibStreamBenchmark extends AsyncInputBenchmark {
 
 void main() async {
   print('--------- XOR ----------');
-  final conditions = [
-    [1 << 20, 10],
-    [5 << 10, 5000],
-    [16, 100000],
-  ];
-  for (var condition in conditions) {
-    int size = condition[0];
-    int iter = condition[1];
-    print('---- message: ${formatSize(size)} | iterations: $iter ----');
-    await CipherlibBenchmark(size, iter).measureRate();
-    print('---- stream: ${formatSize(size)} | iterations: $iter ----');
-    await CipherlibStreamBenchmark(size, iter).measureRate();
+  for (var size in [1 << 20, 1 << 10, 1 << 3]) {
+    print('---- message: ${formatSize(size)} ----');
+    await CipherlibBenchmark(size).measureRate();
+    await CipherlibStreamBenchmark(size).measureRate();
     print('');
   }
 }

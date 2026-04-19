@@ -11,8 +11,7 @@ void measureNonce(void Function(String) emit) {}
 class NonceRandomBenchmark extends InputBenchmark {
   final int byteLength;
 
-  NonceRandomBenchmark(this.byteLength, int iter)
-      : super('Nonce.random($byteLength)', 1, iter);
+  NonceRandomBenchmark(this.byteLength) : super('Nonce.random($byteLength)', 1);
 
   @override
   void run() {
@@ -21,7 +20,7 @@ class NonceRandomBenchmark extends InputBenchmark {
 }
 
 class Nonce64RandomBenchmark extends InputBenchmark {
-  Nonce64RandomBenchmark(int iter) : super('Nonce64.random()', 1, iter);
+  Nonce64RandomBenchmark() : super('Nonce64.random()', 1);
 
   @override
   void run() {
@@ -30,7 +29,7 @@ class Nonce64RandomBenchmark extends InputBenchmark {
 }
 
 class Nonce128RandomBenchmark extends InputBenchmark {
-  Nonce128RandomBenchmark(int iter) : super('Nonce128.random()', 1, iter);
+  Nonce128RandomBenchmark() : super('Nonce128.random()', 1);
 
   @override
   void run() {
@@ -41,7 +40,7 @@ class Nonce128RandomBenchmark extends InputBenchmark {
 class Nonce128HexBenchmark extends InputBenchmark {
   static const _hex = '0102030405060708090a0b0c0d0e0f10';
 
-  Nonce128HexBenchmark(int iter) : super('Nonce128.hex', 1, iter);
+  Nonce128HexBenchmark() : super('Nonce128.hex', 1);
 
   @override
   void run() {
@@ -50,7 +49,7 @@ class Nonce128HexBenchmark extends InputBenchmark {
 }
 
 class Nonce64Int64Benchmark extends InputBenchmark {
-  Nonce64Int64Benchmark(int iter) : super('Nonce64.int64', 1, iter);
+  Nonce64Int64Benchmark() : super('Nonce64.int64', 1);
 
   @override
   void run() {
@@ -59,7 +58,7 @@ class Nonce64Int64Benchmark extends InputBenchmark {
 }
 
 class Nonce128Int64Benchmark extends InputBenchmark {
-  Nonce128Int64Benchmark(int iter) : super('Nonce128.int64', 1, iter);
+  Nonce128Int64Benchmark() : super('Nonce128.int64', 1);
 
   @override
   void run() {
@@ -68,9 +67,10 @@ class Nonce128Int64Benchmark extends InputBenchmark {
 }
 
 class Nonce128ReverseBenchmark extends InputBenchmark {
-  late final Nonce128 n = Nonce128.bytes(input);
-
-  Nonce128ReverseBenchmark(int iter) : super('Nonce128.reverse', 16, iter);
+  late final Nonce128 n;
+  Nonce128ReverseBenchmark() : super('Nonce128.reverse', 16) {
+    n = Nonce128.bytes(input);
+  }
 
   @override
   void run() {
@@ -79,9 +79,10 @@ class Nonce128ReverseBenchmark extends InputBenchmark {
 }
 
 class Nonce128PadLeftBenchmark extends InputBenchmark {
-  late final Nonce128 n = Nonce128.bytes(input);
-
-  Nonce128PadLeftBenchmark(int iter) : super('Nonce128.padLeft(4)', 1, iter);
+  late final Nonce128 n;
+  Nonce128PadLeftBenchmark() : super('Nonce128.padLeft(4)', 1) {
+    n = Nonce128.bytes(input);
+  }
 
   @override
   void run() {
@@ -91,20 +92,14 @@ class Nonce128PadLeftBenchmark extends InputBenchmark {
 
 void main() async {
   print('--------- Nonce ----------');
-  const csprngInner = 400;
-  const cheapInner = 250000;
-
-  print('---- iterations: $csprngInner (CSPRNG) ----');
-  await NonceRandomBenchmark(12, csprngInner).measureRate();
-  await NonceRandomBenchmark(24, csprngInner).measureRate();
-  await Nonce64RandomBenchmark(csprngInner).measureRate();
-  await Nonce128RandomBenchmark(csprngInner).measureRate();
-
-  print('---- iterations: $cheapInner (cheap paths) ----');
-  await Nonce128HexBenchmark(cheapInner).measureRate();
-  await Nonce64Int64Benchmark(cheapInner).measureRate();
-  await Nonce128Int64Benchmark(cheapInner).measureRate();
-  await Nonce128ReverseBenchmark(cheapInner).measureRate();
-  await Nonce128PadLeftBenchmark(cheapInner).measureRate();
+  await NonceRandomBenchmark(12).measureRate();
+  await NonceRandomBenchmark(24).measureRate();
+  await Nonce64RandomBenchmark().measureRate();
+  await Nonce128RandomBenchmark().measureRate();
+  await Nonce128HexBenchmark().measureRate();
+  await Nonce128Int64Benchmark().measureRate();
+  await Nonce64Int64Benchmark().measureRate();
+  await Nonce128ReverseBenchmark().measureRate();
+  await Nonce128PadLeftBenchmark().measureRate();
   print('');
 }

@@ -14,10 +14,10 @@ class CipherlibBenchmark extends InputBenchmark {
   final Uint8List key;
   final Uint8List iv;
 
-  CipherlibBenchmark(int size, int iter, int keySize)
+  CipherlibBenchmark(int size, int keySize)
       : key = Uint8List.fromList(List.filled(keySize, 0x9f)),
         iv = Uint8List.fromList(List.filled(16, 0x87)),
-        super('cipherlib', size, iter);
+        super('cipherlib', size);
 
   @override
   void run() {
@@ -27,21 +27,14 @@ class CipherlibBenchmark extends InputBenchmark {
 
 void main() async {
   print('--------- AES/PCBC ----------');
-  final conditions = [
-    [1 << 20, 10],
-    [5 << 10, 5000],
-    [16, 100000],
-  ];
-  for (var condition in conditions) {
-    int size = condition[0];
-    int iter = condition[1];
-    print('---- message: ${formatSize(size)} | iterations: $iter ----');
+  for (int size in [1 << 20, 1 << 10, 1 << 3]) {
+    print('---- message: ${formatSize(size)} ----');
     print('[AES-128]');
-    CipherlibBenchmark(size, iter, 16).measureRate();
+    CipherlibBenchmark(size, 16).measureRate();
     print('[AES-192]');
-    CipherlibBenchmark(size, iter, 24).measureRate();
+    CipherlibBenchmark(size, 24).measureRate();
     print('[AES-256]');
-    CipherlibBenchmark(size, iter, 32).measureRate();
+    CipherlibBenchmark(size, 32).measureRate();
     print('');
   }
 }

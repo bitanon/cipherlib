@@ -22,12 +22,6 @@ import 'xor.dart' as xor;
 IOSink sink = stdout;
 RandomAccessFile? raf;
 
-const conditions = [
-  [1 << 20, 10],
-  [5 << 10, 5000],
-  [16, 100000],
-];
-
 void dump(String message) {
   raf?.writeStringSync('$message\n');
   stdout.writeln(message);
@@ -37,139 +31,137 @@ void dump(String message) {
 // Symmetric Cipher benchmarks
 // ---------------------------------------------------------------------
 Future<void> measureSymmetricCiphers() async {
-  for (var condition in conditions) {
-    var size = condition[0];
-    var iter = condition[1];
+  for (int size in [1 << 25, 10, 1 << 12, 1 << 4]) {
     var algorithms = {
       "XOR": [
-        xor.CipherlibBenchmark(size, iter),
+        xor.CipherlibBenchmark(size),
       ],
       "ChaCha20": [
-        chacha20.CipherlibBenchmark(size, iter),
-        chacha20.PointyCastleBenchmark(size, iter),
+        chacha20.CipherlibBenchmark(size),
+        chacha20.PointyCastleBenchmark(size),
       ],
       "ChaCha20/Poly1305": [
-        chacha20poly1305.CipherlibBenchmark(size, iter),
-        chacha20poly1305.PointyCastleBenchmark(size, iter),
-        chacha20poly1305.CryptographyBenchmark(size, iter),
+        chacha20poly1305.CipherlibBenchmark(size),
+        chacha20poly1305.PointyCastleBenchmark(size),
+        chacha20poly1305.CryptographyBenchmark(size),
       ],
       "Salsa20": [
-        salsa20.CipherlibBenchmark(size, iter),
-        salsa20.PointyCastleBenchmark(size, iter),
+        salsa20.CipherlibBenchmark(size),
+        salsa20.PointyCastleBenchmark(size),
       ],
       "Salsa20/Poly1305": [
-        salsa20poly1305.CipherlibBenchmark(size, iter),
+        salsa20poly1305.CipherlibBenchmark(size),
       ],
       "AES-128/ECB": [
-        aes_ecb.CipherlibBenchmark(size, iter, 16),
-        aes_ecb.PointyCastleBenchmark(size, iter, 16),
+        aes_ecb.CipherlibBenchmark(size, 16),
+        aes_ecb.PointyCastleBenchmark(size, 16),
       ],
       "AES-192/ECB": [
-        aes_ecb.CipherlibBenchmark(size, iter, 24),
-        aes_ecb.PointyCastleBenchmark(size, iter, 24),
+        aes_ecb.CipherlibBenchmark(size, 24),
+        aes_ecb.PointyCastleBenchmark(size, 24),
       ],
       "AES-256/ECB": [
-        aes_ecb.CipherlibBenchmark(size, iter, 32),
-        aes_ecb.PointyCastleBenchmark(size, iter, 32),
+        aes_ecb.CipherlibBenchmark(size, 32),
+        aes_ecb.PointyCastleBenchmark(size, 32),
       ],
       "AES-128/CBC": [
-        aes_cbc.CipherlibBenchmark(size, iter, 16),
-        aes_cbc.PointyCastleBenchmark(size, iter, 16),
-        aes_cbc.CryptographyBenchmark(size, iter, 16),
+        aes_cbc.CipherlibBenchmark(size, 16),
+        aes_cbc.PointyCastleBenchmark(size, 16),
+        aes_cbc.CryptographyBenchmark(size, 16),
       ],
       "AES-192/CBC": [
-        aes_cbc.CipherlibBenchmark(size, iter, 24),
-        aes_cbc.PointyCastleBenchmark(size, iter, 24),
-        aes_cbc.CryptographyBenchmark(size, iter, 24),
+        aes_cbc.CipherlibBenchmark(size, 24),
+        aes_cbc.PointyCastleBenchmark(size, 24),
+        aes_cbc.CryptographyBenchmark(size, 24),
       ],
       "AES-256/CBC": [
-        aes_cbc.CipherlibBenchmark(size, iter, 32),
-        aes_cbc.PointyCastleBenchmark(size, iter, 32),
-        aes_cbc.CryptographyBenchmark(size, iter, 32),
+        aes_cbc.CipherlibBenchmark(size, 32),
+        aes_cbc.PointyCastleBenchmark(size, 32),
+        aes_cbc.CryptographyBenchmark(size, 32),
       ],
       "AES-128/CTR": [
-        aes_ctr.CipherlibBenchmark(size, iter, 16),
-        aes_ctr.PointyCastleBenchmark(size, iter, 16),
-        aes_ctr.CryptographyBenchmark(size, iter, 16),
+        aes_ctr.CipherlibBenchmark(size, 16),
+        aes_ctr.PointyCastleBenchmark(size, 16),
+        aes_ctr.CryptographyBenchmark(size, 16),
       ],
       "AES-192/CTR": [
-        aes_ctr.CipherlibBenchmark(size, iter, 24),
-        aes_ctr.PointyCastleBenchmark(size, iter, 24),
-        aes_ctr.CryptographyBenchmark(size, iter, 24),
+        aes_ctr.CipherlibBenchmark(size, 24),
+        aes_ctr.PointyCastleBenchmark(size, 24),
+        aes_ctr.CryptographyBenchmark(size, 24),
       ],
       "AES-256/CTR": [
-        aes_ctr.CipherlibBenchmark(size, iter, 32),
-        aes_ctr.PointyCastleBenchmark(size, iter, 32),
-        aes_ctr.CryptographyBenchmark(size, iter, 32),
+        aes_ctr.CipherlibBenchmark(size, 32),
+        aes_ctr.PointyCastleBenchmark(size, 32),
+        aes_ctr.CryptographyBenchmark(size, 32),
       ],
       "AES-128/GCM": [
-        aes_gcm.CipherlibBenchmark(size, iter, 16),
-        aes_gcm.PointyCastleBenchmark(size, iter, 16),
-        aes_gcm.CryptographyBenchmark(size, iter, 16),
+        aes_gcm.CipherlibBenchmark(size, 16),
+        aes_gcm.PointyCastleBenchmark(size, 16),
+        aes_gcm.CryptographyBenchmark(size, 16),
       ],
       "AES-192/GCM": [
-        aes_gcm.CipherlibBenchmark(size, iter, 24),
-        aes_gcm.PointyCastleBenchmark(size, iter, 24),
-        aes_gcm.CryptographyBenchmark(size, iter, 24),
+        aes_gcm.CipherlibBenchmark(size, 24),
+        aes_gcm.PointyCastleBenchmark(size, 24),
+        aes_gcm.CryptographyBenchmark(size, 24),
       ],
       "AES-256/GCM": [
-        aes_gcm.CipherlibBenchmark(size, iter, 32),
-        aes_gcm.PointyCastleBenchmark(size, iter, 32),
-        aes_gcm.CryptographyBenchmark(size, iter, 32),
+        aes_gcm.CipherlibBenchmark(size, 32),
+        aes_gcm.PointyCastleBenchmark(size, 32),
+        aes_gcm.CryptographyBenchmark(size, 32),
       ],
       "AES-128/CFB": [
-        aes_cfb.CipherlibBenchmark(size, iter, 16),
-        aes_cfb.PointyCastleBenchmark(size, iter, 16),
+        aes_cfb.CipherlibBenchmark(size, 16),
+        aes_cfb.PointyCastleBenchmark(size, 16),
       ],
       "AES-192/CFB": [
-        aes_cfb.CipherlibBenchmark(size, iter, 24),
-        aes_cfb.PointyCastleBenchmark(size, iter, 24),
+        aes_cfb.CipherlibBenchmark(size, 24),
+        aes_cfb.PointyCastleBenchmark(size, 24),
       ],
       "AES-256/CFB": [
-        aes_cfb.CipherlibBenchmark(size, iter, 32),
-        aes_cfb.PointyCastleBenchmark(size, iter, 32),
+        aes_cfb.CipherlibBenchmark(size, 32),
+        aes_cfb.PointyCastleBenchmark(size, 32),
       ],
       "AES-128/OFB": [
-        aes_ofb.CipherlibBenchmark(size, iter, 16),
-        aes_ofb.PointyCastleBenchmark(size, iter, 16),
+        aes_ofb.CipherlibBenchmark(size, 16),
+        aes_ofb.PointyCastleBenchmark(size, 16),
       ],
       "AES-192/OFB": [
-        aes_ofb.CipherlibBenchmark(size, iter, 24),
-        aes_ofb.PointyCastleBenchmark(size, iter, 24),
+        aes_ofb.CipherlibBenchmark(size, 24),
+        aes_ofb.PointyCastleBenchmark(size, 24),
       ],
       "AES-256/OFB": [
-        aes_ofb.CipherlibBenchmark(size, iter, 32),
-        aes_ofb.PointyCastleBenchmark(size, iter, 32),
+        aes_ofb.CipherlibBenchmark(size, 32),
+        aes_ofb.PointyCastleBenchmark(size, 32),
       ],
       "AES-128/XTS": [
-        aes_xts.CipherlibBenchmark(size, iter, 16),
+        aes_xts.CipherlibBenchmark(size, 16),
       ],
       "AES-192/XTS": [
-        aes_xts.CipherlibBenchmark(size, iter, 24),
+        aes_xts.CipherlibBenchmark(size, 24),
       ],
       "AES-256/XTS": [
-        aes_xts.CipherlibBenchmark(size, iter, 32),
+        aes_xts.CipherlibBenchmark(size, 32),
       ],
       "AES-128/IGE": [
-        aes_ige.CipherlibBenchmark(size, iter, 16),
-        aes_ige.PointyCastleBenchmark(size, iter, 16),
+        aes_ige.CipherlibBenchmark(size, 16),
+        aes_ige.PointyCastleBenchmark(size, 16),
       ],
       "AES-192/IGE": [
-        aes_ige.CipherlibBenchmark(size, iter, 24),
-        aes_ige.PointyCastleBenchmark(size, iter, 24),
+        aes_ige.CipherlibBenchmark(size, 24),
+        aes_ige.PointyCastleBenchmark(size, 24),
       ],
       "AES-256/IGE": [
-        aes_ige.CipherlibBenchmark(size, iter, 32),
-        aes_ige.PointyCastleBenchmark(size, iter, 32),
+        aes_ige.CipherlibBenchmark(size, 32),
+        aes_ige.PointyCastleBenchmark(size, 32),
       ],
       "AES-128/PCBC": [
-        aes_pcbc.CipherlibBenchmark(size, iter, 16),
+        aes_pcbc.CipherlibBenchmark(size, 16),
       ],
       "AES-192/PCBC": [
-        aes_pcbc.CipherlibBenchmark(size, iter, 24),
+        aes_pcbc.CipherlibBenchmark(size, 24),
       ],
       "AES-256/PCBC": [
-        aes_pcbc.CipherlibBenchmark(size, iter, 32),
+        aes_pcbc.CipherlibBenchmark(size, 32),
       ],
     };
 
@@ -184,24 +176,23 @@ Future<void> measureSymmetricCiphers() async {
     names.sort((a, b) => nameFreq[b] - nameFreq[a]);
     var separator = names.map((e) => ('-' * (e.length + 4)));
 
-    dump("With ${formatSize(size)} message ($iter iterations):");
+    dump("With ${formatSize(size)} message:");
     dump('');
     dump('| Algorithms | `${names.join('` | `')}` |');
     dump('|------------|${separator.join('|')}|');
 
     for (var entry in algorithms.entries) {
       var best = 0.0;
-      var diff = <String, double>{};
+      var diff = <String, Measurement>{};
       for (var benchmark in entry.value.reversed) {
-        var runtime = await measure(benchmark);
-        var speed = 1e6 * iter * size / runtime;
-        diff[benchmark.name] = speed;
-        if (speed > best) {
-          best = speed;
+        var result = await measure(benchmark);
+        diff[benchmark.name] = result;
+        if (result.speed > best) {
+          best = result.speed;
         }
       }
       if (diff.isEmpty) continue;
-      var mine = diff.values.last;
+      var mine = diff.values.last.speed;
 
       var message = '| ${entry.key}     ';
       for (var name in names) {
@@ -210,18 +201,18 @@ Future<void> measureSymmetricCiphers() async {
           continue;
         }
 
-        var speed = diff[name]!;
-        if (speed == best) {
-          message += '**${formatSpeed(speed)}**';
+        var result = diff[name]!;
+        if (result.speed == best) {
+          message += '**${result.speedString}**';
         } else {
-          message += formatSpeed(speed);
+          message += result.speedString;
         }
 
-        if (mine < speed) {
-          var p = formatDecimal(speed / mine);
+        if (mine < result.speed) {
+          var p = formatDecimal(result.speed / mine);
           message += ' <br> `${p}x fast`';
-        } else if (mine > speed) {
-          var p = formatDecimal(mine / speed);
+        } else if (mine > result.speed) {
+          var p = formatDecimal(mine / result.speed);
           message += ' <br> `${p}x slow`';
         }
       }

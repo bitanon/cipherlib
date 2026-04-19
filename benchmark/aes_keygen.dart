@@ -15,9 +15,10 @@ import '_base.dart';
 Random random = Random();
 
 class CipherlibBenchmark extends InputBenchmark {
-  late final Uint8List key = Uint8List.fromList(input);
-
-  CipherlibBenchmark(int size, int iter) : super('cipherlib', size, iter);
+  late final Uint8List key;
+  CipherlibBenchmark(int size) : super('cipherlib', size) {
+    key = Uint8List.fromList(input);
+  }
 
   @override
   void run() {
@@ -26,9 +27,10 @@ class CipherlibBenchmark extends InputBenchmark {
 }
 
 class PointyCastleBenchmark extends InputBenchmark {
-  late final Uint8List key = Uint8List.fromList(input);
-
-  PointyCastleBenchmark(int size, int iter) : super('PointyCastle', size, iter);
+  late final Uint8List key;
+  PointyCastleBenchmark(int size) : super('PointyCastle', size) {
+    key = Uint8List.fromList(input);
+  }
 
   @override
   void run() {
@@ -38,9 +40,10 @@ class PointyCastleBenchmark extends InputBenchmark {
 }
 
 class CryptographyBenchmark extends InputBenchmark {
-  late final Uint8List key = Uint8List.fromList(input);
-
-  CryptographyBenchmark(int size, int iter) : super('cryptography', size, iter);
+  late final Uint8List key;
+  CryptographyBenchmark(int size) : super('cryptography', size) {
+    key = Uint8List.fromList(input);
+  }
 
   @override
   void run() {
@@ -50,18 +53,11 @@ class CryptographyBenchmark extends InputBenchmark {
 
 void main() async {
   print('--------- AES/ECB ----------');
-  final conditions = [
-    [16, 100],
-    [24, 100],
-    [32, 100],
-  ];
-  for (var condition in conditions) {
-    int size = condition[0];
-    int iter = condition[1];
-    print('---- keysize: $size iterations: $iter ----');
-    await CipherlibBenchmark(size, iter).measureDiff([
-      PointyCastleBenchmark(size, iter),
-      CryptographyBenchmark(size, iter),
+  for (int size in [16, 24, 32]) {
+    print('---- keysize: $size ----');
+    await CipherlibBenchmark(size).measureDiff([
+      PointyCastleBenchmark(size),
+      CryptographyBenchmark(size),
     ]);
     print('');
   }

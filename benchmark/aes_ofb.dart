@@ -15,10 +15,10 @@ class CipherlibBenchmark extends InputBenchmark {
   final Uint8List key;
   final Uint8List iv;
 
-  CipherlibBenchmark(int size, int iter, int keySize)
+  CipherlibBenchmark(int size, int keySize)
       : key = Uint8List.fromList(List.filled(keySize, 0x9f)),
         iv = Uint8List.fromList(List.filled(16, 0x87)),
-        super('cipherlib', size, iter);
+        super('cipherlib', size);
 
   @override
   void run() {
@@ -30,10 +30,10 @@ class PointyCastleBenchmark extends InputBenchmark {
   final Uint8List key;
   final Uint8List iv;
 
-  PointyCastleBenchmark(int size, int iter, int keySize)
+  PointyCastleBenchmark(int size, int keySize)
       : key = Uint8List.fromList(List.filled(keySize, 0x9f)),
         iv = Uint8List.fromList(List.filled(16, 0x87)),
-        super('PointyCastle', size, iter);
+        super('PointyCastle', size);
 
   @override
   void run() {
@@ -52,26 +52,19 @@ class PointyCastleBenchmark extends InputBenchmark {
 
 void main() async {
   print('--------- AES/OFB ----------');
-  final conditions = [
-    [1 << 20, 10],
-    [5 << 10, 5000],
-    [16, 100000],
-  ];
-  for (var condition in conditions) {
-    int size = condition[0];
-    int iter = condition[1];
-    print('---- message: ${formatSize(size)} | iterations: $iter ----');
+  for (int size in [1 << 20, 1 << 10, 1 << 3]) {
+    print('---- message: ${formatSize(size)} ----');
     print('[AES-128]');
-    await CipherlibBenchmark(size, iter, 16).measureDiff([
-      PointyCastleBenchmark(size, iter, 16),
+    await CipherlibBenchmark(size, 16).measureDiff([
+      PointyCastleBenchmark(size, 16),
     ]);
     print('[AES-192]');
-    await CipherlibBenchmark(size, iter, 24).measureDiff([
-      PointyCastleBenchmark(size, iter, 24),
+    await CipherlibBenchmark(size, 24).measureDiff([
+      PointyCastleBenchmark(size, 24),
     ]);
     print('[AES-256]');
-    await CipherlibBenchmark(size, iter, 32).measureDiff([
-      PointyCastleBenchmark(size, iter, 32),
+    await CipherlibBenchmark(size, 32).measureDiff([
+      PointyCastleBenchmark(size, 32),
     ]);
     print('');
   }

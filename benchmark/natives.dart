@@ -10,12 +10,79 @@ import '_base.dart';
 
 Random random = Random();
 
+// ---------- Fill Range Benchmark ----------
+class LoopFillBenchmark extends InputBenchmark {
+  LoopFillBenchmark(int size) : super('loop-fill', size);
+
+  @override
+  void run() {
+    final target = Uint8List(size);
+    for (int i = 0; i < size; i++) {
+      target[i] = input[i];
+    }
+  }
+}
+
+class FillRangeBenchmark extends InputBenchmark {
+  FillRangeBenchmark(int size) : super('fillRange()', size);
+
+  @override
+  void run() {
+    final target = Uint8List(size);
+    target.fillRange(0, size, 0x9f);
+  }
+}
+
+// ---------- Set Range Benchmark ----------
+class LoopSetBenchmark extends InputBenchmark {
+  LoopSetBenchmark(int size) : super('loop-set', size);
+
+  @override
+  void run() {
+    final target = Uint8List(size);
+    for (int i = 0; i < size; i++) {
+      target[i] = input[i];
+    }
+  }
+}
+
+class SetRangeBenchmark extends InputBenchmark {
+  SetRangeBenchmark(int size) : super('setRange()', size);
+
+  @override
+  void run() {
+    final target = Uint8List(size)..setRange(0, size, input);
+  }
+}
+
+// ---------- Reverse Range Benchmark ----------
+class LoopReverseBenchmark extends InputBenchmark {
+  LoopReverseBenchmark(int size) : super('loop-reverse', size);
+
+  @override
+  void run() {
+    final target = Uint8List(size);
+    for (int i = 0; i < size; i++) {
+      target[i] = input[size - i - 1];
+    }
+  }
+}
+
+class SetRangeReverseBenchmark extends InputBenchmark {
+  SetRangeReverseBenchmark(int size) : super('setRange()', size);
+
+  @override
+  void run() {
+    final target = Uint8List(size)..setRange(0, size, input.reversed);
+  }
+}
+
 // ---------- Byte Collector Benchmark ----------
 class CollectInSingleListBenchmark extends SyncBenchmark {
   final Uint8List data = Uint8List.fromList(List.filled(16, 0x9f));
 
-  CollectInSingleListBenchmark(int size, int iter)
-      : super('Collect In Single List', size, iter);
+  CollectInSingleListBenchmark(int size)
+      : super('Collect In Single List', size);
 
   @override
   void run() {
@@ -32,8 +99,8 @@ class CollectInSingleListBenchmark extends SyncBenchmark {
 class CollectInSingleUint8ListBenchmark extends SyncBenchmark {
   final Uint8List data = Uint8List.fromList(List.filled(16, 0x9f));
 
-  CollectInSingleUint8ListBenchmark(int size, int iter)
-      : super('Collect In Single Uint8List', size, iter);
+  CollectInSingleUint8ListBenchmark(int size)
+      : super('Collect In Single Uint8List', size);
 
   @override
   void run() {
@@ -58,8 +125,8 @@ class CollectInSingleUint8ListBenchmark extends SyncBenchmark {
 class CollectInChunkedListBenchmark extends SyncBenchmark {
   final Uint8List data = Uint8List.fromList(List.filled(16, 0x9f));
 
-  CollectInChunkedListBenchmark(int size, int iter)
-      : super('Collect In Chunked List', size, iter);
+  CollectInChunkedListBenchmark(int size)
+      : super('Collect In Chunked List', size);
 
   @override
   void run() {
@@ -78,91 +145,29 @@ class CollectInChunkedListBenchmark extends SyncBenchmark {
   }
 }
 
-// ---------- Set Range Benchmark ----------
-class LoopSetBenchmark extends InputBenchmark {
-  LoopSetBenchmark(int size, int iter) : super('loop-set', size, iter);
-
-  @override
-  void run() {
-    final target = Uint8List(size);
-    for (int i = 0; i < size; i++) {
-      target[i] = input[i];
-    }
-  }
-}
-
-class SetRangeBenchmark extends InputBenchmark {
-  SetRangeBenchmark(int size, int iter) : super('setRange()', size, iter);
-
-  @override
-  void run() {
-    final target = Uint8List(size)..setRange(0, size, input);
-  }
-}
-
-// ---------- Fill Range Benchmark ----------
-class LoopFillBenchmark extends InputBenchmark {
-  LoopFillBenchmark(int size, int iter) : super('loop-fill', size, iter);
-
-  @override
-  void run() {
-    final target = Uint8List(size);
-    for (int i = 0, j = size - 1; i < size; i++, j--) {
-      target[i] = input[j];
-    }
-  }
-}
-
-class FillRangeBenchmark extends InputBenchmark {
-  FillRangeBenchmark(int size, int iter) : super('fillRange()', size, iter);
-
-  @override
-  void run() {
-    final target = Uint8List(size);
-    target.fillRange(0, size, 0x9f);
-  }
-}
-
-// ---------- Reverse Range Benchmark ----------
-class LoopReverseBenchmark extends InputBenchmark {
-  LoopReverseBenchmark(int size, int iter) : super('loop-reverse', size, iter);
-
-  @override
-  void run() {
-    final target = Uint8List(size);
-    for (int i = 0; i < size; i++) {
-      target[i] = input[size - i - 1];
-    }
-  }
-}
-
-class SetRangeReverseBenchmark extends InputBenchmark {
-  SetRangeReverseBenchmark(int size, int iter)
-      : super('setRange()', size, iter);
-
-  @override
-  void run() {
-    final target = Uint8List(size)..setRange(0, size, input.reversed);
-  }
-}
-
 // ------------------------------------------
+
+Future<void> runFillRangeBenchmark() async {
+  print('-------------------------------------------');
+  print('|         Fill Range Benchmark             |');
+  print('-------------------------------------------');
+  for (var size in [5 << 20, 1 << 10, 100]) {
+    print('---- message: ${formatSize(size)} ----');
+    await LoopFillBenchmark(size).measureRate();
+    await FillRangeBenchmark(size).measureRate();
+    print('');
+  }
+}
 
 Future<void> runByteCollectorBenchmark() async {
   print('-------------------------------------------');
   print('|         Byte Collector Benchmark         |');
   print('-------------------------------------------');
-  for (var condition in [
-    [1000, 100],
-    [100, 5000],
-    [10, 10000],
-  ]) {
-    int times = condition[0];
-    int iter = condition[1];
-    print('---- times: $times | iterations: $iter ----');
-    await CollectInSingleListBenchmark(times, iter).measureRate();
-    await CollectInChunkedListBenchmark(times, iter).measureRate();
-    await CollectInSingleUint8ListBenchmark(times, iter).measureRate();
+  for (var size in [1000, 100, 10]) {
+    print('---- times: $size ----');
+    await CollectInSingleListBenchmark(size).measureRate();
+    await CollectInChunkedListBenchmark(size).measureRate();
+    await CollectInSingleUint8ListBenchmark(size).measureRate();
     print('');
   }
 }
@@ -171,34 +176,10 @@ Future<void> runSetRangeBenchmark() async {
   print('-------------------------------------------');
   print('|            Set Range Benchmark           |');
   print('-------------------------------------------');
-  for (var condition in [
-    [5 << 20, 100],
-    [1 << 10, 50000],
-    [100, 100000],
-  ]) {
-    int size = condition[0];
-    int iter = condition[1];
-    print('---- message: ${formatSize(size)} | iterations: $iter ----');
-    await LoopSetBenchmark(size, iter).measureRate();
-    await SetRangeBenchmark(size, iter).measureRate();
-    print('');
-  }
-}
-
-Future<void> runFillRangeBenchmark() async {
-  print('-------------------------------------------');
-  print('|         Fill Range Benchmark             |');
-  print('-------------------------------------------');
-  for (var condition in [
-    [5 << 20, 100],
-    [1 << 10, 50000],
-    [100, 100000],
-  ]) {
-    int size = condition[0];
-    int iter = condition[1];
-    print('---- message: ${formatSize(size)} | iterations: $iter ----');
-    await LoopFillBenchmark(size, iter).measureRate();
-    await FillRangeBenchmark(size, iter).measureRate();
+  for (var size in [5 << 20, 1 << 10, 100]) {
+    print('---- message: ${formatSize(size)} ----');
+    await LoopSetBenchmark(size).measureRate();
+    await SetRangeBenchmark(size).measureRate();
     print('');
   }
 }
@@ -207,23 +188,17 @@ Future<void> runReverseRangeBenchmark() async {
   print('-------------------------------------------');
   print('|         Reverse Range Benchmark           |');
   print('-------------------------------------------');
-  for (var condition in [
-    [5 << 20, 100],
-    [1 << 10, 50000],
-    [100, 100000],
-  ]) {
-    int size = condition[0];
-    int iter = condition[1];
-    print('---- message: ${formatSize(size)} | iterations: $iter ----');
-    await LoopReverseBenchmark(size, iter).measureRate();
-    await SetRangeReverseBenchmark(size, iter).measureRate();
+  for (var size in [5 << 20, 1 << 10, 100]) {
+    print('---- message: ${formatSize(size)} ----');
+    await LoopReverseBenchmark(size).measureRate();
+    await SetRangeReverseBenchmark(size).measureRate();
     print('');
   }
 }
 
 void main() async {
-  await runFillRangeBenchmark();
   await runSetRangeBenchmark();
+  await runFillRangeBenchmark();
   await runReverseRangeBenchmark();
   await runByteCollectorBenchmark();
 }

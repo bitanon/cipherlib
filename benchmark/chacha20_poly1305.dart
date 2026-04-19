@@ -16,10 +16,10 @@ class CipherlibBenchmark extends InputBenchmark {
   final Uint8List key;
   final Uint8List nonce;
 
-  CipherlibBenchmark(int size, int iter)
+  CipherlibBenchmark(int size)
       : key = Uint8List.fromList(List.filled(32, 0x9f)),
         nonce = Uint8List.fromList(List.filled(12, 0x2f)),
-        super('cipherlib', size, iter);
+        super('cipherlib', size);
 
   @override
   void run() {
@@ -31,10 +31,10 @@ class CryptographyBenchmark extends AsyncInputBenchmark {
   final Uint8List key;
   final Uint8List nonce;
 
-  CryptographyBenchmark(int size, int iter)
+  CryptographyBenchmark(int size)
       : key = Uint8List.fromList(List.filled(32, 0x9f)),
         nonce = Uint8List.fromList(List.filled(12, 0x2f)),
-        super('cryptography', size, iter);
+        super('cryptography', size);
 
   @override
   Future<void> run() async {
@@ -50,10 +50,10 @@ class PointyCastleBenchmark extends InputBenchmark {
   final Uint8List key;
   final Uint8List nonce;
 
-  PointyCastleBenchmark(int size, int iter)
+  PointyCastleBenchmark(int size)
       : key = Uint8List.fromList(List.filled(32, 0x9f)),
         nonce = Uint8List.fromList(List.filled(12, 0x2f)),
-        super('PointyCastle', size, iter);
+        super('PointyCastle', size);
 
   @override
   void run() {
@@ -70,18 +70,11 @@ class PointyCastleBenchmark extends InputBenchmark {
 
 void main() async {
   print('--------- ChaCha20/Poly1305 ----------');
-  final conditions = [
-    [1 << 20, 10],
-    [5 << 10, 5000],
-    [16, 100000],
-  ];
-  for (var condition in conditions) {
-    int size = condition[0];
-    int iter = condition[1];
-    print('---- message: ${formatSize(size)} | iterations: $iter ----');
-    await CipherlibBenchmark(size, iter).measureDiff([
-      CryptographyBenchmark(size, iter),
-      PointyCastleBenchmark(size, iter),
+  for (int size in [1 << 20, 1 << 10, 1 << 3]) {
+    print('---- message: ${formatSize(size)} ----');
+    await CipherlibBenchmark(size).measureDiff([
+      CryptographyBenchmark(size),
+      PointyCastleBenchmark(size),
     ]);
     print('');
   }

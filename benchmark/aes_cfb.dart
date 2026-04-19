@@ -1,6 +1,8 @@
 // Copyright (c) 2023, Sudipto Chandra
 // All rights reserved. Check LICENSE file for details.
 
+// ignore_for_file: unused_local_variable
+
 import 'dart:math';
 import 'dart:typed_data';
 
@@ -11,68 +13,74 @@ import '_base.dart';
 
 Random random = Random();
 
-class CipherlibBenchmark extends InputBenchmark {
+class CipherlibBenchmark extends SyncBenchmark {
+  final Uint8List input;
   final Uint8List key;
   final Uint8List iv;
 
-  CipherlibBenchmark(int size, int iter, int keySize)
-      : key = Uint8List.fromList(List.filled(keySize, 0x9f)),
+  CipherlibBenchmark(int size, int keySize)
+      : input = Uint8List.fromList(List.filled(size >> 1, 0x3f)),
+        key = Uint8List.fromList(List.filled(keySize, 0x9f)),
         iv = Uint8List.fromList(List.filled(16, 0x87)),
-        super('cipherlib', size, iter);
+        super('cipherlib', size);
 
   @override
   void run() {
-    AES(key).cfb64(iv).encrypt(input);
+    final aes = AES(key).cfb64(iv);
+    final encrypted = aes.encrypt(input);
+    final decrypted = aes.decrypt(encrypted);
   }
 }
 
-class PointyCastleBenchmark extends InputBenchmark {
+class PointyCastleBenchmark extends SyncBenchmark {
+  final Uint8List input;
   final Uint8List key;
   final Uint8List iv;
 
-  PointyCastleBenchmark(int size, int iter, int keySize)
-      : key = Uint8List.fromList(List.filled(keySize, 0x9f)),
+  PointyCastleBenchmark(int size, int keySize)
+      : input = Uint8List.fromList(List.filled(size >> 1, 0x3f)),
+        key = Uint8List.fromList(List.filled(keySize, 0x9f)),
         iv = Uint8List.fromList(List.filled(16, 0x87)),
-        super('PointyCastle', size, iter);
+        super('PointyCastle', size);
 
   @override
   void run() {
-    var inp = Uint8List.fromList(input);
-    var out = Uint8List(inp.length);
-    var instance = pc.BlockCipher('AES/CFB-64');
-    instance.init(
-      true,
+    final instance = pc.PaddedBlockCipher('AES/CFB-64/PKCS7');
+    final params = pc.PaddedBlockCipherParameters(
       pc.ParametersWithIV(pc.KeyParameter(key), iv),
+      null,
     );
-    for (int i = 0; i < inp.length; i += 16) {
-      instance.processBlock(inp, i, out, i);
-    }
+
+    // encrypt
+    instance.init(true, params);
+    final encrypted = instance.process(input);
+
+    // decrypt
+    instance.init(false, params);
+    final decrypted = instance.process(encrypted);
   }
 }
 
 void main() async {
-  print('--------- AES/CFB ----------');
-  final conditions = [
-    [1 << 20, 10],
-    [5 << 10, 5000],
-    [16, 100000],
-  ];
-  for (var condition in conditions) {
-    int size = condition[0];
-    int iter = condition[1];
-    print('---- message: ${formatSize(size)} | iterations: $iter ----');
-    print('[AES-128]');
-    await CipherlibBenchmark(size, iter, 16).measureDiff([
-      PointyCastleBenchmark(size, iter, 16),
-    ]);
-    print('[AES-192]');
-    await CipherlibBenchmark(size, iter, 24).measureDiff([
-      PointyCastleBenchmark(size, iter, 24),
-    ]);
-    print('[AES-256]');
-    await CipherlibBenchmark(size, iter, 32).measureDiff([
-      PointyCastleBenchmark(size, iter, 32),
-    ]);
-    print('');
-  }
+  await CipherlibBenchmark(1 << 16, 16).measureRate();
+  await CipherlibBenchmark(1 << 16, 24).measureRate();
+  await CipherlibBenchmark(1 << 16, 32).measureRate();
+
+  // print('--------- AES/CFB ----------');
+  // for (int size in [1 << 20, 1 << 10, 1 << 3]) {
+  //   print('---- message: ${formatSize(size)} ----');
+  //   print('[AES-128]');
+  //   await CipherlibBenchmark(size, 16).measureDiff([
+  //     PointyCastleBenchmark(size, 16),
+  //   ]);
+  //   print('[AES-192]');
+  //   await CipherlibBenchmark(size, 24).measureDiff([
+  //     PointyCastleBenchmark(size, 24),
+  //   ]);
+  //   print('[AES-256]');
+  //   await CipherlibBenchmark(size, 32).measureDiff([
+  //     PointyCastleBenchmark(size, 32),
+  //   ]);
+  //   print('');
+  // }
 }
