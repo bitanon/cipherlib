@@ -164,7 +164,7 @@ class AESInCFBMode extends CollateCipher with SaltedCipher {
   factory AESInCFBMode(
     List<int> key, {
     List<int>? iv,
-    int sbyte = 8,
+    int sbyte = 16,
   }) {
     if (sbyte < 1 || sbyte > 16) {
       throw StateError('sbyte must be between 1 and 16');

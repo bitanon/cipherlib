@@ -163,56 +163,6 @@ void main() {
     });
   });
 
-  group('treats counter as 64-bit number', () {
-    test('increment from maximum 32-bit integer', () {
-      var key = fromHex('2b7e151628aed2a6abf7158809cf4f3c');
-      var plain1 = randomBytes(16);
-      var plain2 = randomBytes(16);
-      var plain3 = randomBytes(16);
-
-      var iv1 = fromHex('000102030405060708090a00ffffffff');
-      var sink1 = AESInCTRModeSink(key, iv1);
-      sink1.add(plain1);
-      var out1 = sink1.add(plain2);
-      var out3 = sink1.add(plain3);
-
-      var iv2 = fromHex('000102030405060708090a0100000000');
-      var sink2 = AESInCTRModeSink(key, iv2);
-      var out2 = sink2.add(plain2);
-
-      var iv3 = fromHex('000102030405060708090a0100000001');
-      var sink3 = AESInCTRModeSink(key, iv3);
-      var out4 = sink3.add(plain3);
-
-      expect(toHex(out1), equals(toHex(out2)));
-      expect(toHex(out3), equals(toHex(out4)));
-    });
-
-    test('increment from maximum 64-bit integer', () {
-      var key = fromHex('2b7e151628aed2a6abf7158809cf4f3c');
-      var plain1 = randomBytes(16);
-      var plain2 = randomBytes(16);
-      var plain3 = randomBytes(16);
-
-      var iv1 = fromHex('0001020304050607ffffffffffffffff');
-      var sink1 = AESInCTRModeSink(key, iv1);
-      sink1.add(plain1);
-      var out1 = sink1.add(plain2);
-      var out3 = sink1.add(plain3);
-
-      var iv2 = fromHex('00010203040506070000000000000000');
-      var sink2 = AESInCTRModeSink(key, iv2);
-      var out2 = sink2.add(plain2);
-
-      var iv3 = fromHex('00010203040506070000000000000001');
-      var sink3 = AESInCTRModeSink(key, iv3);
-      var out4 = sink3.add(plain3);
-
-      expect(toHex(out1), equals(toHex(out2)));
-      expect(toHex(out3), equals(toHex(out4)));
-    });
-  });
-
   group("PKCS#7 padding", () {
     group('AES128', () {
       var key = 'abcdefghijklmnop'.codeUnits;
@@ -300,7 +250,7 @@ void main() {
       for (int j = 0; j < 100; j++) {
         var inp = randomBytes(j);
         var nonce = Nonce64.random();
-        var aes = AESInCTRMode.nonce(key, nonce: nonce);
+        var aes = AESInCTRMode.iv(key, nonce: nonce);
         var cipher = aes.encrypt(inp);
         var plain = aes.decrypt(cipher);
         expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');

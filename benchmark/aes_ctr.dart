@@ -1,6 +1,8 @@
 // Copyright (c) 2023, Sudipto Chandra
 // All rights reserved. Check LICENSE file for details.
 
+// ignore_for_file: unused_local_variable
+
 import 'dart:math';
 import 'dart:typed_data';
 
@@ -12,71 +14,80 @@ import '_base.dart';
 
 Random random = Random();
 
-class CipherlibBenchmark extends InputBenchmark {
+class CipherlibBenchmark extends AsyncBenchmark {
+  final Uint8List input;
   final Uint8List key;
   final Uint8List iv;
 
   CipherlibBenchmark(int size, int keySize)
-      : key = Uint8List.fromList(List.filled(keySize, 0x9f)),
+      : input = Uint8List.fromList(List.filled(size >> 1, 0x3f)),
+        key = Uint8List.fromList(List.filled(keySize, 0x9f)),
         iv = Uint8List.fromList(List.filled(16, 0x87)),
         super('cipherlib', size);
 
   @override
-  void run() {
-    AES(key).ctr(iv).encrypt(input);
+  Future<void> run() async {
+    final aes = AES(key).ctr(iv, 40);
+    final encrypted = aes.encrypt(input);
+    final decrypted = aes.decrypt(encrypted);
   }
 }
 
-class PointyCastleBenchmark extends InputBenchmark {
+class PointyCastleBenchmark extends AsyncBenchmark {
+  final Uint8List input;
   final Uint8List key;
   final Uint8List iv;
 
   PointyCastleBenchmark(int size, int keySize)
-      : key = Uint8List.fromList(List.filled(keySize, 0x9f)),
+      : input = Uint8List.fromList(List.filled(size >> 1, 0x3f)),
+        key = Uint8List.fromList(List.filled(keySize, 0x9f)),
         iv = Uint8List.fromList(List.filled(16, 0x87)),
         super('PointyCastle', size);
 
   @override
-  void run() {
-    var inp = Uint8List.fromList(input);
-    var out = Uint8List(inp.length);
-    var instance = pc.BlockCipher('AES/CTR');
-    instance.init(
-      true,
+  Future<void> run() async {
+    final instance = pc.PaddedBlockCipher('AES/CTR/PKCS7');
+    final params = pc.PaddedBlockCipherParameters(
       pc.ParametersWithIV(pc.KeyParameter(key), iv),
+      null,
     );
-    for (int i = 0; i < inp.length; i += 16) {
-      instance.processBlock(inp, i, out, i);
-    }
+
+    // encrypt
+    instance.init(true, params);
+    final encrypted = instance.process(input);
+
+    // decrypt
+    instance.init(false, params);
+    final decrypted = instance.process(encrypted);
   }
 }
 
-class CryptographyBenchmark extends AsyncInputBenchmark {
+class CryptographyBenchmark extends AsyncBenchmark {
+  final Uint8List input;
   final Uint8List key;
   final Uint8List iv;
 
   CryptographyBenchmark(int size, int keySize)
-      : key = Uint8List.fromList(List.filled(keySize, 0x9f)),
+      : input = Uint8List.fromList(List.filled(size >> 1, 0x3f)),
+        key = Uint8List.fromList(List.filled(keySize, 0x9f)),
         iv = Uint8List.fromList(List.filled(16, 0x87)),
         super('cryptography', size);
 
   @override
   Future<void> run() async {
-    var instance = key.length == 16
-        ? crypto.AesCtr.with128bits(
-            macAlgorithm: crypto.MacAlgorithm.empty,
-          )
-        : key.length == 24
-            ? crypto.AesCtr.with192bits(
-                macAlgorithm: crypto.MacAlgorithm.empty,
-              )
-            : crypto.AesCtr.with256bits(
-                macAlgorithm: crypto.MacAlgorithm.empty,
-              );
-    await instance.encrypt(
+    final instance = crypto.Cryptography.instance.aesCtr(
+      macAlgorithm: crypto.MacAlgorithm.empty,
+      secretKeyLength: key.length,
+      counterBits: 8,
+    );
+    final encrypted = await instance.encrypt(
       input,
       secretKey: crypto.SecretKey(key),
       nonce: iv,
+    );
+    final decrypted = await instance.decrypt(
+      encrypted,
+      secretKey: crypto.SecretKey(key),
     );
   }
 }

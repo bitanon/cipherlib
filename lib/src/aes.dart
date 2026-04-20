@@ -139,7 +139,8 @@ class AES {
   /// ```
   ///
   /// [spec]: https://csrc.nist.gov/pubs/sp/800/38/a/final
-  AESInCTRMode ctr(List<int> iv) => AESInCTRMode(key, iv);
+  AESInCTRMode ctr(List<int> iv, [int counterBits = 64]) =>
+      AESInCTRMode(key, iv, counterBits);
 
   /// The CFB (Cipher Feedback) mode turns a block cipher into a
   /// self-synchronizing stream cipher. It uses the previous ciphertext block as

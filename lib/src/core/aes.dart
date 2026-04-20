@@ -9,7 +9,7 @@ import 'dart:typed_data';
 abstract class AESCore {
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
-  static int _swap32(int x) =>
+  static int $swap32(int x) =>
       ((x << 24) & 0xff000000) ^
       ((x << 8) & 0x00ff0000) ^
       ((x >>> 8) & 0x0000ff00) ^
@@ -76,10 +76,10 @@ abstract class AESCore {
   static Uint32List _expandEncryptionKey128bit(Uint32List key) {
     int s0, s1, s2, s3;
     var w = Uint32List(44);
-    s0 = w[00] = _swap32(key[0]);
-    s1 = w[01] = _swap32(key[1]);
-    s2 = w[02] = _swap32(key[2]);
-    s3 = w[03] = _swap32(key[3]);
+    s0 = w[00] = $swap32(key[0]);
+    s1 = w[01] = $swap32(key[1]);
+    s2 = w[02] = $swap32(key[2]);
+    s3 = w[03] = $swap32(key[3]);
     // 0: 4..7
     s0 = w[04] = s0 ^ _wordSubRot(s3) ^ _rcon[0];
     s1 = w[05] = s1 ^ s0;
@@ -139,12 +139,12 @@ abstract class AESCore {
   static Uint32List _expandEncryptionKey192bit(Uint32List key) {
     int s0, s1, s2, s3, s4, s5;
     var w = Uint32List(52);
-    s0 = w[00] = _swap32(key[0]);
-    s1 = w[01] = _swap32(key[1]);
-    s2 = w[02] = _swap32(key[2]);
-    s3 = w[03] = _swap32(key[3]);
-    s4 = w[04] = _swap32(key[4]);
-    s5 = w[05] = _swap32(key[5]);
+    s0 = w[00] = $swap32(key[0]);
+    s1 = w[01] = $swap32(key[1]);
+    s2 = w[02] = $swap32(key[2]);
+    s3 = w[03] = $swap32(key[3]);
+    s4 = w[04] = $swap32(key[4]);
+    s5 = w[05] = $swap32(key[5]);
     // 0: 6..11
     s0 = w[06] = s0 ^ _wordSubRot(s5) ^ _rcon[0];
     s1 = w[07] = s1 ^ s0;
@@ -208,14 +208,14 @@ abstract class AESCore {
   static Uint32List _expandEncryptionKey256bit(Uint32List key) {
     int s0, s1, s2, s3, s4, s5, s6, s7;
     var w = Uint32List(60);
-    s0 = w[00] = _swap32(key[0]);
-    s1 = w[01] = _swap32(key[1]);
-    s2 = w[02] = _swap32(key[2]);
-    s3 = w[03] = _swap32(key[3]);
-    s4 = w[04] = _swap32(key[4]);
-    s5 = w[05] = _swap32(key[5]);
-    s6 = w[06] = _swap32(key[6]);
-    s7 = w[07] = _swap32(key[7]);
+    s0 = w[00] = $swap32(key[0]);
+    s1 = w[01] = $swap32(key[1]);
+    s2 = w[02] = $swap32(key[2]);
+    s3 = w[03] = $swap32(key[3]);
+    s4 = w[04] = $swap32(key[4]);
+    s5 = w[05] = $swap32(key[5]);
+    s6 = w[06] = $swap32(key[6]);
+    s7 = w[07] = $swap32(key[7]);
     // 0: 8..15
     s0 = w[08] = s0 ^ _wordSubRot(s7) ^ _rcon[0];
     s1 = w[09] = s1 ^ s0;
@@ -334,15 +334,15 @@ abstract class AESCore {
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   static void $encryptLE(Uint32List box, Uint32List rk) {
-    box[0] = _swap32(box[0]);
-    box[1] = _swap32(box[1]);
-    box[2] = _swap32(box[2]);
-    box[3] = _swap32(box[3]);
+    box[0] = $swap32(box[0]);
+    box[1] = $swap32(box[1]);
+    box[2] = $swap32(box[2]);
+    box[3] = $swap32(box[3]);
     $encrypt(box, rk);
-    box[0] = _swap32(box[0]);
-    box[1] = _swap32(box[1]);
-    box[2] = _swap32(box[2]);
-    box[3] = _swap32(box[3]);
+    box[0] = $swap32(box[0]);
+    box[1] = $swap32(box[1]);
+    box[2] = $swap32(box[2]);
+    box[3] = $swap32(box[3]);
   }
 
   /// ------------------------------------------------------------
@@ -395,15 +395,15 @@ abstract class AESCore {
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   static void $decryptLE(Uint32List box, Uint32List rk) {
-    box[0] = _swap32(box[0]);
-    box[1] = _swap32(box[1]);
-    box[2] = _swap32(box[2]);
-    box[3] = _swap32(box[3]);
+    box[0] = $swap32(box[0]);
+    box[1] = $swap32(box[1]);
+    box[2] = $swap32(box[2]);
+    box[3] = $swap32(box[3]);
     $decrypt(box, rk);
-    box[0] = _swap32(box[0]);
-    box[1] = _swap32(box[1]);
-    box[2] = _swap32(box[2]);
-    box[3] = _swap32(box[3]);
+    box[0] = $swap32(box[0]);
+    box[1] = $swap32(box[1]);
+    box[2] = $swap32(box[2]);
+    box[3] = $swap32(box[3]);
   }
 }
 

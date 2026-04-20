@@ -893,7 +893,7 @@ void main() {
       for (int j = 0; j < 100; j++) {
         var inp = randomBytes(j);
         var nonce = Nonce64.random();
-        var aes = AESInCTRMode.nonce(key, nonce: nonce);
+        var aes = AESInCTRModeic(key, nonce: nonce);
         var cipher = aes.encrypt(inp);
         var plain = aes.decrypt(cipher);
         expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
