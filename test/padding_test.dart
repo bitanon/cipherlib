@@ -8,7 +8,7 @@ import 'package:test/test.dart';
 
 void main() {
   group('PaddingScheme.none', () {
-    var block = List.filled(100, -1);
+    var block = Uint8List.fromList(List.filled(100, 0xFF));
     test('pad <-> unpad', () {
       for (int s = 0; s < 100; ++s) {
         for (int i = 0; i <= s; ++i) {
@@ -20,13 +20,18 @@ void main() {
         }
       }
     });
+
+    test('throws StateError on invalid size', () {
+      expect(() => Padding.none.unpad(Uint8List(5), -1), throwsStateError);
+      expect(() => Padding.none.unpad(Uint8List(5), 6), throwsStateError);
+    });
   });
 
   group('PaddingScheme.zero', () {
     test('pad <-> unpad', () {
       for (int s = 0; s < 100; ++s) {
-        for (int i = 0; i <= s; ++i) {
-          var block = List.filled(100, -1);
+        for (int i = 0; i < s; ++i) {
+          var block = Uint8List.fromList(List.filled(100, 0xFF));
           expect(Padding.zero.pad(block, i, s), true,
               reason: 'pad | pos: $i, size: $s');
           expect(block.skip(i).take(s - i), equals(List.filled(s - i, 0)),
@@ -38,21 +43,27 @@ void main() {
       }
     });
 
+    test('throws StateError on invalid size', () {
+      expect(() => Padding.zero.pad(Uint8List(5), -1), throwsStateError);
+      expect(() => Padding.zero.pad(Uint8List(5), 5), throwsStateError);
+      expect(() => Padding.zero.pad(Uint8List(5), 6), throwsStateError);
+    });
+
     test('can pad without the size parameter', () {
-      var block = [-1, -1, -1];
+      var block = Uint8List.fromList([0xFF, 0xFF, 0xFF]);
       expect(Padding.zero.pad(block, 2), true);
-      expect(block, equals([-1, -1, 0]));
+      expect(block, equals([0xFF, 0xFF, 0]));
     });
 
     test('can get pad length without size parameter', () {
-      var block = [-1, -1, 0, 0, 0];
+      var block = Uint8List.fromList([0xFF, 0xFF, 0, 0, 0]);
       expect(Padding.zero.getPadLength(block), 3);
     });
 
     test('can unpad without the size parameter', () {
-      var block = [-1, -1, 0, 0, 0];
-      expect(Padding.zero.unpad(block), equals([-1, -1]));
-      expect(block, equals([-1, -1, 0, 0, 0]));
+      var block = Uint8List.fromList([0xFF, 0xFF, 0, 0, 0]);
+      expect(Padding.zero.unpad(block), equals([0xFF, 0xFF]));
+      expect(block, equals([0xFF, 0xFF, 0, 0, 0]));
     });
   });
 
@@ -68,7 +79,7 @@ void main() {
     test('pad <-> unpad', () {
       for (int s = 1; s < 100; ++s) {
         for (int i = 0; i < s; ++i) {
-          var block = List.filled(100, -1);
+          var block = Uint8List.fromList(List.filled(100, 0xFF));
           expect(Padding.byte.pad(block, i, s), true,
               reason: 'pad | pos: $i, size: $s');
           var expected = List.filled(s - i, 0);
@@ -83,29 +94,29 @@ void main() {
     });
 
     test('can pad without the size parameter', () {
-      var block = [-1, -1, -1];
+      var block = Uint8List.fromList([0xFF, 0xFF, 0xFF]);
       expect(Padding.byte.pad(block, 2), true);
-      expect(block, equals([-1, -1, 0x80]));
+      expect(block, equals([0xFF, 0xFF, 0x80]));
     });
 
     test('can get pad length without size parameter', () {
-      var block = [-1, -1, 0x80, 0, 0];
+      var block = Uint8List.fromList([0xFF, 0xFF, 0x80, 0, 0]);
       expect(Padding.byte.getPadLength(block), 3);
     });
 
     test('can unpad without the size parameter', () {
-      var block = [-1, -1, 0x80, 0, 0];
-      expect(Padding.byte.unpad(block), equals([-1, -1]));
-      expect(block, equals([-1, -1, 0x80, 0, 0]));
+      var block = Uint8List.fromList([0xFF, 0xFF, 0x80, 0, 0]);
+      expect(Padding.byte.unpad(block), equals([0xFF, 0xFF]));
+      expect(block, equals([0xFF, 0xFF, 0x80, 0, 0]));
     });
 
     test('throws when it contains invalid byte', () {
-      var block = [-1, -1, 0x80, 1, 0];
+      var block = Uint8List.fromList([0xFF, 0xFF, 0x80, 1, 0]);
       expect(() => Padding.byte.getPadLength(block), throwsStateError);
     });
 
     test('throws when no sign byte is present', () {
-      var block = [0, 0, 0, 0];
+      var block = Uint8List.fromList([0, 0, 0, 0]);
       expect(() => Padding.byte.getPadLength(block), throwsStateError);
     });
   });
@@ -122,7 +133,7 @@ void main() {
     test('pad <-> unpad', () {
       for (int s = 1; s < 100; ++s) {
         for (int i = 0; i < s; ++i) {
-          var block = List.filled(100, -1);
+          var block = Uint8List.fromList(List.filled(100, 0xFF));
           expect(Padding.ansi.pad(block, i, s), true,
               reason: 'pad | pos: $i, size: $s');
           expect(
@@ -138,29 +149,34 @@ void main() {
     });
 
     test('can pad without the size parameter', () {
-      var block = [-1, -1, -1, -1];
+      var block = Uint8List.fromList([0xFF, 0xFF, 0xFF, 0xFF]);
       expect(Padding.ansi.pad(block, 2), true);
-      expect(block, equals([-1, -1, 0, 2]));
+      expect(block, equals([0xFF, 0xFF, 0, 2]));
     });
 
     test('can get pad length without size parameter', () {
-      var block = [-1, -1, 0, 0, 3];
+      var block = Uint8List.fromList([0xFF, 0xFF, 0, 0, 3]);
       expect(Padding.ansi.getPadLength(block), 3);
     });
 
     test('can unpad without the size parameter', () {
-      var block = [-1, -1, 0, 0, 3];
-      expect(Padding.ansi.unpad(block), equals([-1, -1]));
-      expect(block, equals([-1, -1, 0, 0, 3]));
+      var block = Uint8List.fromList([0xFF, 0xFF, 0, 0, 3]);
+      expect(Padding.ansi.unpad(block), equals([0xFF, 0xFF]));
+      expect(block, equals([0xFF, 0xFF, 0, 0, 3]));
     });
 
     test('throws when padding count is invalid', () {
-      var block = [-1, -1, 0, 0, 10];
+      var block = Uint8List.fromList([0xFF, 0xFF, 0, 0, 10]);
+      expect(() => Padding.ansi.getPadLength(block), throwsStateError);
+    });
+
+    test('throws when sign byte is zero', () {
+      var block = Uint8List.fromList([0xFF, 0xFF, 0, 0, 0]);
       expect(() => Padding.ansi.getPadLength(block), throwsStateError);
     });
 
     test('throws when padding bytes are not valid', () {
-      var block = [-1, -1, -1, 0, 3];
+      var block = Uint8List.fromList([0xFF, 0xFF, 0xFF, 0, 3]);
       expect(() => Padding.ansi.getPadLength(block), throwsStateError);
     });
 
@@ -187,7 +203,7 @@ void main() {
     test('pad <-> unpad', () {
       for (int s = 1; s < 100; ++s) {
         for (int i = 0; i < s; ++i) {
-          var block = List.filled(100, -1);
+          var block = Uint8List.fromList(List.filled(100, 0xFF));
           expect(Padding.pkcs7.pad(block, i, s), true,
               reason: 'pad | pos: $i, size: $s');
           expect(block.skip(i).take(s - i), equals(List.filled(s - i, s - i)),
@@ -200,20 +216,20 @@ void main() {
     });
 
     test('can pad without the size parameter', () {
-      var block = [-1, -1, -1, -1];
+      var block = Uint8List.fromList([0xFF, 0xFF, 0xFF, 0xFF]);
       expect(Padding.pkcs7.pad(block, 2), true);
-      expect(block, equals([-1, -1, 2, 2]));
+      expect(block, equals([0xFF, 0xFF, 2, 2]));
     });
 
     test('can get pad length without size parameter', () {
-      var block = [-1, -1, 3, 3, 3];
+      var block = Uint8List.fromList([0xFF, 0xFF, 3, 3, 3]);
       expect(Padding.pkcs7.getPadLength(block), 3);
     });
 
     test('can unpad without the size parameter', () {
-      var block = [-1, -1, 3, 3, 3];
-      expect(Padding.pkcs7.unpad(block), equals([-1, -1]));
-      expect(block, equals([-1, -1, 3, 3, 3]));
+      var block = Uint8List.fromList([0xFF, 0xFF, 3, 3, 3]);
+      expect(Padding.pkcs7.unpad(block), equals([0xFF, 0xFF]));
+      expect(block, equals([0xFF, 0xFF, 3, 3, 3]));
     });
 
     test('max padding size limit is 255', () {
@@ -227,12 +243,17 @@ void main() {
     });
 
     test('throws when sign byte is not valid', () {
-      var block = [-1, -1, 10, 10, 10];
+      var block = Uint8List.fromList([0xFF, 0xFF, 10, 10, 10]);
       expect(() => Padding.pkcs7.getPadLength(block), throwsStateError);
     });
 
     test('throws when sign byte is not sequential', () {
-      var block = [-1, -1, 0, 3, 3];
+      var block = Uint8List.fromList([0xFF, 0xFF, 0, 3, 3]);
+      expect(() => Padding.pkcs7.getPadLength(block), throwsStateError);
+    });
+
+    test('throws when sign byte is zero', () {
+      var block = Uint8List.fromList([0xFF, 0xFF, 0, 0, 0]);
       expect(() => Padding.pkcs7.getPadLength(block), throwsStateError);
     });
   });
@@ -255,7 +276,7 @@ void main() {
     test('pad <-> unpad', () {
       int s = 8;
       for (int i = 0; i < s; ++i) {
-        var block = List.filled(100, -1);
+        var block = Uint8List.fromList(List.filled(100, 0xFF));
         expect(Padding.pkcs5.pad(block, i, s), true,
             reason: 'pad | pos: $i, size: $s');
         expect(block.skip(i).take(s - i), equals(List.filled(s - i, s - i)),

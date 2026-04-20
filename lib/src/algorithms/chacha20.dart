@@ -60,18 +60,26 @@ class ChaCha20 extends Cipher with SaltedCipher {
       if (counter == null) {
         nonce8[0] = 1;
       } else {
-        nonce8.setRange(0, counter.length, counter.bytes);
+        for (int i = 0; i < counter.length; i++) {
+          nonce8[i] = counter.bytes[i];
+        }
       }
-      nonce8.setAll(8, nonce);
+      for (int i = 0; i < nonce.length; i++) {
+        nonce8[i + 8] = nonce[i];
+      }
     } else if (nonce.length == 12) {
       counterSize = 4;
       nonce8 = Uint8List(16);
       if (counter == null) {
         nonce8[0] = 1;
       } else {
-        nonce8.setAll(0, counter.bytes);
+        for (int i = 0; i < counter.length; i++) {
+          nonce8[i] = counter.bytes[i];
+        }
       }
-      nonce8.setAll(4, nonce);
+      for (int i = 0; i < nonce.length; i++) {
+        nonce8[i + 4] = nonce[i];
+      }
     } else if (nonce.length == 16) {
       if (counter != null) {
         throw ArgumentError('Counter is not expected with 16-byte nonce');
@@ -87,7 +95,6 @@ class ChaCha20 extends Cipher with SaltedCipher {
   /// The One-Time-Key used for AEAD cipher
   Uint8List $otk() {
     var state32 = Uint32List(16);
-    var state = Uint8List.view(state32.buffer);
     var key32 = Uint32List.view(key.buffer);
     var iv32 = Uint32List.view(_nonce.buffer);
     var nonce32 = Uint32List(4);
@@ -97,40 +104,34 @@ class ChaCha20 extends Cipher with SaltedCipher {
     nonce32[2] = iv32[2];
     nonce32[3] = iv32[3];
     _process(state32, key32, nonce32);
-    return state.sublist(0, 32);
+    return Uint8List.view(state32.buffer).sublist(0, 32);
   }
 
   @override
   Uint8List convert(List<int> message) {
+    int i, p, n;
+    n = message.length;
+
     final iv32 = Uint32List(4);
+    final result = Uint8List(n);
     final state32 = Uint32List(16);
     final state = Uint8List.view(state32.buffer);
     final key32 = Uint32List.view(key.buffer);
     final nonce32 = Uint32List.view(_nonce.buffer);
-    final result = Uint8List(message.length);
 
     iv32[0] = nonce32[0];
     iv32[1] = nonce32[1];
     iv32[2] = nonce32[2];
     iv32[3] = nonce32[3];
 
-    _process(state32, key32, iv32);
-    ++iv32[0];
-    if (iv32[0] == 0 && _counterBytes == 8) {
-      ++iv32[1];
-    }
-
-    for (int i = 0, p = 0; i < message.length;) {
-      for (; p < 64 && i < message.length; ++p, ++i) {
-        result[i] = message[i] ^ state[p];
+    for (i = 0; i < message.length;) {
+      _process(state32, key32, iv32);
+      ++iv32[0];
+      if (iv32[0] == 0 && _counterBytes == 8) {
+        ++iv32[1];
       }
-      if (p == 64) {
-        _process(state32, key32, iv32);
-        ++iv32[0];
-        if (iv32[0] == 0 && _counterBytes == 8) {
-          ++iv32[1];
-        }
-        p = 0;
+      for (p = 0; p < 64 && i < message.length; ++p, ++i) {
+        result[i] = message[i] ^ state[p];
       }
     }
 
@@ -400,7 +401,10 @@ class XChaCha20 extends ChaCha20 {
       state32[14],
       state32[15],
     ]);
-    key.setAll(0, Uint8List.view(subkey32.buffer));
+    var subkey = Uint8List.view(subkey32.buffer);
+    for (int i = 0; i < key.length; i++) {
+      key[i] = subkey[i];
+    }
 
     // Use the subkey and remaining 8 byte of nonce
     var iv32 = Uint32List.view(_nonce.buffer);

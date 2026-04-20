@@ -3,6 +3,16 @@
 
 import 'dart:typed_data';
 
+@pragma('vm:prefer-inline')
+int _validateSize(Uint8List block, int? size) {
+  if (size == null) {
+    return block.length;
+  } else if (size < 0 || size > block.length) {
+    throw StateError('Invalid block size');
+  }
+  return size;
+}
+
 /// Padding is a process to extend the input message to match a specific
 /// block size to be used in the cryptographic algorithms.
 ///
@@ -100,21 +110,19 @@ abstract class Padding {
   /// matching some constraints of specific schemes.
   ///
   /// Returns true if the padding was applied, false otherwise.
-  bool pad(List<int> block, int pos, [int? size]);
+  bool pad(Uint8List block, int pos, [int? size]);
 
   /// Returns the padding length from the [block] according to the scheme.
   ///
   /// Throws [StateError] on malformatted block.
-  int getPadLength(List<int> block, [int? size]);
+  int getPadLength(Uint8List block, [int? size]);
 
   /// Returns the original message after removing padding from the [block]
   /// using the scheme.
-  List<int> unpad(List<int> block, [int? size]) {
+  @pragma('vm:prefer-inline')
+  Uint8List unpad(Uint8List block, [int? size]) {
     size ??= block.length;
     int p = getPadLength(block, size);
-    if (p == size) {
-      return Uint8List(0);
-    }
     return block.sublist(0, size - p);
   }
 }
@@ -127,19 +135,23 @@ class _NonePadding implements Padding {
 
   @override
   @pragma('vm:prefer-inline')
-  bool pad(List<int> block, int pos, [int? size]) => false;
+  bool pad(Uint8List block, int pos, [int? size]) => false;
 
   @override
   @pragma('vm:prefer-inline')
-  int getPadLength(List<int> block, [int? size]) => 0;
+  int getPadLength(Uint8List block, [int? size]) => 0;
 
   @override
   @pragma('vm:prefer-inline')
-  List<int> unpad(List<int> block, [int? size]) => size == null
-      ? block
-      : size == 0
-          ? Uint8List(0)
-          : block.sublist(0, size);
+  Uint8List unpad(Uint8List block, [int? size]) {
+    if (size == null || size == block.length) {
+      return block;
+    }
+    if (size < 0 || size > block.length) {
+      throw StateError('Invalid block size');
+    }
+    return block.sublist(0, size);
+  }
 }
 
 class _ZeroPadding extends Padding {
@@ -149,25 +161,25 @@ class _ZeroPadding extends Padding {
   const _ZeroPadding();
 
   @override
-  bool pad(List<int> block, int pos, [int? size]) {
-    size ??= block.length;
-    block.fillRange(pos, size, 0);
-    for (; pos < size; pos++) {
-      block[pos] = 0;
+  @pragma('vm:prefer-inline')
+  bool pad(Uint8List block, int pos, [int? size]) {
+    size = _validateSize(block, size);
+    if (pos < 0 || pos >= size) {
+      throw StateError('No space for padding');
     }
+    block.fillRange(pos, size, 0);
     return true;
   }
 
   @override
-  int getPadLength(List<int> block, [int? size]) {
-    size ??= block.length;
-    int p;
-    for (p = size; p > 0; p--) {
-      if (block[p - 1] != 0) {
-        break;
-      }
+  @pragma('vm:prefer-inline')
+  int getPadLength(Uint8List block, [int? size]) {
+    size = _validateSize(block, size);
+    int p = size - 1;
+    while (p >= 0 && block[p] == 0) {
+      p--;
     }
-    return size - p;
+    return size - 1 - p;
   }
 }
 
@@ -178,33 +190,33 @@ class _BytePadding extends Padding {
   const _BytePadding();
 
   @override
-  bool pad(List<int> block, int pos, [int? size]) {
-    size ??= block.length;
-    if (pos >= size) {
+  @pragma('vm:prefer-inline')
+  bool pad(Uint8List block, int pos, [int? size]) {
+    size = _validateSize(block, size);
+    if (pos < 0 || pos >= size) {
       throw StateError('No space for padding');
     }
-    block[pos++] = 0x80;
-    for (; pos < size; pos++) {
-      block[pos] = 0;
+    block[pos] = 0x80;
+    if (pos + 1 < size) {
+      block.fillRange(pos + 1, size, 0);
     }
     return true;
   }
 
   @override
-  int getPadLength(List<int> block, [int? size]) {
-    size ??= block.length;
-    int p;
-    for (p = size - 1; p >= 0; p--) {
-      if (block[p] == 0x80) {
-        break;
-      } else if (block[p] != 0) {
+  @pragma('vm:prefer-inline')
+  int getPadLength(Uint8List block, [int? size]) {
+    size = _validateSize(block, size);
+    for (int p = size - 1; p >= 0; p--) {
+      int b = block[p];
+      if (b == 0x80) {
+        return size - p;
+      }
+      if (b != 0) {
         throw StateError('Invalid padding');
       }
     }
-    if (p < 0) {
-      throw StateError('Invalid padding');
-    }
-    return size - p;
+    throw StateError('Invalid padding');
   }
 }
 
@@ -215,30 +227,36 @@ class _ANSIPadding extends Padding {
   const _ANSIPadding();
 
   @override
-  bool pad(List<int> block, int pos, [int? size]) {
-    size ??= block.length;
-    if (pos >= size) {
+  @pragma('vm:prefer-inline')
+  bool pad(Uint8List block, int pos, [int? size]) {
+    size = _validateSize(block, size);
+    if (pos < 0 || pos >= size) {
       throw StateError('No space for padding');
     }
     int n = size - pos;
     if (n > 255) {
       throw StateError('Padding size must not exceed 255 bytes');
     }
-    for (; pos < size; pos++) {
-      block[pos] = 0;
+    if (pos < size - 1) {
+      block.fillRange(pos, size - 1, 0);
     }
-    block[pos - 1] = n;
+    block[size - 1] = n;
     return true;
   }
 
   @override
-  int getPadLength(List<int> block, [int? size]) {
-    size ??= block.length;
-    int n = block[size - 1];
-    if (size < n) {
+  @pragma('vm:prefer-inline')
+  int getPadLength(Uint8List block, [int? size]) {
+    size = _validateSize(block, size);
+    if (size == 0) {
       throw StateError('Invalid padding');
     }
-    for (int p = size - n; p < size - 1; p++) {
+    int n = block[size - 1];
+    if (n == 0 || size < n) {
+      throw StateError('Invalid padding');
+    }
+    int end = size - 1;
+    for (int p = size - n; p < end; p++) {
       if (block[p] != 0) {
         throw StateError('Invalid padding');
       }
@@ -254,26 +272,29 @@ class _PKCS7Padding extends Padding {
   const _PKCS7Padding();
 
   @override
-  bool pad(List<int> block, int pos, [int? size]) {
-    size ??= block.length;
-    if (pos >= size) {
+  @pragma('vm:prefer-inline')
+  bool pad(Uint8List block, int pos, [int? size]) {
+    size = _validateSize(block, size);
+    if (pos < 0 || pos >= size) {
       throw StateError('No space for padding');
     }
     int n = size - pos;
     if (n > 255) {
       throw StateError('Padding size must not exceed 255 bytes');
     }
-    for (; pos < size; pos++) {
-      block[pos] = n;
-    }
+    block.fillRange(pos, size, n);
     return true;
   }
 
   @override
-  int getPadLength(List<int> block, [int? size]) {
-    size ??= block.length;
+  @pragma('vm:prefer-inline')
+  int getPadLength(Uint8List block, [int? size]) {
+    size = _validateSize(block, size);
+    if (size == 0) {
+      throw StateError('Invalid padding');
+    }
     int n = block[size - 1];
-    if (size < n) {
+    if (n == 0 || size < n) {
       throw StateError('Invalid padding');
     }
     for (int p = size - n; p < size; p++) {
@@ -292,18 +313,16 @@ class _PKCS5Padding extends _PKCS7Padding {
   const _PKCS5Padding();
 
   @override
-  bool pad(List<int> block, int pos, [int? size]) {
-    size ??= block.length;
-    if (pos >= size) {
+  @pragma('vm:prefer-inline')
+  bool pad(Uint8List block, int pos, [int? size]) {
+    size = _validateSize(block, size);
+    if (pos < 0 || pos >= size) {
       throw StateError('No space for padding');
     }
     if (size != 8) {
       throw StateError('Block must be exactly 64-bit');
     }
-    int n = size - pos;
-    for (; pos < size; pos++) {
-      block[pos] = n;
-    }
+    block.fillRange(pos, size, size - pos);
     return true;
   }
 }

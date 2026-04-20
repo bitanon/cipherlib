@@ -7,223 +7,323 @@ import 'dart:typed_data';
 ///
 /// [nist]: https://doi.org/10.6028/NIST.FIPS.197-upd1
 abstract class AESCore {
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  static int _swap32(int x) =>
+      ((x << 24) & 0xff000000) ^
+      ((x << 8) & 0x00ff0000) ^
+      ((x >>> 8) & 0x0000ff00) ^
+      ((x >>> 24) & 0x000000ff);
+
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  static int _wordSub(int x) =>
+      (_sbox[(x >>> 24)] << 24) ^
+      (_sbox[(x >>> 16) & 0xFF] << 16) ^
+      (_sbox[(x >>> 8) & 0xFF] << 8) ^
+      (_sbox[(x) & 0xFF]);
+
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  static int _wordSubRot(int x) =>
+      (_sbox[(x >>> 16) & 0xFF] << 24) ^
+      (_sbox[(x >>> 8) & 0xFF] << 16) ^
+      (_sbox[(x) & 0xFF] << 8) ^
+      (_sbox[(x >>> 24)]);
+
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  static int _wordMixInv(int x) =>
+      _dmix0[_sbox[(x >>> 24)]] ^
+      _dmix1[_sbox[(x >>> 16) & 0xFF]] ^
+      _dmix2[_sbox[(x >>> 8) & 0xFF]] ^
+      _dmix3[_sbox[(x) & 0xFF]];
+
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  static int _byteSub(int s0, int s1, int s2, int s3) =>
+      (_sbox[(s0 >>> 24)] << 24) ^
+      (_sbox[(s1 >>> 16) & 0xFF] << 16) ^
+      (_sbox[(s2 >>> 8) & 0xFF] << 8) ^
+      (_sbox[(s3) & 0xFF]);
+
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  static int _byteMix(int s0, int s1, int s2, int s3) =>
+      _mix0[(s0 >>> 24)] ^
+      _mix1[(s1 >>> 16) & 0xFF] ^
+      _mix2[(s2 >>> 8) & 0xFF] ^
+      _mix3[(s3) & 0xFF];
+
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  static int _byteSubInv(int s0, int s1, int s2, int s3) =>
+      (_dsbox[(s0 >>> 24)] << 24) ^
+      (_dsbox[(s1 >>> 16) & 0xFF] << 16) ^
+      (_dsbox[(s2 >>> 8) & 0xFF] << 8) ^
+      (_dsbox[(s3) & 0xFF]);
+
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  static int _byteMixInv(int s0, int s1, int s2, int s3) =>
+      _dmix0[(s0 >>> 24)] ^
+      _dmix1[(s1 >>> 16) & 0xFF] ^
+      _dmix2[(s2 >>> 8) & 0xFF] ^
+      _dmix3[(s3) & 0xFF];
+
+  /// Expands 128-bit key for AES encryption.
+  @pragma('vm:prefer-inline')
+  static Uint32List _expandEncryptionKey128bit(Uint32List key) {
+    int s0, s1, s2, s3;
+    var w = Uint32List(44);
+    s0 = w[00] = _swap32(key[0]);
+    s1 = w[01] = _swap32(key[1]);
+    s2 = w[02] = _swap32(key[2]);
+    s3 = w[03] = _swap32(key[3]);
+    // 0: 4..7
+    s0 = w[04] = s0 ^ _wordSubRot(s3) ^ _rcon[0];
+    s1 = w[05] = s1 ^ s0;
+    s2 = w[06] = s2 ^ s1;
+    s3 = w[07] = s3 ^ s2;
+    // 1: 8..11
+    s0 = w[08] = s0 ^ _wordSubRot(s3) ^ _rcon[1];
+    s1 = w[09] = s1 ^ s0;
+    s2 = w[10] = s2 ^ s1;
+    s3 = w[11] = s3 ^ s2;
+    // 2: 12..15
+    s0 = w[12] = s0 ^ _wordSubRot(s3) ^ _rcon[2];
+    s1 = w[13] = s1 ^ s0;
+    s2 = w[14] = s2 ^ s1;
+    s3 = w[15] = s3 ^ s2;
+    // 3: 16..19
+    s0 = w[16] = s0 ^ _wordSubRot(s3) ^ _rcon[3];
+    s1 = w[17] = s1 ^ s0;
+    s2 = w[18] = s2 ^ s1;
+    s3 = w[19] = s3 ^ s2;
+    // 4: 20..23
+    s0 = w[20] = s0 ^ _wordSubRot(s3) ^ _rcon[4];
+    s1 = w[21] = s1 ^ s0;
+    s2 = w[22] = s2 ^ s1;
+    s3 = w[23] = s3 ^ s2;
+    // 5: 24..27
+    s0 = w[24] = s0 ^ _wordSubRot(s3) ^ _rcon[5];
+    s1 = w[25] = s1 ^ s0;
+    s2 = w[26] = s2 ^ s1;
+    s3 = w[27] = s3 ^ s2;
+    // 6: 28..31
+    s0 = w[28] = s0 ^ _wordSubRot(s3) ^ _rcon[6];
+    s1 = w[29] = s1 ^ s0;
+    s2 = w[30] = s2 ^ s1;
+    s3 = w[31] = s3 ^ s2;
+    // 7: 32..35
+    s0 = w[32] = s0 ^ _wordSubRot(s3) ^ _rcon[7];
+    s1 = w[33] = s1 ^ s0;
+    s2 = w[34] = s2 ^ s1;
+    s3 = w[35] = s3 ^ s2;
+    // 8: 36..39
+    s0 = w[36] = s0 ^ _wordSubRot(s3) ^ _rcon[8];
+    s1 = w[37] = s1 ^ s0;
+    s2 = w[38] = s2 ^ s1;
+    s3 = w[39] = s3 ^ s2;
+    // 9: 40..43
+    s0 = w[40] = s0 ^ _wordSubRot(s3) ^ _rcon[9];
+    s1 = w[41] = s1 ^ s0;
+    s2 = w[42] = s2 ^ s1;
+    s3 = w[43] = s3 ^ s2;
+    // result
+    return w;
+  }
+
+  /// Expands 192-bit key for AES encryption.
+  @pragma('vm:prefer-inline')
+  static Uint32List _expandEncryptionKey192bit(Uint32List key) {
+    int s0, s1, s2, s3, s4, s5;
+    var w = Uint32List(52);
+    s0 = w[00] = _swap32(key[0]);
+    s1 = w[01] = _swap32(key[1]);
+    s2 = w[02] = _swap32(key[2]);
+    s3 = w[03] = _swap32(key[3]);
+    s4 = w[04] = _swap32(key[4]);
+    s5 = w[05] = _swap32(key[5]);
+    // 0: 6..11
+    s0 = w[06] = s0 ^ _wordSubRot(s5) ^ _rcon[0];
+    s1 = w[07] = s1 ^ s0;
+    s2 = w[08] = s2 ^ s1;
+    s3 = w[09] = s3 ^ s2;
+    s4 = w[10] = s4 ^ s3;
+    s5 = w[11] = s5 ^ s4;
+    // 1: 12..17
+    s0 = w[12] = s0 ^ _wordSubRot(s5) ^ _rcon[1];
+    s1 = w[13] = s1 ^ s0;
+    s2 = w[14] = s2 ^ s1;
+    s3 = w[15] = s3 ^ s2;
+    s4 = w[16] = s4 ^ s3;
+    s5 = w[17] = s5 ^ s4;
+    // 2: 18..23
+    s0 = w[18] = s0 ^ _wordSubRot(s5) ^ _rcon[2];
+    s1 = w[19] = s1 ^ s0;
+    s2 = w[20] = s2 ^ s1;
+    s3 = w[21] = s3 ^ s2;
+    s4 = w[22] = s4 ^ s3;
+    s5 = w[23] = s5 ^ s4;
+    // 3: 24..29
+    s0 = w[24] = s0 ^ _wordSubRot(s5) ^ _rcon[3];
+    s1 = w[25] = s1 ^ s0;
+    s2 = w[26] = s2 ^ s1;
+    s3 = w[27] = s3 ^ s2;
+    s4 = w[28] = s4 ^ s3;
+    s5 = w[29] = s5 ^ s4;
+    // 4: 30..35
+    s0 = w[30] = s0 ^ _wordSubRot(s5) ^ _rcon[4];
+    s1 = w[31] = s1 ^ s0;
+    s2 = w[32] = s2 ^ s1;
+    s3 = w[33] = s3 ^ s2;
+    s4 = w[34] = s4 ^ s3;
+    s5 = w[35] = s5 ^ s4;
+    // 5: 36..41
+    s0 = w[36] = s0 ^ _wordSubRot(s5) ^ _rcon[5];
+    s1 = w[37] = s1 ^ s0;
+    s2 = w[38] = s2 ^ s1;
+    s3 = w[39] = s3 ^ s2;
+    s4 = w[40] = s4 ^ s3;
+    s5 = w[41] = s5 ^ s4;
+    // 6: 42..47
+    s0 = w[42] = s0 ^ _wordSubRot(s5) ^ _rcon[6];
+    s1 = w[43] = s1 ^ s0;
+    s2 = w[44] = s2 ^ s1;
+    s3 = w[45] = s3 ^ s2;
+    s4 = w[46] = s4 ^ s3;
+    s5 = w[47] = s5 ^ s4;
+    // 7: 48..51
+    s0 = w[48] = s0 ^ _wordSubRot(s5) ^ _rcon[7];
+    s1 = w[49] = s1 ^ s0;
+    s2 = w[50] = s2 ^ s1;
+    s3 = w[51] = s3 ^ s2;
+    // result
+    return w;
+  }
+
+  /// Expands 256-bit key for AES encryption.
+  @pragma('vm:prefer-inline')
+  static Uint32List _expandEncryptionKey256bit(Uint32List key) {
+    int s0, s1, s2, s3, s4, s5, s6, s7;
+    var w = Uint32List(60);
+    s0 = w[00] = _swap32(key[0]);
+    s1 = w[01] = _swap32(key[1]);
+    s2 = w[02] = _swap32(key[2]);
+    s3 = w[03] = _swap32(key[3]);
+    s4 = w[04] = _swap32(key[4]);
+    s5 = w[05] = _swap32(key[5]);
+    s6 = w[06] = _swap32(key[6]);
+    s7 = w[07] = _swap32(key[7]);
+    // 0: 8..15
+    s0 = w[08] = s0 ^ _wordSubRot(s7) ^ _rcon[0];
+    s1 = w[09] = s1 ^ s0;
+    s2 = w[10] = s2 ^ s1;
+    s3 = w[11] = s3 ^ s2;
+    s4 = w[12] = s4 ^ _wordSub(s3);
+    s5 = w[13] = s5 ^ s4;
+    s6 = w[14] = s6 ^ s5;
+    s7 = w[15] = s7 ^ s6;
+    // 1: 16..23
+    s0 = w[16] = s0 ^ _wordSubRot(s7) ^ _rcon[1];
+    s1 = w[17] = s1 ^ s0;
+    s2 = w[18] = s2 ^ s1;
+    s3 = w[19] = s3 ^ s2;
+    s4 = w[20] = s4 ^ _wordSub(s3);
+    s5 = w[21] = s5 ^ s4;
+    s6 = w[22] = s6 ^ s5;
+    s7 = w[23] = s7 ^ s6;
+    // 2: 24..31
+    s0 = w[24] = s0 ^ _wordSubRot(s7) ^ _rcon[2];
+    s1 = w[25] = s1 ^ s0;
+    s2 = w[26] = s2 ^ s1;
+    s3 = w[27] = s3 ^ s2;
+    s4 = w[28] = s4 ^ _wordSub(s3);
+    s5 = w[29] = s5 ^ s4;
+    s6 = w[30] = s6 ^ s5;
+    s7 = w[31] = s7 ^ s6;
+    // 3: 32..39
+    s0 = w[32] = s0 ^ _wordSubRot(s7) ^ _rcon[3];
+    s1 = w[33] = s1 ^ s0;
+    s2 = w[34] = s2 ^ s1;
+    s3 = w[35] = s3 ^ s2;
+    s4 = w[36] = s4 ^ _wordSub(s3);
+    s5 = w[37] = s5 ^ s4;
+    s6 = w[38] = s6 ^ s5;
+    s7 = w[39] = s7 ^ s6;
+    // 4: 40..47
+    s0 = w[40] = s0 ^ _wordSubRot(s7) ^ _rcon[4];
+    s1 = w[41] = s1 ^ s0;
+    s2 = w[42] = s2 ^ s1;
+    s3 = w[43] = s3 ^ s2;
+    s4 = w[44] = s4 ^ _wordSub(s3);
+    s5 = w[45] = s5 ^ s4;
+    s6 = w[46] = s6 ^ s5;
+    s7 = w[47] = s7 ^ s6;
+    // 5: 48..55
+    s0 = w[48] = s0 ^ _wordSubRot(s7) ^ _rcon[5];
+    s1 = w[49] = s1 ^ s0;
+    s2 = w[50] = s2 ^ s1;
+    s3 = w[51] = s3 ^ s2;
+    s4 = w[52] = s4 ^ _wordSub(s3);
+    s5 = w[53] = s5 ^ s4;
+    s6 = w[54] = s6 ^ s5;
+    s7 = w[55] = s7 ^ s6;
+    // 6: 56..58
+    s0 = w[56] = s0 ^ _wordSubRot(s7) ^ _rcon[6];
+    s1 = w[57] = s1 ^ s0;
+    s2 = w[58] = s2 ^ s1;
+    s3 = w[59] = s3 ^ s2;
+    // result
+    return w;
+  }
+
+  /// ------------------------------------------------------------
+
   /// Expands the key for AES encryption.
   static Uint32List $expandEncryptionKey(Uint32List key) {
     switch (key.lengthInBytes) {
       case 16: // 128-bit
-        {
-          int s0, s1, s2, s3;
-          var w = Uint32List(44);
-          s0 = w[00] = _swap32(key[0]);
-          s1 = w[01] = _swap32(key[1]);
-          s2 = w[02] = _swap32(key[2]);
-          s3 = w[03] = _swap32(key[3]);
-          // 0: 4..7
-          s0 = w[04] = s0 ^ _wordSubRot(s3) ^ _rcon[0];
-          s1 = w[05] = s1 ^ s0;
-          s2 = w[06] = s2 ^ s1;
-          s3 = w[07] = s3 ^ s2;
-          // 1: 8..11
-          s0 = w[08] = s0 ^ _wordSubRot(s3) ^ _rcon[1];
-          s1 = w[09] = s1 ^ s0;
-          s2 = w[10] = s2 ^ s1;
-          s3 = w[11] = s3 ^ s2;
-          // 2: 12..15
-          s0 = w[12] = s0 ^ _wordSubRot(s3) ^ _rcon[2];
-          s1 = w[13] = s1 ^ s0;
-          s2 = w[14] = s2 ^ s1;
-          s3 = w[15] = s3 ^ s2;
-          // 3: 16..19
-          s0 = w[16] = s0 ^ _wordSubRot(s3) ^ _rcon[3];
-          s1 = w[17] = s1 ^ s0;
-          s2 = w[18] = s2 ^ s1;
-          s3 = w[19] = s3 ^ s2;
-          // 4: 20..23
-          s0 = w[20] = s0 ^ _wordSubRot(s3) ^ _rcon[4];
-          s1 = w[21] = s1 ^ s0;
-          s2 = w[22] = s2 ^ s1;
-          s3 = w[23] = s3 ^ s2;
-          // 5: 24..27
-          s0 = w[24] = s0 ^ _wordSubRot(s3) ^ _rcon[5];
-          s1 = w[25] = s1 ^ s0;
-          s2 = w[26] = s2 ^ s1;
-          s3 = w[27] = s3 ^ s2;
-          // 6: 28..31
-          s0 = w[28] = s0 ^ _wordSubRot(s3) ^ _rcon[6];
-          s1 = w[29] = s1 ^ s0;
-          s2 = w[30] = s2 ^ s1;
-          s3 = w[31] = s3 ^ s2;
-          // 7: 32..35
-          s0 = w[32] = s0 ^ _wordSubRot(s3) ^ _rcon[7];
-          s1 = w[33] = s1 ^ s0;
-          s2 = w[34] = s2 ^ s1;
-          s3 = w[35] = s3 ^ s2;
-          // 8: 36..39
-          s0 = w[36] = s0 ^ _wordSubRot(s3) ^ _rcon[8];
-          s1 = w[37] = s1 ^ s0;
-          s2 = w[38] = s2 ^ s1;
-          s3 = w[39] = s3 ^ s2;
-          // 9: 40..43
-          s0 = w[40] = s0 ^ _wordSubRot(s3) ^ _rcon[9];
-          s1 = w[41] = s1 ^ s0;
-          s2 = w[42] = s2 ^ s1;
-          s3 = w[43] = s3 ^ s2;
-          // result
-          return w;
-        }
+        return _expandEncryptionKey128bit(key);
       case 24: // 192-bit
-        {
-          int s0, s1, s2, s3, s4, s5;
-          var w = Uint32List(52);
-          s0 = w[00] = _swap32(key[0]);
-          s1 = w[01] = _swap32(key[1]);
-          s2 = w[02] = _swap32(key[2]);
-          s3 = w[03] = _swap32(key[3]);
-          s4 = w[04] = _swap32(key[4]);
-          s5 = w[05] = _swap32(key[5]);
-          // 0: 6..11
-          s0 = w[06] = s0 ^ _wordSubRot(s5) ^ _rcon[0];
-          s1 = w[07] = s1 ^ s0;
-          s2 = w[08] = s2 ^ s1;
-          s3 = w[09] = s3 ^ s2;
-          s4 = w[10] = s4 ^ s3;
-          s5 = w[11] = s5 ^ s4;
-          // 1: 12..17
-          s0 = w[12] = s0 ^ _wordSubRot(s5) ^ _rcon[1];
-          s1 = w[13] = s1 ^ s0;
-          s2 = w[14] = s2 ^ s1;
-          s3 = w[15] = s3 ^ s2;
-          s4 = w[16] = s4 ^ s3;
-          s5 = w[17] = s5 ^ s4;
-          // 2: 18..23
-          s0 = w[18] = s0 ^ _wordSubRot(s5) ^ _rcon[2];
-          s1 = w[19] = s1 ^ s0;
-          s2 = w[20] = s2 ^ s1;
-          s3 = w[21] = s3 ^ s2;
-          s4 = w[22] = s4 ^ s3;
-          s5 = w[23] = s5 ^ s4;
-          // 3: 24..29
-          s0 = w[24] = s0 ^ _wordSubRot(s5) ^ _rcon[3];
-          s1 = w[25] = s1 ^ s0;
-          s2 = w[26] = s2 ^ s1;
-          s3 = w[27] = s3 ^ s2;
-          s4 = w[28] = s4 ^ s3;
-          s5 = w[29] = s5 ^ s4;
-          // 4: 30..35
-          s0 = w[30] = s0 ^ _wordSubRot(s5) ^ _rcon[4];
-          s1 = w[31] = s1 ^ s0;
-          s2 = w[32] = s2 ^ s1;
-          s3 = w[33] = s3 ^ s2;
-          s4 = w[34] = s4 ^ s3;
-          s5 = w[35] = s5 ^ s4;
-          // 5: 36..41
-          s0 = w[36] = s0 ^ _wordSubRot(s5) ^ _rcon[5];
-          s1 = w[37] = s1 ^ s0;
-          s2 = w[38] = s2 ^ s1;
-          s3 = w[39] = s3 ^ s2;
-          s4 = w[40] = s4 ^ s3;
-          s5 = w[41] = s5 ^ s4;
-          // 6: 42..47
-          s0 = w[42] = s0 ^ _wordSubRot(s5) ^ _rcon[6];
-          s1 = w[43] = s1 ^ s0;
-          s2 = w[44] = s2 ^ s1;
-          s3 = w[45] = s3 ^ s2;
-          s4 = w[46] = s4 ^ s3;
-          s5 = w[47] = s5 ^ s4;
-          // 7: 48..51
-          s0 = w[48] = s0 ^ _wordSubRot(s5) ^ _rcon[7];
-          s1 = w[49] = s1 ^ s0;
-          s2 = w[50] = s2 ^ s1;
-          s3 = w[51] = s3 ^ s2;
-          // result
-          return w;
-        }
+        return _expandEncryptionKey192bit(key);
       case 32: // 256-bit
-        {
-          int s0, s1, s2, s3, s4, s5, s6, s7;
-          var w = Uint32List(60);
-          s0 = w[00] = _swap32(key[0]);
-          s1 = w[01] = _swap32(key[1]);
-          s2 = w[02] = _swap32(key[2]);
-          s3 = w[03] = _swap32(key[3]);
-          s4 = w[04] = _swap32(key[4]);
-          s5 = w[05] = _swap32(key[5]);
-          s6 = w[06] = _swap32(key[6]);
-          s7 = w[07] = _swap32(key[7]);
-          // 0: 8..15
-          s0 = w[08] = s0 ^ _wordSubRot(s7) ^ _rcon[0];
-          s1 = w[09] = s1 ^ s0;
-          s2 = w[10] = s2 ^ s1;
-          s3 = w[11] = s3 ^ s2;
-          s4 = w[12] = s4 ^ _wordSub(s3);
-          s5 = w[13] = s5 ^ s4;
-          s6 = w[14] = s6 ^ s5;
-          s7 = w[15] = s7 ^ s6;
-          // 1: 16..23
-          s0 = w[16] = s0 ^ _wordSubRot(s7) ^ _rcon[1];
-          s1 = w[17] = s1 ^ s0;
-          s2 = w[18] = s2 ^ s1;
-          s3 = w[19] = s3 ^ s2;
-          s4 = w[20] = s4 ^ _wordSub(s3);
-          s5 = w[21] = s5 ^ s4;
-          s6 = w[22] = s6 ^ s5;
-          s7 = w[23] = s7 ^ s6;
-          // 2: 24..31
-          s0 = w[24] = s0 ^ _wordSubRot(s7) ^ _rcon[2];
-          s1 = w[25] = s1 ^ s0;
-          s2 = w[26] = s2 ^ s1;
-          s3 = w[27] = s3 ^ s2;
-          s4 = w[28] = s4 ^ _wordSub(s3);
-          s5 = w[29] = s5 ^ s4;
-          s6 = w[30] = s6 ^ s5;
-          s7 = w[31] = s7 ^ s6;
-          // 3: 32..39
-          s0 = w[32] = s0 ^ _wordSubRot(s7) ^ _rcon[3];
-          s1 = w[33] = s1 ^ s0;
-          s2 = w[34] = s2 ^ s1;
-          s3 = w[35] = s3 ^ s2;
-          s4 = w[36] = s4 ^ _wordSub(s3);
-          s5 = w[37] = s5 ^ s4;
-          s6 = w[38] = s6 ^ s5;
-          s7 = w[39] = s7 ^ s6;
-          // 4: 40..47
-          s0 = w[40] = s0 ^ _wordSubRot(s7) ^ _rcon[4];
-          s1 = w[41] = s1 ^ s0;
-          s2 = w[42] = s2 ^ s1;
-          s3 = w[43] = s3 ^ s2;
-          s4 = w[44] = s4 ^ _wordSub(s3);
-          s5 = w[45] = s5 ^ s4;
-          s6 = w[46] = s6 ^ s5;
-          s7 = w[47] = s7 ^ s6;
-          // 5: 48..55
-          s0 = w[48] = s0 ^ _wordSubRot(s7) ^ _rcon[5];
-          s1 = w[49] = s1 ^ s0;
-          s2 = w[50] = s2 ^ s1;
-          s3 = w[51] = s3 ^ s2;
-          s4 = w[52] = s4 ^ _wordSub(s3);
-          s5 = w[53] = s5 ^ s4;
-          s6 = w[54] = s6 ^ s5;
-          s7 = w[55] = s7 ^ s6;
-          // 6: 56..58
-          s0 = w[56] = s0 ^ _wordSubRot(s7) ^ _rcon[6];
-          s1 = w[57] = s1 ^ s0;
-          s2 = w[58] = s2 ^ s1;
-          s3 = w[59] = s3 ^ s2;
-          // result
-          return w;
-        }
+        return _expandEncryptionKey256bit(key);
       default:
         throw StateError('Key must be 128, 192, or 256 bits long');
     }
   }
 
-  /// Expands the key for AES decryption.
-  static Uint32List $expandDecryptionKey(Uint32List key) {
-    var dw = $expandEncryptionKey(key);
-    for (int i = 4; i + 4 < dw.length; i++) {
-      dw[i] = _wordMixInv(dw[i]);
+  /// Encrypts a plaintext block in big-endian mode.
+  ///
+  /// Parameters:
+  /// - [box] : plaintext as 32-bit words
+  /// - [rk] : expanded key for encryption as 32-bit words
+  static void $encrypt(Uint32List box, Uint32List rk) {
+    int p, n, s0, s1, s2, s3, t0, t1, t2, t3;
+    n = rk.length - 4;
+    // s = AddRoundKey(box)
+    s0 = box[0] ^ rk[0];
+    s1 = box[1] ^ rk[1];
+    s2 = box[2] ^ rk[2];
+    s3 = box[3] ^ rk[3];
+    // Rounds: s = AddRoundKey(MixColumns(ShiftRows(SubTypes(s))))
+    for (p = 4; p < n; p += 4) {
+      t0 = _byteMix(s0, s1, s2, s3) ^ rk[p];
+      t1 = _byteMix(s1, s2, s3, s0) ^ rk[p + 1];
+      t2 = _byteMix(s2, s3, s0, s1) ^ rk[p + 2];
+      t3 = _byteMix(s3, s0, s1, s2) ^ rk[p + 3];
+      s0 = t0;
+      s1 = t1;
+      s2 = t2;
+      s3 = t3;
     }
-    return dw;
+    // box = AddRoundKey(ShiftRows(SubBytes(s)))
+    box[0] = _byteSub(s0, s1, s2, s3) ^ rk[p];
+    box[1] = _byteSub(s1, s2, s3, s0) ^ rk[p + 1];
+    box[2] = _byteSub(s2, s3, s0, s1) ^ rk[p + 2];
+    box[3] = _byteSub(s3, s0, s1, s2) ^ rk[p + 3];
   }
 
   /// Encrypts a plaintext block in little-endian mode.
@@ -231,6 +331,8 @@ abstract class AESCore {
   /// Parameters:
   /// - [box] : plaintext as 32-bit words
   /// - [rk] : expanded key for encryption as 32-bit words
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   static void $encryptLE(Uint32List box, Uint32List rk) {
     box[0] = _swap32(box[0]);
     box[1] = _swap32(box[1]);
@@ -243,53 +345,15 @@ abstract class AESCore {
     box[3] = _swap32(box[3]);
   }
 
-  /// Encrypts a plaintext block in big-endian mode.
-  ///
-  /// Parameters:
-  /// - [box] : plaintext as 32-bit words
-  /// - [rk] : expanded key for encryption as 32-bit words
-  static void $encrypt(Uint32List box, Uint32List rk) {
-    int p, n, s0, s1, s2, s3, t0, t1, t2, t3;
-    p = 0;
-    n = rk.length - 4;
-    // s = AddRoundKey(box)
-    s0 = box[0] ^ rk[p++];
-    s1 = box[1] ^ rk[p++];
-    s2 = box[2] ^ rk[p++];
-    s3 = box[3] ^ rk[p++];
-    // Rounds: s = AddRoundKey(MixColumns(ShiftRows(SubTypes(s))))
-    while (p < n) {
-      t0 = _byteMix(s0, s1, s2, s3) ^ rk[p++];
-      t1 = _byteMix(s1, s2, s3, s0) ^ rk[p++];
-      t2 = _byteMix(s2, s3, s0, s1) ^ rk[p++];
-      t3 = _byteMix(s3, s0, s1, s2) ^ rk[p++];
-      s0 = t0;
-      s1 = t1;
-      s2 = t2;
-      s3 = t3;
-    }
-    // box = AddRoundKey(ShiftRows(SubBytes(s)))
-    box[0] = _byteSub(s0, s1, s2, s3) ^ rk[p++];
-    box[1] = _byteSub(s1, s2, s3, s0) ^ rk[p++];
-    box[2] = _byteSub(s2, s3, s0, s1) ^ rk[p++];
-    box[3] = _byteSub(s3, s0, s1, s2) ^ rk[p++];
-  }
+  /// ------------------------------------------------------------
 
-  /// Decrypts a plaintext block in little-endian mode.
-  ///
-  /// Parameters:
-  /// - [box] : ciphertext as 32-bit words
-  /// - [rk] : expanded key for decryption as 32-bit words
-  static void $decryptLE(Uint32List box, Uint32List rk) {
-    box[0] = _swap32(box[0]);
-    box[1] = _swap32(box[1]);
-    box[2] = _swap32(box[2]);
-    box[3] = _swap32(box[3]);
-    $decrypt(box, rk);
-    box[0] = _swap32(box[0]);
-    box[1] = _swap32(box[1]);
-    box[2] = _swap32(box[2]);
-    box[3] = _swap32(box[3]);
+  /// Expands the key for AES decryption.
+  static Uint32List $expandDecryptionKey(Uint32List key) {
+    var dw = $expandEncryptionKey(key);
+    for (int i = 4; i + 4 < dw.length; i++) {
+      dw[i] = _wordMixInv(dw[i]);
+    }
+    return dw;
   }
 
   /// Decrypts a plaintext block in big-endian mode.
@@ -301,83 +365,46 @@ abstract class AESCore {
     int n, s0, s1, s2, s3, t0, t1, t2, t3;
     n = rk.length - 1;
     // s = AddRoundKey(box)
-    s3 = box[3] ^ rk[n--];
-    s2 = box[2] ^ rk[n--];
-    s1 = box[1] ^ rk[n--];
-    s0 = box[0] ^ rk[n--];
+    s3 = box[3] ^ rk[n];
+    s2 = box[2] ^ rk[n - 1];
+    s1 = box[1] ^ rk[n - 2];
+    s0 = box[0] ^ rk[n - 3];
     // Rounds: s = InvMixColumns(AddRoundKey(InvSubBytes(InvShiftRows(s))))
-    while (n > 4) {
-      t3 = _byteMixInv(s3, s2, s1, s0) ^ rk[n--];
-      t2 = _byteMixInv(s2, s1, s0, s3) ^ rk[n--];
-      t1 = _byteMixInv(s1, s0, s3, s2) ^ rk[n--];
-      t0 = _byteMixInv(s0, s3, s2, s1) ^ rk[n--];
+    for (n -= 4; n > 4; n -= 4) {
+      t3 = _byteMixInv(s3, s2, s1, s0) ^ rk[n];
+      t2 = _byteMixInv(s2, s1, s0, s3) ^ rk[n - 1];
+      t1 = _byteMixInv(s1, s0, s3, s2) ^ rk[n - 2];
+      t0 = _byteMixInv(s0, s3, s2, s1) ^ rk[n - 3];
       s3 = t3;
       s2 = t2;
       s1 = t1;
       s0 = t0;
     }
     // box = AddRoundKey(InvSubBytes(InvShiftRows(s)))
-    box[3] = _byteSubInv(s3, s2, s1, s0) ^ rk[n--];
-    box[2] = _byteSubInv(s2, s1, s0, s3) ^ rk[n--];
-    box[1] = _byteSubInv(s1, s0, s3, s2) ^ rk[n--];
-    box[0] = _byteSubInv(s0, s3, s2, s1) ^ rk[n--];
+    box[3] = _byteSubInv(s3, s2, s1, s0) ^ rk[n];
+    box[2] = _byteSubInv(s2, s1, s0, s3) ^ rk[n - 1];
+    box[1] = _byteSubInv(s1, s0, s3, s2) ^ rk[n - 2];
+    box[0] = _byteSubInv(s0, s3, s2, s1) ^ rk[n - 3];
   }
 
+  /// Decrypts a plaintext block in little-endian mode.
+  ///
+  /// Parameters:
+  /// - [box] : ciphertext as 32-bit words
+  /// - [rk] : expanded key for decryption as 32-bit words
   @pragma('vm:prefer-inline')
-  static int _swap32(int x) =>
-      ((x << 24) & 0xff000000) |
-      ((x << 8) & 0x00ff0000) |
-      ((x >>> 8) & 0x0000ff00) |
-      ((x >>> 24) & 0x000000ff);
-
-  @pragma('vm:prefer-inline')
-  static int _wordSub(int x) =>
-      (_sbox[(x >>> 24)] << 24) ^
-      (_sbox[(x >>> 16) & 0xFF] << 16) ^
-      (_sbox[(x >>> 8) & 0xFF] << 8) ^
-      (_sbox[(x) & 0xFF]);
-
-  @pragma('vm:prefer-inline')
-  static int _wordSubRot(int x) =>
-      (_sbox[(x >>> 16) & 0xFF] << 24) ^
-      (_sbox[(x >>> 8) & 0xFF] << 16) ^
-      (_sbox[(x) & 0xFF] << 8) ^
-      (_sbox[(x >>> 24)]);
-
-  @pragma('vm:prefer-inline')
-  static int _wordMixInv(int x) =>
-      _dmix0[_sbox[(x >>> 24)]] ^
-      _dmix1[_sbox[(x >>> 16) & 0xFF]] ^
-      _dmix2[_sbox[(x >>> 8) & 0xFF]] ^
-      _dmix3[_sbox[(x) & 0xFF]];
-
-  @pragma('vm:prefer-inline')
-  static int _byteSub(int s0, int s1, int s2, int s3) =>
-      (_sbox[(s0 >>> 24)] << 24) ^
-      (_sbox[(s1 >>> 16) & 0xFF] << 16) ^
-      (_sbox[(s2 >>> 8) & 0xFF] << 8) ^
-      (_sbox[(s3) & 0xFF]);
-
-  @pragma('vm:prefer-inline')
-  static int _byteMix(int s0, int s1, int s2, int s3) =>
-      _mix0[(s0 >>> 24)] ^
-      _mix1[(s1 >>> 16) & 0xFF] ^
-      _mix2[(s2 >>> 8) & 0xFF] ^
-      _mix3[(s3) & 0xFF];
-
-  @pragma('vm:prefer-inline')
-  static int _byteSubInv(int s0, int s1, int s2, int s3) =>
-      (_dsbox[(s0 >>> 24)] << 24) ^
-      (_dsbox[(s1 >>> 16) & 0xFF] << 16) ^
-      (_dsbox[(s2 >>> 8) & 0xFF] << 8) ^
-      (_dsbox[(s3) & 0xFF]);
-
-  @pragma('vm:prefer-inline')
-  static int _byteMixInv(int s0, int s1, int s2, int s3) =>
-      _dmix0[(s0 >>> 24)] ^
-      _dmix1[(s1 >>> 16) & 0xFF] ^
-      _dmix2[(s2 >>> 8) & 0xFF] ^
-      _dmix3[(s3) & 0xFF];
+  @pragma('dart2js:tryInline')
+  static void $decryptLE(Uint32List box, Uint32List rk) {
+    box[0] = _swap32(box[0]);
+    box[1] = _swap32(box[1]);
+    box[2] = _swap32(box[2]);
+    box[3] = _swap32(box[3]);
+    $decrypt(box, rk);
+    box[0] = _swap32(box[0]);
+    box[1] = _swap32(box[1]);
+    box[2] = _swap32(box[2]);
+    box[3] = _swap32(box[3]);
+  }
 }
 
 /// power of 2

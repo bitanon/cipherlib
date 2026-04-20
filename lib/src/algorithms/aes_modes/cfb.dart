@@ -7,125 +7,9 @@ import 'package:hashlib/random.dart' show randomBytes;
 
 import '../../core/aes.dart';
 import '../../core/cipher.dart';
-import '../../core/cipher_sink.dart';
 import '../padding.dart';
 
-/// The sink used for encryption by the [AESInCFBModeEncrypt] algorithm.
-class AESInCFBModeEncryptSink extends CipherSink {
-  AESInCFBModeEncryptSink(
-    this._key,
-    this._iv,
-    this._sbyte,
-  ) {
-    reset();
-  }
-
-  int _pos = 0;
-  final Uint8List _key;
-  final Uint8List _iv;
-  final int _sbyte;
-  final _salt = Uint8List(16);
-  final _block = Uint8List(16); // 128-bit
-  late final _key32 = Uint32List.view(_key.buffer);
-  late final _block32 = Uint32List.view(_block.buffer);
-  late final _xkey32 = AESCore.$expandEncryptionKey(_key32);
-
-  @override
-  void reset() {
-    super.reset();
-    _pos = 0;
-    for (int i = 0; i < 16; ++i) {
-      _salt[i] = _iv[i];
-    }
-  }
-
-  @override
-  @pragma('vm:prefer-inline')
-  Uint8List $add(List<int> data, int start, int end) {
-    int i, j, p;
-    var output = Uint8List(end - start);
-
-    p = 0;
-    j = _pos + 16 - _sbyte;
-    for (i = start; i < end; ++i) {
-      if (_pos == 0) {
-        for (j = 0; j < 16; ++j) {
-          _block[j] = _salt[j];
-        }
-        AESCore.$encryptLE(_block32, _xkey32);
-        for (j = _sbyte; j < 16; ++j) {
-          _salt[j - _sbyte] = _salt[j];
-        }
-        j = 16 - _sbyte;
-      }
-      output[p] = _block[_pos++] ^ data[i];
-      _salt[j++] = output[p++];
-      if (_pos == _sbyte) {
-        _pos = 0;
-      }
-    }
-
-    return output;
-  }
-}
-
-/// The sink used for decryption by the [AESInCFBModeDecrypt] algorithm.
-class AESInCFBModeDecryptSink extends CipherSink {
-  AESInCFBModeDecryptSink(
-    this._key,
-    this._iv,
-    this._sbyte,
-  ) {
-    reset();
-  }
-
-  int _pos = 0;
-  final Uint8List _key;
-  final Uint8List _iv;
-  late final Uint32List _key32 = Uint32List.view(_key.buffer);
-  final int _sbyte;
-  final _block = Uint8List(16); // 128-bit
-  final _salt = Uint8List(16);
-  late final _block32 = Uint32List.view(_block.buffer);
-  late final _xkey32 = AESCore.$expandEncryptionKey(_key32);
-
-  @override
-  void reset() {
-    super.reset();
-    _pos = 0;
-    for (int i = 0; i < 16; ++i) {
-      _salt[i] = _iv[i];
-    }
-  }
-
-  @override
-  @pragma('vm:prefer-inline')
-  Uint8List $add(List<int> data, int start, int end) {
-    int i, j, p;
-    p = 0;
-    j = _pos + 16 - _sbyte;
-    var output = Uint8List(end - start);
-    for (i = start; i < end; ++i) {
-      if (_pos == 0) {
-        for (j = 0; j < 16; ++j) {
-          _block[j] = _salt[j];
-        }
-        AESCore.$encryptLE(_block32, _xkey32);
-        for (j = _sbyte; j < 16; ++j) {
-          _salt[j - _sbyte] = _salt[j];
-        }
-        j = 16 - _sbyte;
-      }
-      output[p++] = _block[_pos++] ^ data[i];
-      _salt[j++] = data[i];
-      if (_pos == _sbyte) {
-        _pos = 0;
-      }
-    }
-
-    return output;
-  }
-}
+// TODO: (sbyte) instead of blocks of bytes, can we use bits?
 
 /// Provides encryption for AES cipher in CFB mode.
 class AESInCFBModeEncrypt extends Cipher with SaltedCipher {
@@ -135,7 +19,7 @@ class AESInCFBModeEncrypt extends Cipher with SaltedCipher {
   /// Key for the cipher
   final Uint8List key;
 
-  /// Number of bytes to use per block
+  /// Number of bytes to use per block (1..16)
   final int sbyte;
 
   @override
@@ -149,7 +33,43 @@ class AESInCFBModeEncrypt extends Cipher with SaltedCipher {
 
   @override
   Uint8List convert(List<int> message) {
-    return AESInCFBModeEncryptSink(key, iv, sbyte).add(message, true);
+    int i, j, p, pos;
+    int n = message.length;
+
+    final output = Uint8List(n);
+    final salt32 = Uint32List(4);
+    final block32 = Uint32List(4); // 128-bit
+    final iv32 = Uint32List.view(iv.buffer);
+    final key32 = Uint32List.view(key.buffer);
+    final salt = Uint8List.view(salt32.buffer);
+    final block = Uint8List.view(block32.buffer);
+    final xkey32 = AESCore.$expandEncryptionKey(key32);
+
+    salt32[0] = iv32[0];
+    salt32[1] = iv32[1];
+    salt32[2] = iv32[2];
+    salt32[3] = iv32[3];
+
+    p = 0;
+    pos = sbyte;
+    j = 16 - sbyte;
+    for (i = 0; i < n; ++i, ++j, ++p, ++pos) {
+      if (pos == sbyte) {
+        block32[0] = salt32[0];
+        block32[1] = salt32[1];
+        block32[2] = salt32[2];
+        block32[3] = salt32[3];
+        AESCore.$encryptLE(block32, xkey32);
+        for (j = sbyte; j < 16; ++j) {
+          salt[j - sbyte] = salt[j];
+        }
+        j = 16 - sbyte;
+        pos = 0;
+      }
+      salt[j] = output[p] = block[pos] ^ message[i];
+    }
+
+    return output;
   }
 }
 
@@ -161,7 +81,7 @@ class AESInCFBModeDecrypt extends Cipher with SaltedCipher {
   /// Key for the cipher
   final Uint8List key;
 
-  /// Number of bytes to use per block
+  /// Number of bytes to use per block (1..16)
   final int sbyte;
 
   @override
@@ -175,7 +95,43 @@ class AESInCFBModeDecrypt extends Cipher with SaltedCipher {
 
   @override
   Uint8List convert(List<int> message) {
-    return AESInCFBModeDecryptSink(key, iv, sbyte).add(message, true);
+    int i, j, p, pos;
+    int n = message.length;
+
+    final output = Uint8List(n);
+    final salt32 = Uint32List(4);
+    final block32 = Uint32List(4); // 128-bit
+    final iv32 = Uint32List.view(iv.buffer);
+    final key32 = Uint32List.view(key.buffer);
+    final salt = Uint8List.view(salt32.buffer);
+    final block = Uint8List.view(block32.buffer);
+    final xkey32 = AESCore.$expandEncryptionKey(key32);
+
+    salt32[0] = iv32[0];
+    salt32[1] = iv32[1];
+    salt32[2] = iv32[2];
+    salt32[3] = iv32[3];
+
+    p = 0;
+    pos = sbyte;
+    j = 16 - sbyte;
+    for (i = 0; i < n; ++i, ++j, ++p, ++pos) {
+      if (pos == sbyte) {
+        block32[0] = salt32[0];
+        block32[1] = salt32[1];
+        block32[2] = salt32[2];
+        block32[3] = salt32[3];
+        AESCore.$encryptLE(block32, xkey32);
+        for (j = sbyte; j < 16; ++j) {
+          salt[j - sbyte] = salt[j];
+        }
+        j = 16 - sbyte;
+        pos = 0;
+      }
+      output[p] = block[pos] ^ (salt[j] = message[i]);
+    }
+
+    return output;
   }
 }
 
@@ -203,7 +159,8 @@ class AESInCFBMode extends CollateCipher with SaltedCipher {
   /// Parameters:
   /// - [key] The key for encryption and decryption
   /// - [iv] 128-bit random initialization vector or salt
-  /// - [sbyte] number of bits to take per block to encrypt plaintext.
+  /// - [sbyte] number of bytes between 1 and 16 to take per block
+  ///   to encrypt/decrypt plaintext.
   factory AESInCFBMode(
     List<int> key, {
     List<int>? iv,

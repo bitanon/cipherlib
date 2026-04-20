@@ -29,12 +29,15 @@ class XOR extends Cipher {
 
   @override
   Uint8List convert(List<int> message) {
-    if (key.isEmpty && message.isNotEmpty) {
+    int i, k;
+    int kLen = key.length;
+    int mLen = message.length;
+    final output = Uint8List(mLen);
+    if (kLen == 0 && mLen > 0) {
       throw ArgumentError.value(key, 'key', 'must not be empty');
     }
-    final output = Uint8List(message.length);
-    for (int i = 0, k = 0; i < output.length; ++i, ++k) {
-      if (k == key.length) {
+    for (i = k = 0; i < output.length; ++i, ++k) {
+      if (k == kLen) {
         k = 0;
       }
       output[i] = message[i] ^ key[k];

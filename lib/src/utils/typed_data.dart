@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 @pragma('vm:prefer-inline')
+@pragma('dart2js:tryInline')
 Uint8List toUint8List<T extends Iterable<int>>(T list) {
   if (list is Uint8List) {
     return list;

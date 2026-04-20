@@ -7,6 +7,7 @@ import 'package:hashlib/random.dart' show randomBytes;
 
 import '../core/cipher.dart';
 import '../utils/nonce.dart';
+import '../utils/typed_data.dart';
 
 const int _mask32 = 0xFFFFFFFF;
 
@@ -36,41 +37,6 @@ class Salsa20 extends Cipher with SaltedCipher {
   @override
   Uint8List get iv => _nonce;
 
-  @override
-  Uint8List convert(List<int> message) {
-    final iv32 = Uint32List(4);
-    final state32 = Uint32List(16);
-    final state = Uint8List.view(state32.buffer);
-    final key32 = Uint32List.view(key.buffer);
-    final nonce32 = Uint32List.view(_nonce.buffer);
-    final result = Uint8List(message.length);
-
-    iv32[0] = nonce32[0];
-    iv32[1] = nonce32[1];
-    iv32[2] = nonce32[2];
-    iv32[3] = nonce32[3];
-    _process(state32, key32, iv32);
-    ++iv32[2];
-    if (iv32[2] == 0) {
-      ++iv32[3];
-    }
-
-    for (int i = 0, p = 0; i < message.length;) {
-      for (; p < 64 && i < message.length; ++p, ++i) {
-        result[i] = message[i] ^ state[p];
-      }
-      if (p == 64) {
-        _process(state32, key32, iv32);
-        ++iv32[2];
-        if (iv32[2] == 0) {
-          ++iv32[3];
-        }
-        p = 0;
-      }
-    }
-    return result;
-  }
-
   /// Creates an instance with a [key], [nonce], and [counter] containing a
   /// list of bytes.
   factory Salsa20(
@@ -82,22 +48,26 @@ class Salsa20 extends Cipher with SaltedCipher {
     if (key.length != 16 && key.length != 32) {
       throw ArgumentError('The key should be either 16 or 32 bytes');
     }
-    var key8 = key is Uint8List ? key : Uint8List.fromList(key);
+    final key8 = toUint8List(key);
 
     // validate nonce
     Uint8List nonce8;
-    nonce ??= randomBytes(16);
+    nonce ??= randomBytes(counter == null ? 16 : 8);
     if (nonce.length == 8) {
       nonce8 = Uint8List(16);
-      nonce8.setAll(0, nonce);
+      for (int i = 0; i < 8; ++i) {
+        nonce8[i] = nonce[i];
+      }
       if (counter != null) {
-        nonce8.setAll(8, counter.bytes);
+        for (int i = 0; i < 8; ++i) {
+          nonce8[8 + i] = counter.bytes[i];
+        }
       }
     } else if (nonce.length == 16) {
       if (counter != null) {
-        throw ArgumentError('Counter is not expected with 16-byte nonce');
+        throw ArgumentError('Counter is not expected with a 16-byte nonce');
       }
-      nonce8 = nonce is Uint8List ? nonce : Uint8List.fromList(nonce);
+      nonce8 = toUint8List(nonce);
     } else {
       throw ArgumentError('The nonce should be either 8 or 16 bytes');
     }
@@ -107,12 +77,41 @@ class Salsa20 extends Cipher with SaltedCipher {
 
   /// The One-Time-Key used for AEAD cipher
   Uint8List $otk() {
-    var state32 = Uint32List(16);
-    var state = Uint8List.view(state32.buffer);
-    var key32 = Uint32List.view(key.buffer);
-    var nonce32 = Uint32List.view(_nonce.buffer);
+    final state32 = Uint32List(16);
+    final key32 = Uint32List.view(key.buffer);
+    final nonce32 = Uint32List.view(_nonce.buffer);
     _process(state32, key32, nonce32);
-    return state.sublist(0, 32);
+    return Uint8List.view(state32.buffer).sublist(0, 32);
+  }
+
+  @override
+  Uint8List convert(List<int> message) {
+    int i, p, n;
+    n = message.length;
+
+    final iv32 = Uint32List(4);
+    final result = Uint8List(n);
+    final state32 = Uint32List(16);
+    final key32 = Uint32List.view(key.buffer);
+    final state = Uint8List.view(state32.buffer);
+    final nonce32 = Uint32List.view(_nonce.buffer);
+
+    iv32[0] = nonce32[0];
+    iv32[1] = nonce32[1];
+    iv32[2] = nonce32[2];
+    iv32[3] = nonce32[3];
+
+    for (i = 0; i < n;) {
+      _process(state32, key32, iv32);
+      ++iv32[2];
+      if (iv32[2] == 0) {
+        ++iv32[3];
+      }
+      for (p = 0; p < 64 && i < n; ++p, ++i) {
+        result[i] = message[i] ^ state[p];
+      }
+    }
+    return result;
   }
 
   @pragma('vm:prefer-inline')
@@ -293,28 +292,25 @@ class XSalsa20 extends Salsa20 {
     if (key.length != 16 && key.length != 32) {
       throw ArgumentError('The key should be either 16 or 32 bytes');
     }
-    var key8 = key is Uint8List ? key : Uint8List.fromList(key);
+    final key8 = toUint8List(key);
 
     // validate nonce
     nonce ??= randomBytes(32);
-    if (nonce.length == 32) {
-      if (counter != null) {
-        throw ArgumentError('Counter is not expected with 32-byte nonce');
-      }
-    } else if (nonce.length != 24) {
+    if (nonce.length != 24 && nonce.length != 32) {
       throw ArgumentError('The nonce should be either 24 or 32 bytes');
     }
-    var nonce8 = nonce is Uint8List ? nonce : Uint8List.fromList(nonce);
+    if (nonce.length == 32 && counter != null) {
+      throw ArgumentError('Counter is not expected with 32-byte nonce');
+    }
+    final nonce8 = toUint8List(nonce);
 
-    var instance = XSalsa20._(
+    return XSalsa20._(
       key8,
       nonce8,
       counter,
       Uint8List(32),
       Uint8List(16),
-    );
-    instance._hsalsa20();
-    return instance;
+    ).._hsalsa20();
   }
 
   @override
@@ -341,7 +337,10 @@ class XSalsa20 extends Salsa20 {
       state32[8],
       state32[9],
     ]);
-    key.setAll(0, Uint8List.view(subkey32.buffer));
+    var subkey = Uint8List.view(subkey32.buffer);
+    for (int i = 0; i < key.length; i++) {
+      key[i] = subkey[i];
+    }
 
     // Use the subkey and last 128-bit of nonce or 96-bit nonce and counter.
     var iv32 = Uint32List.view(_nonce.buffer);
