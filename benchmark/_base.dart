@@ -7,6 +7,7 @@ import 'dart:async';
 const int warmupDurationMillis = 100;
 const int exerciseDurationMillis = 2000;
 
+// ------------ Interface Classes ------------
 abstract class Benchmark {
   final int size;
   final String name;
@@ -55,6 +56,8 @@ class Measurement {
   /// Speed in human readable string.
   late final String speedString = formatSpeed(speed);
 }
+
+// ------------ Main Classes ------------
 
 abstract class SyncBenchmark extends Benchmark {
   const SyncBenchmark(super.name, super.size);
@@ -166,23 +169,6 @@ abstract class AsyncBenchmark extends Benchmark {
     await teardown();
     return Measurement(micros, iter, size);
   }
-}
-
-/// ------------ Helper Classes ------------
-abstract class InputBenchmark extends SyncBenchmark {
-  final List<int> input;
-
-  Stream<int> get inputStream => Stream.fromIterable(input);
-
-  InputBenchmark(super.name, super.size) : input = List.filled(size, 0x3f);
-}
-
-abstract class AsyncInputBenchmark extends AsyncBenchmark {
-  final List<int> input;
-
-  Stream<int> get inputStream => Stream.fromIterable(input);
-
-  AsyncInputBenchmark(super.name, super.size) : input = List.filled(size, 0x3f);
 }
 
 /// ------------ Utility Functions ------------

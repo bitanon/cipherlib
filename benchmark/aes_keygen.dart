@@ -14,23 +14,24 @@ import '_base.dart';
 
 Random random = Random();
 
-class CipherlibBenchmark extends InputBenchmark {
-  late final Uint8List key;
-  CipherlibBenchmark(int size) : super('cipherlib', size) {
-    key = Uint8List.fromList(input);
-  }
+class CipherlibBenchmark extends SyncBenchmark {
+  final Uint8List key;
+  CipherlibBenchmark(int size)
+      : key = Uint8List.fromList(List.filled(size, 0x9f)),
+        super('cipherlib', size);
 
   @override
   void run() {
-    cipher.AESCore.$expandDecryptionKey(Uint32List.view(key.buffer));
+    final key32 = Uint32List.view(key.buffer);
+    cipher.AESCore.$expandDecryptionKey(key32);
   }
 }
 
-class PointyCastleBenchmark extends InputBenchmark {
-  late final Uint8List key;
-  PointyCastleBenchmark(int size) : super('PointyCastle', size) {
-    key = Uint8List.fromList(input);
-  }
+class PointyCastleBenchmark extends SyncBenchmark {
+  final Uint8List key;
+  PointyCastleBenchmark(int size)
+      : key = Uint8List.fromList(List.filled(size, 0x9f)),
+        super('PointyCastle', size);
 
   @override
   void run() {
@@ -39,11 +40,11 @@ class PointyCastleBenchmark extends InputBenchmark {
   }
 }
 
-class CryptographyBenchmark extends InputBenchmark {
-  late final Uint8List key;
-  CryptographyBenchmark(int size) : super('cryptography', size) {
-    key = Uint8List.fromList(input);
-  }
+class CryptographyBenchmark extends SyncBenchmark {
+  final Uint8List key;
+  CryptographyBenchmark(int size)
+      : key = Uint8List.fromList(List.filled(size, 0x9f)),
+        super('cryptography', size);
 
   @override
   void run() {
@@ -52,9 +53,8 @@ class CryptographyBenchmark extends InputBenchmark {
 }
 
 void main() async {
-  print('--------- AES/ECB ----------');
   for (int size in [16, 24, 32]) {
-    print('---- keysize: $size ----');
+    print('---- AES-${size << 3} Keygen ----');
     await CipherlibBenchmark(size).measureDiff([
       PointyCastleBenchmark(size),
       CryptographyBenchmark(size),

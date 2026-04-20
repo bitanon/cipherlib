@@ -1,7 +1,8 @@
 // Copyright (c) 2023, Sudipto Chandra
 // All rights reserved. Check LICENSE file for details.
 
-import 'dart:math';
+// ignore_for_file: unused_local_variable
+
 import 'dart:typed_data';
 
 import 'package:cipherlib/cipherlib.dart';
@@ -9,50 +10,57 @@ import 'package:pointycastle/pointycastle.dart' as pc;
 
 import '_base.dart';
 
-Random random = Random();
-
-class CipherlibBenchmark extends InputBenchmark {
+class CipherlibBenchmark extends SyncBenchmark {
+  final Uint8List input;
   final Uint8List key;
   final Uint8List iv;
 
   CipherlibBenchmark(int size, int keySize)
-      : key = Uint8List.fromList(List.filled(keySize, 0x9f)),
+      : input = Uint8List.fromList(List.filled(size >> 1, 0x3f)),
+        key = Uint8List.fromList(List.filled(keySize, 0x9f)),
         iv = Uint8List.fromList(List.filled(32, 0x87)),
         super('cipherlib', size);
 
   @override
   void run() {
-    AES(key).ige(iv).encrypt(input);
+    final aes = AES.pkcs7(key).ige(iv);
+    final encrypted = aes.encrypt(input);
+    final decrypted = aes.decrypt(encrypted);
   }
 }
 
-class PointyCastleBenchmark extends InputBenchmark {
+class PointyCastleBenchmark extends SyncBenchmark {
+  final Uint8List input;
   final Uint8List key;
   final Uint8List iv;
 
   PointyCastleBenchmark(int size, int keySize)
-      : key = Uint8List.fromList(List.filled(keySize, 0x9f)),
+      : input = Uint8List.fromList(List.filled(size >> 1, 0x3f)),
+        key = Uint8List.fromList(List.filled(keySize, 0x9f)),
         iv = Uint8List.fromList(List.filled(32, 0x87)),
         super('PointyCastle', size);
 
   @override
   void run() {
-    var inp = Uint8List.fromList(input);
-    var out = Uint8List(inp.length);
-    var instance = pc.BlockCipher('AES/IGE');
-    instance.init(
-      true,
+    final instance = pc.PaddedBlockCipher('AES/IGE/PKCS7');
+    final params = pc.PaddedBlockCipherParameters(
       pc.ParametersWithIV(pc.KeyParameter(key), iv),
+      null,
     );
-    for (int i = 0; i < inp.length; i += 16) {
-      instance.processBlock(inp, i, out, i);
-    }
+
+    // encrypt
+    instance.init(true, params);
+    final encrypted = instance.process(input);
+
+    // decrypt
+    instance.init(false, params);
+    final decrypted = instance.process(encrypted);
   }
 }
 
 void main() async {
   print('--------- AES/IGE ----------');
-  for (int size in [1 << 20, 1 << 10, 1 << 3]) {
+  for (int size in [1 << 20, 1 << 10, 1 << 5]) {
     print('---- message: ${formatSize(size)} ----');
     print('[AES-128]');
     await CipherlibBenchmark(size, 16).measureDiff([

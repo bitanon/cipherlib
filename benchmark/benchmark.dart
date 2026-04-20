@@ -14,6 +14,10 @@ import 'aes_ofb.dart' as aes_ofb;
 import 'aes_pcbc.dart' as aes_pcbc;
 import 'aes_xts.dart' as aes_xts;
 import 'chacha20.dart' as chacha20;
+import 'xchacha20.dart' as xchacha20;
+import 'xchacha20_poly1305.dart' as xchacha20poly1305;
+import 'xsalsa20.dart' as xsalsa20;
+import 'xsalsa20_poly1305.dart' as xsalsa20poly1305;
 import 'chacha20_poly1305.dart' as chacha20poly1305;
 import 'salsa20.dart' as salsa20;
 import 'salsa20_poly1305.dart' as salsa20poly1305;
@@ -31,10 +35,23 @@ void dump(String message) {
 // Symmetric Cipher benchmarks
 // ---------------------------------------------------------------------
 Future<void> measureSymmetricCiphers() async {
-  for (int size in [1 << 25, 10, 1 << 12, 1 << 4]) {
+  for (int size in [1 << 20, 1 << 10, 1 << 5]) {
     var algorithms = {
       "XOR": [
         xor.CipherlibBenchmark(size),
+      ],
+      "Salsa20": [
+        salsa20.CipherlibBenchmark(size),
+        salsa20.PointyCastleBenchmark(size),
+      ],
+      "Salsa20/Poly1305": [
+        salsa20poly1305.CipherlibBenchmark(size),
+      ],
+      "XSalsa20": [
+        xsalsa20.CipherlibBenchmark(size),
+      ],
+      "XSalsa20/Poly1305": [
+        xsalsa20poly1305.CipherlibBenchmark(size),
       ],
       "ChaCha20": [
         chacha20.CipherlibBenchmark(size),
@@ -45,24 +62,11 @@ Future<void> measureSymmetricCiphers() async {
         chacha20poly1305.PointyCastleBenchmark(size),
         chacha20poly1305.CryptographyBenchmark(size),
       ],
-      "Salsa20": [
-        salsa20.CipherlibBenchmark(size),
-        salsa20.PointyCastleBenchmark(size),
+      "XChaCha20": [
+        xchacha20.CipherlibBenchmark(size),
       ],
-      "Salsa20/Poly1305": [
-        salsa20poly1305.CipherlibBenchmark(size),
-      ],
-      "AES-128/ECB": [
-        aes_ecb.CipherlibBenchmark(size, 16),
-        aes_ecb.PointyCastleBenchmark(size, 16),
-      ],
-      "AES-192/ECB": [
-        aes_ecb.CipherlibBenchmark(size, 24),
-        aes_ecb.PointyCastleBenchmark(size, 24),
-      ],
-      "AES-256/ECB": [
-        aes_ecb.CipherlibBenchmark(size, 32),
-        aes_ecb.PointyCastleBenchmark(size, 32),
+      "XChaCha20/Poly1305": [
+        xchacha20poly1305.CipherlibBenchmark(size),
       ],
       "AES-128/CBC": [
         aes_cbc.CipherlibBenchmark(size, 16),
@@ -79,6 +83,18 @@ Future<void> measureSymmetricCiphers() async {
         aes_cbc.PointyCastleBenchmark(size, 32),
         aes_cbc.CryptographyBenchmark(size, 32),
       ],
+      "AES-128/CFB": [
+        aes_cfb.CipherlibBenchmark(size, 16),
+        aes_cfb.PointyCastleBenchmark(size, 16),
+      ],
+      "AES-192/CFB": [
+        aes_cfb.CipherlibBenchmark(size, 24),
+        aes_cfb.PointyCastleBenchmark(size, 24),
+      ],
+      "AES-256/CFB": [
+        aes_cfb.CipherlibBenchmark(size, 32),
+        aes_cfb.PointyCastleBenchmark(size, 32),
+      ],
       "AES-128/CTR": [
         aes_ctr.CipherlibBenchmark(size, 16),
         aes_ctr.PointyCastleBenchmark(size, 16),
@@ -93,6 +109,18 @@ Future<void> measureSymmetricCiphers() async {
         aes_ctr.CipherlibBenchmark(size, 32),
         aes_ctr.PointyCastleBenchmark(size, 32),
         aes_ctr.CryptographyBenchmark(size, 32),
+      ],
+      "AES-128/ECB": [
+        aes_ecb.CipherlibBenchmark(size, 16),
+        aes_ecb.PointyCastleBenchmark(size, 16),
+      ],
+      "AES-192/ECB": [
+        aes_ecb.CipherlibBenchmark(size, 24),
+        aes_ecb.PointyCastleBenchmark(size, 24),
+      ],
+      "AES-256/ECB": [
+        aes_ecb.CipherlibBenchmark(size, 32),
+        aes_ecb.PointyCastleBenchmark(size, 32),
       ],
       "AES-128/GCM": [
         aes_gcm.CipherlibBenchmark(size, 16),
@@ -109,17 +137,17 @@ Future<void> measureSymmetricCiphers() async {
         aes_gcm.PointyCastleBenchmark(size, 32),
         aes_gcm.CryptographyBenchmark(size, 32),
       ],
-      "AES-128/CFB": [
-        aes_cfb.CipherlibBenchmark(size, 16),
-        aes_cfb.PointyCastleBenchmark(size, 16),
+      "AES-128/IGE": [
+        aes_ige.CipherlibBenchmark(size, 16),
+        aes_ige.PointyCastleBenchmark(size, 16),
       ],
-      "AES-192/CFB": [
-        aes_cfb.CipherlibBenchmark(size, 24),
-        aes_cfb.PointyCastleBenchmark(size, 24),
+      "AES-192/IGE": [
+        aes_ige.CipherlibBenchmark(size, 24),
+        aes_ige.PointyCastleBenchmark(size, 24),
       ],
-      "AES-256/CFB": [
-        aes_cfb.CipherlibBenchmark(size, 32),
-        aes_cfb.PointyCastleBenchmark(size, 32),
+      "AES-256/IGE": [
+        aes_ige.CipherlibBenchmark(size, 32),
+        aes_ige.PointyCastleBenchmark(size, 32),
       ],
       "AES-128/OFB": [
         aes_ofb.CipherlibBenchmark(size, 16),
@@ -133,27 +161,6 @@ Future<void> measureSymmetricCiphers() async {
         aes_ofb.CipherlibBenchmark(size, 32),
         aes_ofb.PointyCastleBenchmark(size, 32),
       ],
-      "AES-128/XTS": [
-        aes_xts.CipherlibBenchmark(size, 16),
-      ],
-      "AES-192/XTS": [
-        aes_xts.CipherlibBenchmark(size, 24),
-      ],
-      "AES-256/XTS": [
-        aes_xts.CipherlibBenchmark(size, 32),
-      ],
-      "AES-128/IGE": [
-        aes_ige.CipherlibBenchmark(size, 16),
-        aes_ige.PointyCastleBenchmark(size, 16),
-      ],
-      "AES-192/IGE": [
-        aes_ige.CipherlibBenchmark(size, 24),
-        aes_ige.PointyCastleBenchmark(size, 24),
-      ],
-      "AES-256/IGE": [
-        aes_ige.CipherlibBenchmark(size, 32),
-        aes_ige.PointyCastleBenchmark(size, 32),
-      ],
       "AES-128/PCBC": [
         aes_pcbc.CipherlibBenchmark(size, 16),
       ],
@@ -162,6 +169,15 @@ Future<void> measureSymmetricCiphers() async {
       ],
       "AES-256/PCBC": [
         aes_pcbc.CipherlibBenchmark(size, 32),
+      ],
+      "AES-128/XTS": [
+        aes_xts.CipherlibBenchmark(size, 16),
+      ],
+      "AES-192/XTS": [
+        aes_xts.CipherlibBenchmark(size, 24),
+      ],
+      "AES-256/XTS": [
+        aes_xts.CipherlibBenchmark(size, 32),
       ],
     };
 

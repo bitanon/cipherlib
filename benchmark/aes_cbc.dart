@@ -3,7 +3,6 @@
 
 // ignore_for_file: unused_local_variable
 
-import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:cipherlib/cipherlib.dart';
@@ -11,8 +10,6 @@ import 'package:cryptography/cryptography.dart' as crypto;
 import 'package:pointycastle/pointycastle.dart' as pc;
 
 import '_base.dart';
-
-Random random = Random();
 
 class CipherlibBenchmark extends AsyncBenchmark {
   final Uint8List input;
@@ -94,7 +91,7 @@ class CryptographyBenchmark extends AsyncBenchmark {
 
 void main() async {
   print('--------- AES/CBC ----------');
-  for (int size in [1 << 20, 1 << 10, 1 << 3]) {
+  for (int size in [1 << 20, 1 << 10, 1 << 5]) {
     print('---- message: ${formatSize(size)} ----');
     print('[AES-128]');
     await CipherlibBenchmark(size, 16).measureDiff([

@@ -1,40 +1,43 @@
 // Copyright (c) 2023, Sudipto Chandra
 // All rights reserved. Check LICENSE file for details.
 
-import 'dart:math';
+// ignore_for_file: unused_local_variable
+
 import 'dart:typed_data';
 
 import 'package:cipherlib/cipherlib.dart';
 
 import '_base.dart';
 
-Random random = Random();
-
-class CipherlibBenchmark extends InputBenchmark {
+class CipherlibBenchmark extends SyncBenchmark {
+  final Uint8List input;
   final Uint8List key;
   final Uint8List iv;
 
   CipherlibBenchmark(int size, int keySize)
-      : key = Uint8List.fromList(List.filled(2 * keySize, 0x9f)),
+      : input = Uint8List.fromList(List.filled(size >> 1, 0x3f)),
+        key = Uint8List.fromList(List.filled(keySize << 1, 0x9f)),
         iv = Uint8List.fromList(List.filled(16, 0x87)),
         super('cipherlib', size);
 
   @override
   void run() {
-    AES(key).xts(iv).encrypt(input);
+    final aes = AES.pkcs7(key).xts(iv);
+    final encrypted = aes.encrypt(input);
+    final decrypted = aes.decrypt(encrypted);
   }
 }
 
 void main() async {
   print('--------- AES/XTS ----------');
-  for (int size in [1 << 20, 1 << 10, 1 << 3]) {
+  for (int size in [1 << 20, 1 << 10, 1 << 5]) {
     print('---- message: ${formatSize(size)} ----');
     print('[AES-128]');
-    CipherlibBenchmark(size, 16).measureRate();
+    await CipherlibBenchmark(size, 16).measureRate();
     print('[AES-192]');
-    CipherlibBenchmark(size, 24).measureRate();
+    await CipherlibBenchmark(size, 24).measureRate();
     print('[AES-256]');
-    CipherlibBenchmark(size, 32).measureRate();
+    await CipherlibBenchmark(size, 32).measureRate();
     print('');
   }
 }

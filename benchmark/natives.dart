@@ -11,8 +11,11 @@ import '_base.dart';
 Random random = Random();
 
 // ---------- Fill Range Benchmark ----------
-class LoopFillBenchmark extends InputBenchmark {
-  LoopFillBenchmark(int size) : super('loop-fill', size);
+class LoopFillBenchmark extends SyncBenchmark {
+  final Uint8List input;
+  LoopFillBenchmark(int size)
+      : input = Uint8List.fromList(List.filled(size, 0x3f)),
+        super('loop-fill', size);
 
   @override
   void run() {
@@ -23,8 +26,11 @@ class LoopFillBenchmark extends InputBenchmark {
   }
 }
 
-class FillRangeBenchmark extends InputBenchmark {
-  FillRangeBenchmark(int size) : super('fillRange()', size);
+class FillRangeBenchmark extends SyncBenchmark {
+  final Uint8List input;
+  FillRangeBenchmark(int size)
+      : input = Uint8List.fromList(List.filled(size, 0x3f)),
+        super('fillRange()', size);
 
   @override
   void run() {
@@ -34,8 +40,11 @@ class FillRangeBenchmark extends InputBenchmark {
 }
 
 // ---------- Set Range Benchmark ----------
-class LoopSetBenchmark extends InputBenchmark {
-  LoopSetBenchmark(int size) : super('loop-set', size);
+class LoopSetBenchmark extends SyncBenchmark {
+  final Uint8List input;
+  LoopSetBenchmark(int size)
+      : input = Uint8List.fromList(List.filled(size, 0x3f)),
+        super('loop-set', size);
 
   @override
   void run() {
@@ -46,8 +55,11 @@ class LoopSetBenchmark extends InputBenchmark {
   }
 }
 
-class SetRangeBenchmark extends InputBenchmark {
-  SetRangeBenchmark(int size) : super('setRange()', size);
+class SetRangeBenchmark extends SyncBenchmark {
+  final Uint8List input;
+  SetRangeBenchmark(int size)
+      : input = Uint8List.fromList(List.filled(size, 0x3f)),
+        super('setRange()', size);
 
   @override
   void run() {
@@ -56,8 +68,11 @@ class SetRangeBenchmark extends InputBenchmark {
 }
 
 // ---------- Reverse Range Benchmark ----------
-class LoopReverseBenchmark extends InputBenchmark {
-  LoopReverseBenchmark(int size) : super('loop-reverse', size);
+class LoopReverseBenchmark extends SyncBenchmark {
+  final Uint8List input;
+  LoopReverseBenchmark(int size)
+      : input = Uint8List.fromList(List.filled(size, 0x3f)),
+        super('loop-reverse', size);
 
   @override
   void run() {
@@ -68,8 +83,11 @@ class LoopReverseBenchmark extends InputBenchmark {
   }
 }
 
-class SetRangeReverseBenchmark extends InputBenchmark {
-  SetRangeReverseBenchmark(int size) : super('setRange()', size);
+class SetRangeReverseBenchmark extends SyncBenchmark {
+  final Uint8List input;
+  SetRangeReverseBenchmark(int size)
+      : input = Uint8List.fromList(List.filled(size, 0x3f)),
+        super('setRange()', size);
 
   @override
   void run() {
@@ -79,10 +97,11 @@ class SetRangeReverseBenchmark extends InputBenchmark {
 
 // ---------- Byte Collector Benchmark ----------
 class CollectInSingleListBenchmark extends SyncBenchmark {
-  final Uint8List data = Uint8List.fromList(List.filled(16, 0x9f));
+  final Uint8List data;
 
   CollectInSingleListBenchmark(int size)
-      : super('Collect In Single List', size);
+      : data = Uint8List.fromList(List.filled(16, 0x9f)),
+        super('Collect In Single List', size);
 
   @override
   void run() {
@@ -97,10 +116,11 @@ class CollectInSingleListBenchmark extends SyncBenchmark {
 }
 
 class CollectInSingleUint8ListBenchmark extends SyncBenchmark {
-  final Uint8List data = Uint8List.fromList(List.filled(16, 0x9f));
+  final Uint8List data;
 
   CollectInSingleUint8ListBenchmark(int size)
-      : super('Collect In Single Uint8List', size);
+      : data = Uint8List.fromList(List.filled(16, 0x9f)),
+        super('Collect In Single Uint8List', size);
 
   @override
   void run() {
@@ -123,10 +143,11 @@ class CollectInSingleUint8ListBenchmark extends SyncBenchmark {
 }
 
 class CollectInChunkedListBenchmark extends SyncBenchmark {
-  final Uint8List data = Uint8List.fromList(List.filled(16, 0x9f));
+  final Uint8List data;
 
   CollectInChunkedListBenchmark(int size)
-      : super('Collect In Chunked List', size);
+      : data = Uint8List.fromList(List.filled(16, 0x9f)),
+        super('Collect In Chunked List', size);
 
   @override
   void run() {
