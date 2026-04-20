@@ -1,6 +1,8 @@
 // Copyright (c) 2023, Sudipto Chandra
 // All rights reserved. Check LICENSE file for details.
 
+// ignore_for_file: unused_local_variable
+
 import 'dart:math';
 import 'dart:typed_data';
 
@@ -11,35 +13,51 @@ import '_base.dart';
 
 Random random = Random();
 
-class CipherlibBenchmark extends InputBenchmark {
+class CipherlibBenchmark extends AsyncBenchmark {
+  final Uint8List input;
   final Uint8List key;
+  final Uint8List iv;
 
   CipherlibBenchmark(int size, int keySize)
-      : key = Uint8List.fromList(List.filled(keySize, 0x9f)),
+      : input = Uint8List.fromList(List.filled(size >> 1, 0x3f)),
+        key = Uint8List.fromList(List.filled(keySize, 0x9f)),
+        iv = Uint8List.fromList(List.filled(16, 0x87)),
         super('cipherlib', size);
 
   @override
-  void run() {
-    AES(key).ecb().encrypt(input);
+  Future<void> run() async {
+    final cbc = AES.pkcs7(key).ecb();
+    final encrypted = cbc.encrypt(input);
+    final decrypted = cbc.decrypt(encrypted);
   }
 }
 
-class PointyCastleBenchmark extends InputBenchmark {
+class PointyCastleBenchmark extends AsyncBenchmark {
+  final Uint8List input;
   final Uint8List key;
+  final Uint8List iv;
 
   PointyCastleBenchmark(int size, int keySize)
-      : key = Uint8List.fromList(List.filled(keySize, 0x9f)),
+      : input = Uint8List.fromList(List.filled(size >> 1, 0x3f)),
+        key = Uint8List.fromList(List.filled(keySize, 0x9f)),
+        iv = Uint8List.fromList(List.filled(16, 0x87)),
         super('PointyCastle', size);
 
   @override
-  void run() {
-    var inp = Uint8List.fromList(input);
-    var out = Uint8List(inp.length);
-    var instance = pc.BlockCipher('AES/ECB');
-    instance.init(true, pc.KeyParameter(key));
-    for (int i = 0; i < inp.length; i += 16) {
-      instance.processBlock(inp, i, out, i);
-    }
+  Future<void> run() async {
+    final instance = pc.PaddedBlockCipher('AES/ECB/PKCS7');
+    final params = pc.PaddedBlockCipherParameters(
+      pc.KeyParameter(key),
+      null,
+    );
+
+    // encrypt
+    instance.init(true, params);
+    final encrypted = instance.process(input);
+
+    // decrypt
+    instance.init(false, params);
+    final decrypted = instance.process(encrypted);
   }
 }
 

@@ -36,7 +36,6 @@ class AESInCBCModeEncrypt extends Cipher with SaltedCipher {
     int n = message.length;
     int m = n + 16 - (n & 15);
 
-    final temp = Uint8List(16);
     final output = Uint8List(m);
     final block32 = Uint32List(4); // 128-bit
     final iv32 = Uint32List.view(iv.buffer);
@@ -79,18 +78,14 @@ class AESInCBCModeEncrypt extends Cipher with SaltedCipher {
       output32[j + 3] = block32[3];
     }
 
-    // last block
+    // process last block
     for (pos = 0; i + pos < n; ++pos) {
       block[pos] ^= message[i + pos];
     }
-
-    // pad last block if necessary
-    for (j = pos; j < 16; ++j) {
-      temp[j] = block[j];
-    }
+    final temp = block.sublist(pos);
     if (padding.pad(block, pos)) {
-      for (j = pos; j < 16; ++j) {
-        block[j] ^= temp[j];
+      for (j = 0; j < temp.length; ++j) {
+        block[pos + j] ^= temp[j];
       }
       AESCore.$encryptLE(block32, xkey32);
 

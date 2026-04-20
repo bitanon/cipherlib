@@ -3,157 +3,9 @@
 
 import 'dart:typed_data';
 
-import '../../core/cipher.dart';
-import '../../core/cipher_sink.dart';
 import '../../core/aes.dart';
+import '../../core/cipher.dart';
 import '../padding.dart';
-
-/// The sink used for encryption by the [AESInECBModeEncrypt] algorithm.
-class AESInECBModeEncryptSink extends CipherSink {
-  AESInECBModeEncryptSink(
-    this._key,
-    this._padding,
-  ) {
-    reset();
-  }
-
-  int _pos = 0;
-  final Uint8List _key;
-  final Padding _padding;
-  final _block = Uint8List(16); // 128-bit
-  late final _key32 = Uint32List.view(_key.buffer);
-  late final _block32 = Uint32List.view(_block.buffer);
-  late final _xkey32 = AESCore.$expandEncryptionKey(_key32);
-
-  @override
-  void reset() {
-    super.reset();
-    _pos = 0;
-  }
-
-  @override
-  @pragma('vm:prefer-inline')
-  Uint8List $add(List<int> data, int start, int end) {
-    int i, j, p, n;
-    n = _pos + end - start;
-    if (closed) {
-      n += 16 - (n & 15);
-    }
-    var output = Uint8List(n);
-
-    p = 0;
-    for (i = start; i < end;) {
-      for (; _pos < 16 && i < end; ++_pos, ++i) {
-        _block[_pos] = data[i];
-      }
-      if (_pos == 16) {
-        AESCore.$encryptLE(_block32, _xkey32);
-        for (j = 0; j < 16; ++j, ++p) {
-          output[p] = _block[j];
-        }
-        _pos = 0;
-      }
-    }
-
-    if (closed) {
-      if (_padding.pad(_block, _pos)) {
-        AESCore.$encryptLE(_block32, _xkey32);
-        for (j = 0; j < 16; ++j, ++p) {
-          output[p] = _block[j];
-        }
-        _pos = 0;
-      }
-      if (_pos != 0) {
-        throw StateError('Invalid input size');
-      }
-    }
-
-    if (n == p) {
-      return output;
-    } else if (p == 0) {
-      return Uint8List(0);
-    } else {
-      return output.sublist(0, p);
-    }
-  }
-}
-
-/// The sink used for decryption by the [AESInECBModeDecrypt] algorithm.
-class AESInECBModeDecryptSink extends CipherSink {
-  AESInECBModeDecryptSink(
-    this._key,
-    this._padding,
-  ) {
-    reset();
-  }
-
-  int _pos = 0;
-  int _rpos = 0;
-  final Uint8List _key;
-  final Padding _padding;
-  final _block = Uint8List(16); // 128-bit
-  final _residue = Uint8List(16);
-  late final _key32 = Uint32List.view(_key.buffer);
-  late final _block32 = Uint32List.view(_block.buffer);
-  late final _xkey32 = AESCore.$expandDecryptionKey(_key32);
-
-  @override
-  void reset() {
-    super.reset();
-    _pos = 0;
-    _rpos = 0;
-  }
-
-  @override
-  @pragma('vm:prefer-inline')
-  Uint8List $add(List<int> data, int start, int end) {
-    int i, j, k, p, n;
-    p = 0;
-    n = _rpos + end - start;
-    var output = Uint8List(n);
-    for (i = start; i < end;) {
-      for (; _pos < 16 && i < end; ++_pos, ++i) {
-        _block[_pos] = data[i];
-      }
-      if (_pos == 16) {
-        AESCore.$decryptLE(_block32, _xkey32);
-        for (j = 0; j < 16; ++j, ++_rpos) {
-          if (_rpos == 16) {
-            for (k = 0; k < 16; ++k, ++p) {
-              output[p] = _residue[k];
-            }
-            _rpos = 0;
-          }
-          _residue[_rpos] = _block[j];
-        }
-        _pos = 0;
-      }
-    }
-
-    if (closed) {
-      if (_rpos == 16) {
-        for (k = 0; k < 16; ++k) {
-          output[p++] = _residue[k];
-        }
-        _rpos = 0;
-      }
-      if (_pos != 0 || _rpos != 0) {
-        throw StateError('Invalid input size');
-      }
-      if (p > 0) {
-        p -= _padding.getPadLength(output, p);
-      }
-    }
-
-    if (n == p) {
-      return output;
-    } else if (p == 0) {
-      return Uint8List(0);
-    } else {
-      return output.sublist(0, p);
-    }
-  }
-}
 
 /// Provides encryption for AES cipher in ECB mode.
 class AESInECBModeEncrypt extends Cipher {
@@ -173,7 +25,70 @@ class AESInECBModeEncrypt extends Cipher {
 
   @override
   Uint8List convert(List<int> message) {
-    return AESInECBModeEncryptSink(key, padding).add(message, true);
+    int i, j, n, pos;
+    n = message.length;
+
+    final block32 = Uint32List(4); // 128-bit
+    final output = Uint8List(n + 16 - (n & 15));
+    final key32 = Uint32List.view(key.buffer);
+    final block = Uint8List.view(block32.buffer);
+    final output32 = Uint32List.view(output.buffer);
+    final xkey32 = AESCore.$expandEncryptionKey(key32);
+
+    // process 16-byte blocks
+    for (i = 0; i + 16 <= n; i += 16) {
+      block32[0] = (message[i + 0] ^
+          (message[i + 1] << 8) ^
+          (message[i + 2] << 16) ^
+          (message[i + 3] << 24));
+      block32[1] = ((message[i + 4]) ^
+          (message[i + 5] << 8) ^
+          (message[i + 6] << 16) ^
+          message[i + 7] << 24);
+      block32[2] = (message[i + 8] ^
+          (message[i + 9] << 8) ^
+          (message[i + 10] << 16) ^
+          (message[i + 11] << 24));
+      block32[3] = (message[i + 12] ^
+          (message[i + 13] << 8) ^
+          (message[i + 14] << 16) ^
+          (message[i + 15] << 24));
+
+      AESCore.$encryptLE(block32, xkey32);
+
+      j = i >>> 2;
+      output32[j + 0] = block32[0];
+      output32[j + 1] = block32[1];
+      output32[j + 2] = block32[2];
+      output32[j + 3] = block32[3];
+    }
+
+    // process last block
+    for (pos = 0; i + pos < n; ++pos) {
+      block[pos] = message[i + pos];
+    }
+    if (padding.pad(block, pos)) {
+      AESCore.$encryptLE(block32, xkey32);
+
+      j = i >>> 2;
+      output32[j + 0] = block32[0];
+      output32[j + 1] = block32[1];
+      output32[j + 2] = block32[2];
+      output32[j + 3] = block32[3];
+
+      i += 16;
+      pos = 0;
+    }
+
+    if (pos != 0) {
+      throw StateError('Invalid input size');
+    }
+
+    if (i == output.length) {
+      return output;
+    } else {
+      return output.sublist(0, i);
+    }
   }
 }
 
@@ -195,7 +110,48 @@ class AESInECBModeDecrypt extends Cipher {
 
   @override
   Uint8List convert(List<int> message) {
-    return AESInECBModeDecryptSink(key, padding).add(message, true);
+    int i, j, n;
+    n = message.length;
+
+    final output = Uint8List(n);
+    final block32 = Uint32List(16); // 128-bit
+    final key32 = Uint32List.view(key.buffer);
+    final output32 = Uint32List.view(output.buffer);
+    final xkey32 = AESCore.$expandDecryptionKey(key32);
+
+    if (n & 15 != 0) {
+      throw StateError('Invalid input size');
+    }
+
+    // process 16-byte blocks
+    for (i = 0; i + 16 <= n; i += 16) {
+      block32[0] = (message[i + 0] ^
+          (message[i + 1] << 8) ^
+          (message[i + 2] << 16) ^
+          (message[i + 3] << 24));
+      block32[1] = ((message[i + 4]) ^
+          (message[i + 5] << 8) ^
+          (message[i + 6] << 16) ^
+          message[i + 7] << 24);
+      block32[2] = (message[i + 8] ^
+          (message[i + 9] << 8) ^
+          (message[i + 10] << 16) ^
+          (message[i + 11] << 24));
+      block32[3] = (message[i + 12] ^
+          (message[i + 13] << 8) ^
+          (message[i + 14] << 16) ^
+          (message[i + 15] << 24));
+
+      AESCore.$decryptLE(block32, xkey32);
+
+      j = i >>> 2;
+      output32[j + 0] = block32[0];
+      output32[j + 1] = block32[1];
+      output32[j + 2] = block32[2];
+      output32[j + 3] = block32[3];
+    }
+
+    return padding.unpad(output);
   }
 }
 

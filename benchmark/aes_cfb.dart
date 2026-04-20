@@ -26,7 +26,7 @@ class CipherlibBenchmark extends SyncBenchmark {
 
   @override
   void run() {
-    final aes = AES(key).cfb64(iv);
+    final aes = AES.pkcs7(key).cfb64(iv);
     final encrypted = aes.encrypt(input);
     final decrypted = aes.decrypt(encrypted);
   }
@@ -62,25 +62,21 @@ class PointyCastleBenchmark extends SyncBenchmark {
 }
 
 void main() async {
-  await CipherlibBenchmark(1 << 16, 16).measureRate();
-  await CipherlibBenchmark(1 << 16, 24).measureRate();
-  await CipherlibBenchmark(1 << 16, 32).measureRate();
-
-  // print('--------- AES/CFB ----------');
-  // for (int size in [1 << 20, 1 << 10, 1 << 3]) {
-  //   print('---- message: ${formatSize(size)} ----');
-  //   print('[AES-128]');
-  //   await CipherlibBenchmark(size, 16).measureDiff([
-  //     PointyCastleBenchmark(size, 16),
-  //   ]);
-  //   print('[AES-192]');
-  //   await CipherlibBenchmark(size, 24).measureDiff([
-  //     PointyCastleBenchmark(size, 24),
-  //   ]);
-  //   print('[AES-256]');
-  //   await CipherlibBenchmark(size, 32).measureDiff([
-  //     PointyCastleBenchmark(size, 32),
-  //   ]);
-  //   print('');
-  // }
+  print('--------- AES/CFB ----------');
+  for (int size in [1 << 20, 1 << 10, 1 << 3]) {
+    print('---- message: ${formatSize(size)} ----');
+    print('[AES-128]');
+    await CipherlibBenchmark(size, 16).measureDiff([
+      PointyCastleBenchmark(size, 16),
+    ]);
+    print('[AES-192]');
+    await CipherlibBenchmark(size, 24).measureDiff([
+      PointyCastleBenchmark(size, 24),
+    ]);
+    print('[AES-256]');
+    await CipherlibBenchmark(size, 32).measureDiff([
+      PointyCastleBenchmark(size, 32),
+    ]);
+    print('');
+  }
 }
