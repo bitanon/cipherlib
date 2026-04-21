@@ -7,354 +7,336 @@ import 'package:hashlib/random.dart' show randomBytes;
 
 import '../../core/aes.dart';
 import '../../core/cipher.dart';
+import '../../utils/typed_data.dart';
 import '../padding.dart';
-
-const List<int> _pow2 = <int>[
-  0x80,
-  0x40,
-  0x20,
-  0x10,
-  0x08,
-  0x04,
-  0x02,
-  0x01,
-  0x8000,
-  0x4000,
-  0x2000,
-  0x1000,
-  0x0800,
-  0x0400,
-  0x0200,
-  0x0100,
-  0x800000,
-  0x400000,
-  0x200000,
-  0x100000,
-  0x080000,
-  0x040000,
-  0x020000,
-  0x010000,
-  0x80000000,
-  0x40000000,
-  0x20000000,
-  0x10000000,
-  0x08000000,
-  0x04000000,
-  0x02000000,
-  0x01000000,
-];
 
 /// This implementation is derived from [NIST GCM Specification][spec].
 ///
 /// [spec]: https://csrc.nist.rip/groups/ST/toolkit/BCM/documents/proposedmodes/gcm/gcm-spec.pdf
-abstract class _AESInGCMModeSinkBase {
-  int _pos = 0;
-  int _rpos = 0;
-  int _aadLength = 0;
-  int _msgLength = 0;
-  final Uint8List _key;
-  final Uint8List _iv;
-  final Iterable<int>? _aad;
-  final _counter = Uint8List(16);
-  final _block = Uint8List(16); // 128-bit
-  final _tag = Uint8List(16);
-  final _first = Uint8List(16);
-  final _hkey = Uint8List(16); // key for GHASH
-  final _hcache = Uint8List(2048); // 16 * 128
-  late final _tag32 = Uint32List.view(_tag.buffer);
-  late final _key32 = Uint32List.view(_key.buffer);
-  late final _block32 = Uint32List.view(_block.buffer);
-  late final _first32 = Uint32List.view(_first.buffer);
-  late final _hkey32 = Uint32List.view(_hkey.buffer);
-  late final _hcache32 = Uint32List.view(_hcache.buffer);
-  late final _xkey32 = AESCore.$expandEncryptionKey(_key32);
+class AESInGCMModeCipherCore {
+  final int tagSize;
+  final Uint8List iv;
+  final Uint8List key;
+  final Uint8List? aad;
 
-  Uint8List convert(List<int> data);
+  AESInGCMModeCipherCore(
+    this.key,
+    this.iv,
+    this.aad, [
+    this.tagSize = 16,
+  ]);
 
+  int pos = 0;
+  int rpos = 0;
+  int aadLength = 0;
+  int msgLength = 0;
+
+  final tag32 = Uint32List(4);
+  final block32 = Uint32List(4); // 128-bit
+  final first32 = Uint32List(4);
+  final counter32 = Uint32List(4);
+  final hcache32 = Uint32List(512); // 16 * 128 bytes
+
+  late final iv32 = Uint32List.view(iv.buffer);
+  late final tag = Uint8List.view(tag32.buffer);
+  late final key32 = Uint32List.view(key.buffer);
+  late final block = Uint8List.view(block32.buffer);
+  late final first = Uint8List.view(first32.buffer);
+  late final counter = Uint8List.view(counter32.buffer);
+  late final xkey32 = AESCore.$expandEncryptionKey(key32);
+
+  /// Returns `T ^ (a << 3) ^ (b << 3)`
   @pragma('vm:prefer-inline')
-  void _nextBlock() {
-    int i;
-    for (i = 15; i >= 12; i--) {
-      _counter[i]++;
-      if (_counter[i] != 0) break;
-    }
-    for (i = 0; i < 16; ++i) {
-      _block[i] = _counter[i];
-    }
-    AESCore.$encryptLE(_block32, _xkey32);
+  @pragma('dart2js:tryInline')
+  static void _xor128(Uint32List T, int a, int b) {
+    T[0] ^= AESCore.$swap32(a >>> 29);
+    T[1] ^= AESCore.$swap32(a << 3);
+    T[2] ^= AESCore.$swap32(b >>> 29);
+    T[3] ^= AESCore.$swap32(b << 3);
   }
 
+  /// Returns `(M * H) mod P` in **GF(`2^128`)**,
+  /// where `P` = 0xE1000000000000000000000000000
   @pragma('vm:prefer-inline')
-  void _serialize64(int a, int b) {
-    a <<= 3;
-    b <<= 3;
-    _tag[0] ^= a >>> 56;
-    _tag[1] ^= a >>> 48;
-    _tag[2] ^= a >>> 40;
-    _tag[3] ^= a >>> 32;
-    _tag[4] ^= a >>> 24;
-    _tag[5] ^= a >>> 16;
-    _tag[6] ^= a >>> 8;
-    _tag[7] ^= a;
-    _tag[8] ^= b >>> 56;
-    _tag[9] ^= b >>> 48;
-    _tag[10] ^= b >>> 40;
-    _tag[11] ^= b >>> 32;
-    _tag[12] ^= b >>> 24;
-    _tag[13] ^= b >>> 16;
-    _tag[14] ^= b >>> 8;
-    _tag[15] ^= b;
+  static void _multiply128(Uint32List M, Uint32List H) {
+    int i, x, b, s;
+    int t0, t1, t2, t3;
+    i = 0;
+    t0 = t1 = t2 = t3 = 0;
+    for (x in M) {
+      for (s = 128; x != 0; x >>>= 8, s -= 32) {
+        for (b = 0x80; b != 0; b >>>= 1, i += 4) {
+          if (x & b != 0) {
+            t0 ^= H[i];
+            t1 ^= H[i + 1];
+            t2 ^= H[i + 2];
+            t3 ^= H[i + 3];
+          }
+        }
+      }
+      i += s;
+    }
+    M[0] = t0;
+    M[1] = t1;
+    M[2] = t2;
+    M[3] = t3;
   }
 
-  /// Build the [_hkey] cache for [_multiply128]
-  void _buildCache() {
+  // Increment a 32-bit counter in little-endian order
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  static void _increment32(Uint8List counter) {
+    counter[15]++;
+    if (counter[15] == 0) {
+      counter[14]++;
+      if (counter[14] == 0) {
+        counter[13]++;
+        if (counter[13] == 0) {
+          counter[12]++;
+        }
+      }
+    }
+  }
+
+  void initialize() {
     int i, j, y, c;
-    for (i = 0; i < 16; i++) {
-      _hcache[i] = _hkey[i];
-    }
-    for (i = 16; i < 2048; i += 16) {
-      // shift right
+
+    // GHASH hash table generation
+    AESCore.$encrypt(hcache32, xkey32);
+    hcache32[0] = AESCore.$swap32(hcache32[0]);
+    hcache32[1] = AESCore.$swap32(hcache32[1]);
+    hcache32[2] = AESCore.$swap32(hcache32[2]);
+    hcache32[3] = AESCore.$swap32(hcache32[3]);
+    for (i = 4; i < 512; i += 4) {
+      // shift right 1-bit over 16 bytes in the table row
       c = 0;
-      for (j = 0; j < 16; j++) {
-        y = _hcache[i + j - 16];
-        _hcache[i + j] = c | (y >>> 1);
-        c = (y & 1) << 7;
-      }
-      // modulus
-      if (c != 0) {
-        _hcache[i] ^= 0xE1;
-      }
+      // 0...3 of the current row
+      y = hcache32[i - 4];
+      hcache32[i] = c | ((y >>> 1) & 0x7F7F7F7F) | ((y & 0x00010101) << 15);
+      c = (y >>> 17) & 0x80;
+      // 4...7 of the current row
+      y = hcache32[i - 3];
+      hcache32[i + 1] = c | ((y >>> 1) & 0x7F7F7F7F) | ((y & 0x00010101) << 15);
+      c = (y >>> 17) & 0x80;
+      // 8...11 of the current row
+      y = hcache32[i - 2];
+      hcache32[i + 2] = c | ((y >>> 1) & 0x7F7F7F7F) | ((y & 0x00010101) << 15);
+      c = (y >>> 17) & 0x80;
+      // 12...15 of the current row
+      y = hcache32[i - 1];
+      hcache32[i + 3] = c | ((y >>> 1) & 0x7F7F7F7F) | ((y & 0x00010101) << 15);
+      c = (y >>> 17) & 0x80;
+      // modulus (c is either 0x00 or 0x80).
+      hcache32[i] ^= (-(c >>> 7)) & 0xE1;
     }
-  }
 
-  /// Multiply M=[_tag] and H=[_hkey] in 128-bit Galois field.
-  ///
-  /// Returns `M * H mod P` in GF(2^128), where
-  /// `P = 0xE1000000000000000000000000000`
-  void _multiply128() {
-    int i, x, p, t0, t1, t2, t3;
-    p = 0;
-    t0 = 0;
-    t1 = 0;
-    t2 = 0;
-    t3 = 0;
-    for (x in _tag32) {
-      for (i = 0; i < 32; i++) {
-        if ((x & _pow2[i]) != 0) {
-          t0 ^= _hcache32[p++];
-          t1 ^= _hcache32[p++];
-          t2 ^= _hcache32[p++];
-          t3 ^= _hcache32[p++];
-        } else {
-          p += 4;
-        }
-      }
-    }
-    _tag32[0] = t0;
-    _tag32[1] = t1;
-    _tag32[2] = t2;
-    _tag32[3] = t3;
-  }
-
-  _AESInGCMModeSinkBase(this._key, this._iv, this._aad) {
-    int i, n;
-
-    _pos = 0;
-    _rpos = 0;
-    _aadLength = 0;
-    _msgLength = 0;
-
-    // GHASH init
-    for (i = 0; i < 16; ++i) {
-      _tag[i] = 0;
-      _hkey[i] = 0;
-    }
-    AESCore.$encryptLE(_hkey32, _xkey32);
-    _buildCache();
-
-    // build counter 0
-    if (_iv.lengthInBytes == 12) {
-      // 96-bit nonce
-      for (i = 0; i < 12; ++i) {
-        _counter[i] = _iv[i];
-      }
-      _counter[12] = 0;
-      _counter[13] = 0;
-      _counter[14] = 0;
-      _counter[15] = 1;
+    // build first counter from initialization vector
+    if (iv.length == 12) {
+      // if IV is 12 bytes, use the first 9 bytes as the counter
+      counter32[0] = iv32[0];
+      counter32[1] = iv32[1];
+      counter32[2] = iv32[2];
+      counter32[3] = 0x1000000;
     } else {
-      // nonce of other length
-      n = 0;
-      for (int x in _iv) {
-        _tag[n++] ^= x;
-        if (n == 16) {
-          _multiply128();
-          n = 0;
-        }
+      // otherwise, use the entire IV as the counter
+      for (i = 0; i + 4 < iv32.length; i += 4) {
+        counter32[0] ^= iv32[i];
+        counter32[1] ^= iv32[i + 1];
+        counter32[2] ^= iv32[i + 2];
+        counter32[3] ^= iv32[i + 3];
+        _multiply128(counter32, hcache32);
       }
-      if (n > 0) {
-        _multiply128();
+      i <<= 2;
+      for (j = 0; i + j < iv.length; ++j) {
+        counter[j] ^= iv[i + j];
       }
-      _serialize64(0, _iv.length);
-      _multiply128();
-      for (i = 0; i < 16; ++i) {
-        _counter[i] = _tag[i];
-        _tag[i] = 0;
+      if (j > 0) {
+        _multiply128(counter32, hcache32);
       }
+      _xor128(counter32, 0, iv.length);
+      _multiply128(counter32, hcache32);
     }
 
-    // encrypt counter 0 for mac
-    for (i = 0; i < 16; ++i) {
-      _first[i] = _counter[i];
-    }
-    AESCore.$encryptLE(_first32, _xkey32);
+    // encrypt first counter for message authentication code
+    first32[0] = counter32[0];
+    first32[1] = counter32[1];
+    first32[2] = counter32[2];
+    first32[3] = counter32[3];
+    AESCore.$encryptLE(first32, xkey32);
 
-    // add aad
-    if (_aad != null) {
-      n = 0;
-      for (int x in _aad!) {
-        _tag[n++] ^= x;
-        if (n == 16) {
-          _multiply128();
-          _aadLength += 16;
-          n = 0;
-        }
+    // process additional authenticated data
+    if (aad != null) {
+      aadLength = aad!.length;
+      final aad32 = Uint32List.view(aad!.buffer);
+      for (i = 0; i + 4 <= aad32.length; i += 4) {
+        tag32[0] ^= aad32[i];
+        tag32[1] ^= aad32[i + 1];
+        tag32[2] ^= aad32[i + 2];
+        tag32[3] ^= aad32[i + 3];
+        _multiply128(tag32, hcache32);
       }
-      if (n > 0) {
-        _multiply128();
-        _aadLength += n;
+      i <<= 2;
+      for (j = 0; i + j < aadLength; ++j) {
+        tag[j] ^= aad![i + j];
       }
-    }
-
-    _nextBlock();
-  }
-}
-
-/// The sink used for both encryption and decryption by the
-/// [AESInGCMModeEncrypt] algorithm.
-class AESInGCMModeEncryptSink extends _AESInGCMModeSinkBase {
-  AESInGCMModeEncryptSink(
-    super._key,
-    super._iv,
-    super._aad, [
-    this._tagSize = 16,
-  ]) {
-    if (_tagSize < 1) {
-      throw StateError('Tag size must be at least 1');
-    } else if (_tagSize > 16) {
-      throw StateError('Tag size must be at most 16');
+      if (j > 0) {
+        _multiply128(tag32, hcache32);
+      }
     }
   }
 
-  final int _tagSize;
+  Uint8List encrypt(List<int> message) {
+    int i, j, n;
+    int x0, x1, x2, x3;
 
-  @override
-  Uint8List convert(List<int> data) {
-    int i, j, n, p;
+    n = message.length;
+    final output = Uint8List(n + tagSize);
+    final output32 = Uint32List.view(output.buffer);
 
-    _msgLength = data.length;
-    n = _msgLength + _tagSize;
-    final output = Uint8List(n);
+    for (i = 0; i + 16 <= n; i += 16) {
+      _increment32(counter);
+      block32[0] = counter32[0];
+      block32[1] = counter32[1];
+      block32[2] = counter32[2];
+      block32[3] = counter32[3];
+      AESCore.$encryptLE(block32, xkey32);
 
-    p = 0;
-    for (i = 0; i < data.length;) {
-      for (; _pos < 16 && i < data.length; ++_pos, ++i, ++p) {
-        output[p] = _block[_pos] ^ data[i];
-        _tag[_pos] ^= output[p];
-      }
-      if (_pos == 16) {
-        _multiply128();
-        _nextBlock();
-        _pos = 0;
-      }
+      x0 = block32[0] ^
+          (message[i + 0]) ^
+          (message[i + 1] << 8) ^
+          (message[i + 2] << 16) ^
+          (message[i + 3] << 24);
+      x1 = block32[1] ^
+          (message[i + 4]) ^
+          (message[i + 5] << 8) ^
+          (message[i + 6] << 16) ^
+          (message[i + 7] << 24);
+      x2 = block32[2] ^
+          (message[i + 8]) ^
+          (message[i + 9] << 8) ^
+          (message[i + 10] << 16) ^
+          (message[i + 11] << 24);
+      x3 = block32[3] ^
+          (message[i + 12]) ^
+          (message[i + 13] << 8) ^
+          (message[i + 14] << 16) ^
+          (message[i + 15] << 24);
+
+      tag32[0] ^= x0;
+      tag32[1] ^= x1;
+      tag32[2] ^= x2;
+      tag32[3] ^= x3;
+      _multiply128(tag32, hcache32);
+
+      j = i >>> 2;
+      output32[j + 0] = x0;
+      output32[j + 1] = x1;
+      output32[j + 2] = x2;
+      output32[j + 3] = x3;
     }
 
-    if (_pos > 0) {
-      _multiply128();
+    if (i < n) {
+      _increment32(counter);
+      block32[0] = counter32[0];
+      block32[1] = counter32[1];
+      block32[2] = counter32[2];
+      block32[3] = counter32[3];
+      AESCore.$encryptLE(block32, xkey32);
+
+      for (pos = 0; i + pos < n; ++pos) {
+        output[i + pos] = block[pos] ^ message[i + pos];
+        tag[pos] ^= output[i + pos];
+      }
+      _multiply128(tag32, hcache32);
     }
-    _serialize64(_aadLength, _msgLength);
-    _multiply128();
-    for (j = 0; j < _tagSize; ++j) {
-      _tag[j] ^= _first[j];
-      output[p++] = _tag[j];
+
+    _xor128(tag32, aadLength, n);
+    _multiply128(tag32, hcache32);
+    for (j = 0; j < tagSize; ++j) {
+      tag[j] ^= first[j];
+      output[n + j] = tag[j];
     }
 
     return output;
   }
-}
 
-/// The sink used for both encryption and decryption by the
-/// [AESInGCMModeDecrypt] algorithm.
-class AESInGCMModeDecryptSink extends _AESInGCMModeSinkBase {
-  AESInGCMModeDecryptSink(
-    super._key,
-    super._iv,
-    super._aad, [
-    this._tagSize = 16,
-  ]) {
-    if (_tagSize < 1) {
-      throw StateError('Tag size must be at least 1');
-    } else if (_tagSize > 16) {
-      throw StateError('Tag size must be at most 16');
-    }
-  }
+  Uint8List decrypt(List<int> message) {
+    int i, j, n;
+    int m0, m1, m2, m3;
 
-  final int _tagSize;
-  late final _residue = Uint8List(_tagSize);
-
-  @override
-  @pragma('vm:prefer-inline')
-  Uint8List convert(List<int> data) {
-    int i, j, p;
-    final output = Uint8List(data.length);
-
-    p = 0;
-    for (i = 0; i < data.length; ++i) {
-      if (_msgLength >= _tagSize) {
-        output[p++] = _block[_pos] ^ _residue[_rpos];
-        _tag[_pos] ^= _residue[_rpos];
-        _pos++;
-        if (_pos == 16) {
-          _multiply128();
-          _nextBlock();
-          _pos = 0;
-        }
-      }
-      _residue[_rpos++] = data[i];
-      _msgLength++;
-      if (_rpos == _tagSize) {
-        _rpos = 0;
-      }
-    }
-
-    _msgLength -= _tagSize;
-    if (_msgLength < 0) {
+    n = message.length - tagSize;
+    if (n < 0) {
       throw StateError('Invalid message size');
     }
-    if (_pos > 0) {
-      _multiply128();
+    final output = Uint8List(n);
+    final output32 = Uint32List.view(output.buffer);
+
+    for (i = 0; i + 16 <= n; i += 16) {
+      _increment32(counter);
+      block32[0] = counter32[0];
+      block32[1] = counter32[1];
+      block32[2] = counter32[2];
+      block32[3] = counter32[3];
+      AESCore.$encryptLE(block32, xkey32);
+
+      m0 = (message[i + 0]) ^
+          (message[i + 1] << 8) ^
+          (message[i + 2] << 16) ^
+          (message[i + 3] << 24);
+      m1 = (message[i + 4]) ^
+          (message[i + 5] << 8) ^
+          (message[i + 6] << 16) ^
+          (message[i + 7] << 24);
+      m2 = (message[i + 8]) ^
+          (message[i + 9] << 8) ^
+          (message[i + 10] << 16) ^
+          (message[i + 11] << 24);
+      m3 = (message[i + 12]) ^
+          (message[i + 13] << 8) ^
+          (message[i + 14] << 16) ^
+          (message[i + 15] << 24);
+
+      tag32[0] ^= m0;
+      tag32[1] ^= m1;
+      tag32[2] ^= m2;
+      tag32[3] ^= m3;
+      _multiply128(tag32, hcache32);
+
+      j = i >>> 2;
+      output32[j + 0] = block32[0] ^ m0;
+      output32[j + 1] = block32[1] ^ m1;
+      output32[j + 2] = block32[2] ^ m2;
+      output32[j + 3] = block32[3] ^ m3;
     }
-    _serialize64(_aadLength, _msgLength);
-    _multiply128();
-    for (j = 0; j < _tagSize; ++j) {
-      _tag[j] ^= _first[j];
-    }
-    for (j = 0; j < _tagSize; ++j) {
-      if (_tag[j] != _residue[_rpos++]) {
-        throw StateError('Message authentication check failed');
+
+    if (i < n) {
+      _increment32(counter);
+      block32[0] = counter32[0];
+      block32[1] = counter32[1];
+      block32[2] = counter32[2];
+      block32[3] = counter32[3];
+      AESCore.$encryptLE(block32, xkey32);
+
+      for (pos = 0; i + pos < n; ++pos) {
+        output[i + pos] = block[pos] ^ message[i + pos];
+        tag[pos] ^= message[i + pos];
       }
-      if (_rpos == _tagSize) {
-        _rpos = 0;
+      _multiply128(tag32, hcache32);
+    }
+
+    _xor128(tag32, aadLength, n);
+    _multiply128(tag32, hcache32);
+    for (j = 0; j < tagSize; ++j) {
+      tag[j] ^= first[j];
+    }
+
+    for (j = 0; j < tagSize; ++j) {
+      if (tag[j] != message[n + j]) {
+        throw StateError('Message authentication check failed');
       }
     }
 
-    if (p == 0) {
-      return Uint8List(0);
-    } else if (p == output.length) {
-      return output;
-    } else {
-      return output.sublist(0, p);
-    }
+    return output;
   }
 }
 
@@ -373,7 +355,7 @@ class AESInGCMModeEncrypt extends Cipher with SaltedCipher {
   final int tagSize;
 
   /// Additional authenticated data for AEAD construction
-  final Iterable<int>? aad;
+  final Uint8List? aad;
 
   const AESInGCMModeEncrypt(
     this.key,
@@ -384,7 +366,9 @@ class AESInGCMModeEncrypt extends Cipher with SaltedCipher {
 
   @override
   Uint8List convert(List<int> message) {
-    return AESInGCMModeEncryptSink(key, iv, aad, tagSize).convert(message);
+    final core = AESInGCMModeCipherCore(key, iv, aad, tagSize);
+    core.initialize();
+    return core.encrypt(message);
   }
 }
 
@@ -403,7 +387,7 @@ class AESInGCMModeDecrypt extends Cipher with SaltedCipher {
   final int tagSize;
 
   /// Additional authenticated data for AEAD construction
-  final Iterable<int>? aad;
+  final Uint8List? aad;
 
   const AESInGCMModeDecrypt(
     this.key,
@@ -414,7 +398,9 @@ class AESInGCMModeDecrypt extends Cipher with SaltedCipher {
 
   @override
   Uint8List convert(List<int> message) {
-    return AESInGCMModeDecryptSink(key, iv, aad, tagSize).convert(message);
+    final core = AESInGCMModeCipherCore(key, iv, aad, tagSize);
+    core.initialize();
+    return core.decrypt(message);
   }
 }
 
@@ -450,12 +436,31 @@ class AESInGCMMode extends CollateCipher with SaltedCipher {
     Iterable<int>? aad,
     int tagSize = 16,
   }) {
+    if (key.length != 16 && key.length != 24 && key.length != 32) {
+      throw StateError('Key must be 16, 24, or 32 bytes');
+    }
+    if (tagSize < 1) {
+      throw StateError('Tag size must be at least 1');
+    } else if (tagSize > 16) {
+      throw StateError('Tag size must be at most 16');
+    }
     iv ??= randomBytes(12);
-    var iv8 = iv is Uint8List ? iv : Uint8List.fromList(iv);
-    var key8 = key is Uint8List ? key : Uint8List.fromList(key);
+    final iv8 = toUint8List(iv);
+    final key8 = toUint8List(key);
+    final aad8 = aad != null ? toUint8List(aad) : null;
     return AESInGCMMode._(
-      encryptor: AESInGCMModeEncrypt(key8, iv8, aad: aad, tagSize: tagSize),
-      decryptor: AESInGCMModeDecrypt(key8, iv8, aad: aad, tagSize: tagSize),
+      encryptor: AESInGCMModeEncrypt(
+        key8,
+        iv8,
+        aad: aad8,
+        tagSize: tagSize,
+      ),
+      decryptor: AESInGCMModeDecrypt(
+        key8,
+        iv8,
+        aad: aad8,
+        tagSize: tagSize,
+      ),
     );
   }
 }

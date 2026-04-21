@@ -4,8 +4,8 @@
 import 'dart:typed_data';
 
 import 'package:cipherlib/cipherlib.dart';
-import 'package:cipherlib/random.dart';
 import 'package:cipherlib/codecs.dart';
+import 'package:cipherlib/random.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -25,18 +25,25 @@ void main() {
     test("decryptor name is correct", () {
       expect(AES(key).gcm(iv).decryptor.name, "AES#decrypt/GCM/NoPadding");
     });
+    test("key must be 16, 24, or 32 bytes", () {
+      expect(() => AES(Uint8List(0)).gcm(iv), throwsStateError);
+      expect(() => AES(Uint8List(15)).gcm(iv), throwsStateError);
+      expect(() => AES(Uint8List(16)).gcm(iv), returnsNormally);
+      expect(() => AES(Uint8List(17)).gcm(iv), throwsStateError);
+      expect(() => AES(Uint8List(23)).gcm(iv), throwsStateError);
+      expect(() => AES(Uint8List(24)).gcm(iv), returnsNormally);
+      expect(() => AES(Uint8List(25)).gcm(iv), throwsStateError);
+      expect(() => AES(Uint8List(31)).gcm(iv), throwsStateError);
+      expect(() => AES(Uint8List(32)).gcm(iv), returnsNormally);
+      expect(() => AES(Uint8List(33)).gcm(iv), throwsStateError);
+    });
     test("tagSize must be between 1 and 16", () {
       for (int i = -10; i < 20; ++i) {
         if (i >= 1 && i <= 16) {
-          AESInGCMModeEncryptSink(key, iv, null, i);
-          AESInGCMModeDecryptSink(key, iv, null, i);
+          AES(key).gcm(iv, tagSize: i);
         } else {
           expect(
-            () => AESInGCMModeEncryptSink(key, iv, null, i),
-            throwsStateError,
-          );
-          expect(
-            () => AESInGCMModeDecryptSink(key, iv, null, i),
+            () => AES(key).gcm(iv, tagSize: i),
             throwsStateError,
           );
         }

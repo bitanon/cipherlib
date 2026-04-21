@@ -35,6 +35,28 @@ void dump(String message) {
 // Symmetric Cipher benchmarks
 // ---------------------------------------------------------------------
 Future<void> measureSymmetricCiphers() async {
+  /**
+   * TODO: Change the layout to something like this:
+   * 
+   * <table>
+   * <tr>
+   * <th>Algorithms</th>
+   * <th>1MB</th>
+   * <th>100KB</th>
+   * <th>10KB</th>
+   * </tr>
+   * <tr>
+   * <th>XOR</th>
+   * <td>
+   *  <ul>
+   *    <li>algo1: **8.9 Gbps**</li>
+   *    <li>algo2: 8.8 Gbps => 2x slow</li>
+   *    <li>algo3: 8.7 Gbps => 3x slow</li>
+   *  </ul>
+   *  </td>
+   * </tr>
+   * </table>
+   */
   for (int size in [1 << 20, 1 << 10, 1 << 5]) {
     var algorithms = {
       "XOR": [
