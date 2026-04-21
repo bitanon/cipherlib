@@ -127,112 +127,128 @@ Libraries:
 - **PointyCastle** : https://pub.dev/packages/pointycastle
 - **Cryptography** : https://pub.dev/packages/cryptography
 
-With 1MB message (10 iterations):
+With 1MB message:
 
-| Algorithms        | `cipherlib`   | `PointyCastle`                | `cryptography`              |
-| ----------------- | ------------- | ----------------------------- | --------------------------- |
-| XOR               | **6.18 Gbps** |                               |                             |
-| ChaCha20          | **1.37 Gbps** | 307 Mbps <br> `4.46x slow`    |                             |
-| ChaCha20/Poly1305 | **940 Mbps**  | 228 Mbps <br> `4.13x slow`    | 256 Mbps <br> `3.67x slow`  |
-| Salsa20           | **1.45 Gbps** | 303 Mbps <br> `4.8x slow`     |                             |
-| Salsa20/Poly1305  | **989 Mbps**  |                               |                             |
-| AES-128/ECB       | **1.2 Gbps**  | 199 Mbps <br> `6.04x slow`    |                             |
-| AES-192/ECB       | **1.06 Gbps** | 192 Mbps <br> `5.49x slow`    |                             |
-| AES-256/ECB       | **955 Mbps**  | 171 Mbps <br> `5.58x slow`    |                             |
-| AES-128/CBC       | **1.23 Gbps** | 204 Mbps <br> `5.65x slow`    | 1.15 Gbps <br> `1.07x slow` |
-| AES-192/CBC       | **1.08 Gbps** | 182 Mbps <br> `5.77x slow`    | 1.05 Gbps <br> `1.02x slow` |
-| AES-256/CBC       | **965 Mbps**  | 163 Mbps <br> `5.67x slow`    | 927 Mbps <br> `1.04x slow`  |
-| AES-128/CTR       | **1.13 Gbps** | 201 Mbps <br> `5.61x slow`    | 579 Mbps <br> `1.95x slow`  |
-| AES-192/CTR       | **1 Gbps**    | 178 Mb                        |                             |
-| AES-128/CFB       | **579 Mbps**  | 3.11 Mbps <br> `185.87x slow` |                             |
-| AES-192/CFB       | **510 Mbps**  | 3.1 Mbps <br> `164.63x slow`  |                             |
-| AES-256/CFB       | **463 Mbps**  | 3.16 Mbps <br> `146.64x slow` |                             |
-| AES-128/OFB       | **1.07 Gbps** | 212 Mbps <br> `5.06x slow`    |                             |
-| AES-192/OFB       | **936 Mbps**  | 187 Mbps <br> `5.01x slow`    |                             |
-| AES-256/OFB       | **874 Mbps**  | 167 Mbps <br> `5.23x slow`    |                             |
-| AES-128/XTS       | **792 Mbps**  |                               |                             |
-| AES-192/XTS       | **729 Mbps**  |                               |                             |
-| AES-256/XTS       | **680 Mbps**  |                               |                             |
-| AES-128/IGE       | **1.05 Gbps** | 196 Mbps <br> `5.35x slow`    |                             |
-| AES-192/IGE       | **928 Mbps**  | 174 Mbps <br> `5.33x slow`    |                             |
-| AES-256/IGE       | **850 Mbps**  | 157 Mbps <br> `5.42x slow`    |                             |
-| AES-128/PCBC      | **1.05 Gbps** |                               |                             |
-| AES-192/PCBC      | **951 Mbps**  |                               |                             |
-| AES-256/PCBC      | **862 Mbps**  |                               |                             |
+| Algorithms         | `cipherlib`   | `PointyCastle`                | `cryptography`              |
+| ------------------ | ------------- | ----------------------------- | --------------------------- |
+| XOR                | **9.1 Gbps**  |                               |                             |
+| Salsa20            | **2.16 Gbps** | 356 Mbps <br> `6.07x slow`    |                             |
+| Salsa20/Poly1305   | **2.16 Gbps** |                               |                             |
+| XSalsa20           | **2.16 Gbps** |                               |                             |
+| XSalsa20/Poly1305  | **2.15 Gbps** |                               |                             |
+| ChaCha20           | **2.01 Gbps** | 359 Mbps <br> `5.61x slow`    |                             |
+| ChaCha20/Poly1305  | **1.21 Gbps** | 279 Mbps <br> `4.33x slow`    | 283 Mbps <br> `4.26x slow`  |
+| XChaCha20          | **2.01 Gbps** |                               |                             |
+| XChaCha20/Poly1305 | **1.21 Gbps** |                               |                             |
+| AES-128/CBC        | **1.47 Gbps** | 234 Mbps <br> `6.29x slow`    | 1.41 Gbps <br> `1.05x slow` |
+| AES-192/CBC        | **1.27 Gbps** | 203 Mbps <br> `6.28x slow`    | 1.22 Gbps <br> `1.05x slow` |
+| AES-256/CBC        | **1.12 Gbps** | 181 Mbps <br> `6.22x slow`    | 1.07 Gbps <br> `1.05x slow` |
+| AES-128/CFB        | **646 Mbps**  | 4.04 Mbps <br> `159.66x slow` |                             |
+| AES-192/CFB        | **568 Mbps**  | 4.09 Mbps <br> `138.91x slow` |                             |
+| AES-256/CFB        | **506 Mbps**  | 4.06 Mbps <br> `124.59x slow` |                             |
+| AES-128/CTR        | **1.55 Gbps** | 223 Mbps <br> `6.96x slow`    | 746 Mbps <br> `2.08x slow`  |
+| AES-192/CTR        | **1.34 Gbps** | 195 Mbps <br> `6.84x slow`    | 690 Mbps <br> `1.94x slow`  |
+| AES-256/CTR        | **1.17 Gbps** | 174 Mbps <br> `6.73x slow`    | 642 Mbps <br> `1.82x slow`  |
+| AES-128/ECB        | **1.5 Gbps**  | 250 Mbps <br> `6.03x slow`    |                             |
+| AES-192/ECB        | **1.29 Gbps** | 215 Mbps <br> `5.99x slow`    |                             |
+| AES-256/ECB        | **1.12 Gbps** | 189 Mbps <br> `5.96x slow`    |                             |
+| AES-128/GCM        | **232 Mbps**  | 12.7 Mbps <br> `18.27x slow`  | 154 Mbps <br> `1.51x slow`  |
+| AES-192/GCM        | **226 Mbps**  | 12.61 Mbps <br> `17.95x slow` | 154 Mbps <br> `1.46x slow`  |
+| AES-256/GCM        | **221 Mbps**  | 12.49 Mbps <br> `17.7x slow`  | 146 Mbps <br> `1.51x slow`  |
+| AES-128/IGE        | **1.43 Gbps** | 212 Mbps <br> `6.74x slow`    |                             |
+| AES-192/IGE        | **1.24 Gbps** | 187 Mbps <br> `6.63x slow`    |                             |
+| AES-256/IGE        | **1.09 Gbps** | 166 Mbps <br> `6.55x slow`    |                             |
+| AES-128/OFB        | **641 Mbps**  | 122 Mbps <br> `5.25x slow`    |                             |
+| AES-192/OFB        | **560 Mbps**  | 106 Mbps <br> `5.31x slow`    |                             |
+| AES-256/OFB        | **503 Mbps**  | 93.16 Mbps <br> `5.4x slow`   |                             |
+| AES-128/PCBC       | **1.47 Gbps** |                               |                             |
+| AES-192/PCBC       | **1.27 Gbps** |                               |                             |
+| AES-256/PCBC       | **1.12 Gbps** |                               |                             |
+| AES-128/XTS        | **1.42 Gbps** |                               |                             |
+| AES-192/XTS        | **1.24 Gbps** |                               |                             |
+| AES-256/XTS        | **1.1 Gbps**  |                               |                             |
 
-With 5KB message (5000 iterations):
+With 1KB message:
 
-| Algorithms        | `cipherlib`   | `PointyCastle`                | `cryptography`              |
-| ----------------- | ------------- | ----------------------------- | --------------------------- |
-| XOR               | **7.36 Gbps** |                               |                             |
-| ChaCha20          | **1.46 Gbps** | 320 Mbps <br> `4.55x slow`    |                             |
-| ChaCha20/Poly1305 | **947 Mbps**  | 251 Mbps <br> `3.77x slow`    | 255 Mbps <br> `3.71x slow`  |
-| Salsa20           | **1.53 Gbps** | 315 Mbps <br> `4.85x slow`    |                             |
-| Salsa20/Poly1305  | **999 Mbps**  |                               |                             |
-| AES-128/ECB       | **1.18 Gbps** | 233 Mbps <br> `5.06x slow`    |                             |
-| AES-192/ECB       | **1.05 Gbps** | 199 Mbps <br> `5.27x slow`    |                             |
-| AES-256/ECB       | **950 Mbps**  | 179 Mbps <br> `5.32x slow`    |                             |
-| AES-128/CBC       | **1.23 Gbps** | 219 Mbps <br> `5.42x slow`    | 1.19 Gbps <br> `1.04x slow` |
-| AES-192/CBC       | **1.08 Gbps** | 192 Mbps <br> `5.44x slow`    | 1.04 Gbps <br> `1.03x slow` |
-| AES-256/CBC       | **950 Mbps**  | 171 Mbps <br> `5.54x slow`    | 946 Mbps <br> `1.01x slow`  |
-| AES-128/CTR       | **1.14 Gbps** | 211 Mbps <br> `5.4x slow`     | 600 Mbps <br> `1.9x slow`   |
-| AES-192/CTR       | **1.01 Gbps** | 186 Mbps <br> `5.44x slow`    | 562 Mbps <br> `1.8x slow`   |
-| AES-256/CTR       | **919 Mbps**  | 166 Mbps <br> `5.53x slow`    | 527 Mbps <br> `1.74x slow`  |
-| AES-128/GCM       | **266 Mbps**  | 13.04 Mbps <br> `20.36x slow` | 217 Mbps <br> `1.22x slow`  |
-| AES-192/GCM       | **256 Mbps**  | 12.92 Mbps <br> `19.84x slow` | 223 Mbps <br> `1.15x slow`  |
-| AES-256/GCM       | **241 Mbps**  | 12.77 Mbps <br> `18.89x slow` | 216 Mbps <br> `1.12x slow`  |
-| AES-128/CFB       | **578 Mbps**  | 188 Mbps <br> `3.08x slow`    |                             |
-| AES-192/CFB       | **510 Mbps**  | 167 Mbps <br> `3.06x slow`    |                             |
-| AES-256/CFB       | **463 Mbps**  | 151 Mbps <br> `3.07x slow`    |                             |
-| AES-128/OFB       | **1.07 Gbps** | 226 Mbps <br> `4.72x slow`    |                             |
-| AES-192/OFB       | **952 Mbps**  | 197 Mbps <br> `4.83x slow`    |                             |
-| AES-256/OFB       | **871 Mbps**  | 175 Mbps <br> `4.98x slow`    |                             |
-| AES-128/XTS       | **797 Mbps**  |                               |                             |
-| AES-192/XTS       | **728 Mbps**  |                               |                             |
-| AES-256/XTS       | **674 Mbps**  |                               |                             |
-| AES-128/IGE       | **1.04 Gbps** | 206 Mbps <br> `5.07x slow`    |                             |
-| AES-192/IGE       | **937 Mbps**  | 182 Mbps <br> `5.15x slow`    |                             |
-| AES-256/IGE       | **843 Mbps**  | 163 Mbps <br> `5.18x slow`    |                             |
-| AES-128/PCBC      | **1.04 Gbps** |                               |                             |
-| AES-192/PCBC      | **944 Mbps**  |                               |                             |
-| AES-256/PCBC      | **859 Mbps**  |                               |                             |
+| Algorithms         | `cipherlib`   | `PointyCastle`                | `cryptography`              |
+| ------------------ | ------------- | ----------------------------- | --------------------------- |
+| XOR                | **9.22 Gbps** |                               |                             |
+| Salsa20            | **2.15 Gbps** | 348 Mbps <br> `6.17x slow`    |                             |
+| Salsa20/Poly1305   | **2.03 Gbps** |                               |                             |
+| XSalsa20           | **2.01 Gbps** |                               |                             |
+| XSalsa20/Poly1305  | **1.9 Gbps**  |                               |                             |
+| ChaCha20           | **2 Gbps**    | 353 Mbps <br> `5.68x slow`    |                             |
+| ChaCha20/Poly1305  | **1.13 Gbps** | 258 Mbps <br> `4.38x slow`    | 261 Mbps <br> `4.33x slow`  |
+| XChaCha20          | **1.88 Gbps** |                               |                             |
+| XChaCha20/Poly1305 | **1.09 Gbps** |                               |                             |
+| AES-128/CBC        | **1.34 Gbps** | 206 Mbps <br> `6.51x slow`    | 1.02 Gbps <br> `1.31x slow` |
+| AES-192/CBC        | **1.17 Gbps** | 180 Mbps <br> `6.49x slow`    | 893 Mbps <br> `1.31x slow`  |
+| AES-256/CBC        | **1.03 Gbps** | 160 Mbps <br> `6.41x slow`    | 785 Mbps <br> `1.31x slow`  |
+| AES-128/CFB        | **635 Mbps**  | 109 Mbps <br> `5.85x slow`    |                             |
+| AES-192/CFB        | **558 Mbps**  | 94.94 Mbps <br> `5.88x slow`  |                             |
+| AES-256/CFB        | **498 Mbps**  | 84.55 Mbps <br> `5.89x slow`  |                             |
+| AES-128/CTR        | **1.45 Gbps** | 201 Mbps <br> `7.21x slow`    | 594 Mbps <br> `2.44x slow`  |
+| AES-192/CTR        | **1.25 Gbps** | 175 Mbps <br> `7.15x slow`    | 556 Mbps <br> `2.25x slow`  |
+| AES-256/CTR        | **1.09 Gbps** | 157 Mbps <br> `6.95x slow`    | 517 Mbps <br> `2.12x slow`  |
+| AES-128/ECB        | **1.36 Gbps** | 219 Mbps <br> `6.18x slow`    |                             |
+| AES-192/ECB        | **1.18 Gbps** | 190 Mbps <br> `6.2x slow`     |                             |
+| AES-256/ECB        | **1.04 Gbps** | 168 Mbps <br> `6.17x slow`    |                             |
+| AES-128/GCM        | **364 Mbps**  | 15.14 Mbps <br> `24.06x slow` | 248 Mbps <br> `1.47x slow`  |
+| AES-192/GCM        | **352 Mbps**  | 14.51 Mbps <br> `24.27x slow` | 242 Mbps <br> `1.45x slow`  |
+| AES-256/GCM        | **335 Mbps**  | 14.51 Mbps <br> `23.06x slow` | 227 Mbps <br> `1.47x slow`  |
+| AES-128/IGE        | **1.31 Gbps** | 189 Mbps <br> `6.94x slow`    |                             |
+| AES-192/IGE        | **1.15 Gbps** | 166 Mbps <br> `6.89x slow`    |                             |
+| AES-256/IGE        | **1.01 Gbps** | 150 Mbps <br> `6.71x slow`    |                             |
+| AES-128/OFB        | **630 Mbps**  | 115 Mbps <br> `5.48x slow`    |                             |
+| AES-192/OFB        | **555 Mbps**  | 99.45 Mbps <br> `5.58x slow`  |                             |
+| AES-256/OFB        | **494 Mbps**  | 88.28 Mbps <br> `5.59x slow`  |                             |
+| AES-128/PCBC       | **1.35 Gbps** |                               |                             |
+| AES-192/PCBC       | **1.18 Gbps** |                               |                             |
+| AES-256/PCBC       | **1.04 Gbps** |                               |                             |
+| AES-128/XTS        | **1.29 Gbps** |                               |                             |
+| AES-192/XTS        | **1.13 Gbps** |                               |                             |
+| AES-256/XTS        | **994 Mbps**  |                               |                             |
 
-With 16B message (100000 iterations):
+With 32B message:
 
-| Algorithms        | `cipherlib`   | `PointyCastle`               | `cryptography`                   |
-| ----------------- | ------------- | ---------------------------- | -------------------------------- |
-| XOR               | **5.25 Gbps** |                              |                                  |
-| ChaCha20          | **443 Mbps**  | 66.87 Mbps <br> `6.62x slow` |                                  |
-| ChaCha20/Poly1305 | **146 Mbps**  | 59.14 Mbps <br> `2.47x slow` | 39.29 Mbps <br> `3.72x slow`     |
-| Salsa20           | **474 Mbps**  | 66.47 Mbps <br> `7.13x slow` |                                  |
-| Salsa20/Poly1305  | **156 Mbps**  |                              |                                  |
-| AES-128/ECB       | **420 Mbps**  | 70.84 Mbps <br> `5.93x slow` |                                  |
-| AES-192/ECB       | **389 Mbps**  | 63.08 Mbps <br> `6.16x slow` |                                  |
-| AES-256/ECB       | **339 Mbps**  | 59.04 Mbps <br> `5.74x slow` |                                  |
-| AES-128/CBC       | **376 Mbps**  | 67.1 Mbps <br> `5.61x slow`  | 164 Mbps <br> `2.29x slow`       |
-| AES-192/CBC       | **355 Mbps**  | 60.14 Mbps <br> `5.91x slow` | 156 Mbps <br> `2.28x slow`       |
-| AES-256/CBC       | **310 Mbps**  | 56.74 Mbps <br> `5.46x slow` | 144 Mbps <br> `2.15x slow`       |
-| AES-128/CTR       | **442 Mbps**  | 66.71 Mbps <br> `6.62x slow` | 89.87 Mbps <br> `4.91x slow`     |
-| AES-192/CTR       | **411 Mbps**  | 59.46 Mbps <br> `6.91x slow` | 87.79 Mbps <br> `4.68x slow`     |
-| AES-256/CTR       | **350 Mbps**  | 56.14 Mbps <br> `6.23x slow` | 84.64 Mbps <br> `4.13x slow`     |
-| AES-128/GCM       | 34.21 Mbps    | 6.57 Mbps <br> `5.21x slow`  | **55.41 Mbps** <br> `1.62x fast` |
-| AES-192/GCM       | 33.7 Mbps     | 6.33 Mbps <br> `5.33x slow`  | **53.6 Mbps** <br> `1.59x fast`  |
-| AES-256/GCM       | 33.13 Mbps    | 6.29 Mbps <br> `5.26x slow`  | **50.12 Mbps** <br> `1.51x fast` |
-| AES-128/CFB       | **376 Mbps**  | 66.78 Mbps <br> `5.64x slow` |                                  |
-| AES-192/CFB       | **353 Mbps**  | 59.97 Mbps <br> `5.88x slow` |                                  |
-| AES-256/CFB       | **307 Mbps**  | 56.24 Mbps <br> `5.47x slow` |                                  |
-| AES-128/OFB       | **389 Mbps**  | 67.39 Mbps <br> `5.77x slow` |                                  |
-| AES-192/OFB       | **365 Mbps**  | 60.44 Mbps <br> `6.04x slow` |                                  |
-| AES-256/OFB       | **320 Mbps**  | 56.5 Mbps <br> `5.67x slow`  |                                  |
-| AES-128/XTS       | **287 Mbps**  |                              |                                  |
-| AES-192/XTS       | **278 Mbps**  |                              |                                  |
-| AES-256/XTS       | **236 Mbps**  |                              |                                  |
-| AES-128/IGE       | **348 Mbps**  | 64.22 Mbps <br> `5.42x slow` |                                  |
-| AES-192/IGE       | **323 Mbps**  | 58.74 Mbps <br> `5.49x slow` |                                  |
-| AES-256/IGE       | **290 Mbps**  | 55.44 Mbps <br> `5.23x slow` |                                  |
-| AES-128/PCBC      | **369 Mbps**  |                              |                                  |
-| AES-192/PCBC      | **347 Mbps**  |                              |                                  |
-| AES-256/PCBC      | **304 Mbps**  |                              |                                  |
+| Algorithms         | `cipherlib`    | `PointyCastle`                | `cryptography`               |
+| ------------------ | -------------- | ----------------------------- | ---------------------------- |
+| XOR                | **7.99 Gbps**  |                               |                              |
+| Salsa20            | **1.01 Gbps**  | 135 Mbps <br> `7.49x slow`    |                              |
+| Salsa20/Poly1305   | **541 Mbps**   |                               |                              |
+| XSalsa20           | **513 Mbps**   |                               |                              |
+| XSalsa20/Poly1305  | **352 Mbps**   |                               |                              |
+| ChaCha20           | **941 Mbps**   | 135 Mbps <br> `6.95x slow`    |                              |
+| ChaCha20/Poly1305  | **322 Mbps**   | 116 Mbps <br> `2.79x slow`    | 67.32 Mbps <br> `4.79x slow` |
+| XChaCha20          | **489 Mbps**   |                               |                              |
+| XChaCha20/Poly1305 | **243 Mbps**   |                               |                              |
+| AES-128/CBC        | **334 Mbps**   | 44.76 Mbps <br> `7.47x slow`  | 107 Mbps <br> `3.13x slow`   |
+| AES-192/CBC        | **307 Mbps**   | 39.74 Mbps <br> `7.72x slow`  | 96.84 Mbps <br> `3.17x slow` |
+| AES-256/CBC        | **267 Mbps**   | 36.82 Mbps <br> `7.25x slow`  | 87.24 Mbps <br> `3.06x slow` |
+| AES-128/CFB        | **416 Mbps**   | 42.35 Mbps <br> `9.83x slow`  |                              |
+| AES-192/CFB        | **390 Mbps**   | 36.98 Mbps <br> `10.55x slow` |                              |
+| AES-256/CFB        | **334 Mbps**   | 34.58 Mbps <br> `9.67x slow`  |                              |
+| AES-128/CTR        | **456 Mbps**   | 48.93 Mbps <br> `9.32x slow`  | 78.98 Mbps <br> `5.77x slow` |
+| AES-192/CTR        | **419 Mbps**   | 43.64 Mbps <br> `9.6x slow`   | 79.12 Mbps <br> `5.3x slow`  |
+| AES-256/CTR        | **358 Mbps**   | 40.93 Mbps <br> `8.74x slow`  | 75.85 Mbps <br> `4.72x slow` |
+| AES-128/ECB        | **356 Mbps**   | 47.47 Mbps <br> `7.5x slow`   |                              |
+| AES-192/ECB        | **324 Mbps**   | 41.55 Mbps <br> `7.81x slow`  |                              |
+| AES-256/ECB        | **281 Mbps**   | 38.22 Mbps <br> `7.36x slow`  |                              |
+| AES-128/GCM        | **64.09 Mbps** | 5.03 Mbps <br> `12.75x slow`  | 50.56 Mbps <br> `1.27x slow` |
+| AES-192/GCM        | **62.52 Mbps** | 4.9 Mbps <br> `12.75x slow`   | 48.56 Mbps <br> `1.29x slow` |
+| AES-256/GCM        | **60.84 Mbps** | 4.8 Mbps <br> `12.66x slow`   | 45.88 Mbps <br> `1.33x slow` |
+| AES-128/IGE        | **363 Mbps**   | 43.78 Mbps <br> `8.3x slow`   |                              |
+| AES-192/IGE        | **331 Mbps**   | 38.58 Mbps <br> `8.59x slow`  |                              |
+| AES-256/IGE        | **284 Mbps**   | 36.19 Mbps <br> `7.85x slow`  |                              |
+| AES-128/OFB        | **428 Mbps**   | 43.09 Mbps <br> `9.94x slow`  |                              |
+| AES-192/OFB        | **406 Mbps**   | 37.56 Mbps <br> `10.8x slow`  |                              |
+| AES-256/OFB        | **345 Mbps**   | 34.85 Mbps <br> `9.91x slow`  |                              |
+| AES-128/PCBC       | **386 Mbps**   |                               |                              |
+| AES-192/PCBC       | **354 Mbps**   |                               |                              |
+| AES-256/PCBC       | **300 Mbps**   |                               |                              |
+| AES-128/XTS        | **329 Mbps**   |                               |                              |
+| AES-192/XTS        | **306 Mbps**   |                               |                              |
+| AES-256/XTS        | **254 Mbps**   |                               |                              |
 
 > All benchmarks are done on 36GB _Apple M3 Pro_ using compiled _exe_
 >
