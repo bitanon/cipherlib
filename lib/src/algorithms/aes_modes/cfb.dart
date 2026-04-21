@@ -9,12 +9,16 @@ import '../../core/aes.dart';
 import '../../core/cipher.dart';
 import '../padding.dart';
 
-// TODO: (sbyte) instead of blocks of bytes, can we use bits?
+// TODO: can we use bits instead of blocks of bytes for (sbyte)?
 
 /// Provides encryption for AES cipher in CFB mode.
-class AESInCFBModeEncrypt extends Cipher with SaltedCipher {
+class AESInCFBModeCipher extends Cipher with SaltedCipher {
   @override
-  String get name => "AES#encrypt/CFB/${Padding.none.name}";
+  String get name =>
+      "AES#${forEncryption ? 'encrypt' : 'decrypt'}/CFB/${Padding.none.name}";
+
+  /// Whether the cipher is for encryption or decryption
+  final bool forEncryption;
 
   /// Key for the cipher
   final Uint8List key;
@@ -25,7 +29,8 @@ class AESInCFBModeEncrypt extends Cipher with SaltedCipher {
   @override
   final Uint8List iv;
 
-  const AESInCFBModeEncrypt(
+  const AESInCFBModeCipher(
+    this.forEncryption,
     this.key,
     this.iv,
     this.sbyte,
@@ -33,7 +38,7 @@ class AESInCFBModeEncrypt extends Cipher with SaltedCipher {
 
   @override
   Uint8List convert(List<int> message) {
-    int i, j, p, pos;
+    int i, j, pos;
     int n = message.length;
 
     final output = Uint8List(n);
@@ -50,10 +55,8 @@ class AESInCFBModeEncrypt extends Cipher with SaltedCipher {
     salt32[2] = iv32[2];
     salt32[3] = iv32[3];
 
-    p = 0;
     pos = sbyte;
-    j = 16 - sbyte;
-    for (i = 0; i < n; ++i, ++j, ++p, ++pos) {
+    for (i = 0; i < n; ++i, ++pos) {
       if (pos == sbyte) {
         block32[0] = salt32[0];
         block32[1] = salt32[1];
@@ -63,72 +66,15 @@ class AESInCFBModeEncrypt extends Cipher with SaltedCipher {
         for (j = sbyte; j < 16; ++j) {
           salt[j - sbyte] = salt[j];
         }
-        j = 16 - sbyte;
         pos = 0;
       }
-      salt[j] = output[p] = block[pos] ^ message[i];
-    }
-
-    return output;
-  }
-}
-
-/// Provides decryption for AES cipher in CFB mode.
-class AESInCFBModeDecrypt extends Cipher with SaltedCipher {
-  @override
-  String get name => "AES#decrypt/CFB/${Padding.none.name}";
-
-  /// Key for the cipher
-  final Uint8List key;
-
-  /// Number of bytes to use per block (1..16)
-  final int sbyte;
-
-  @override
-  final Uint8List iv;
-
-  const AESInCFBModeDecrypt(
-    this.key,
-    this.iv,
-    this.sbyte,
-  );
-
-  @override
-  Uint8List convert(List<int> message) {
-    int i, j, p, pos;
-    int n = message.length;
-
-    final output = Uint8List(n);
-    final salt32 = Uint32List(4);
-    final block32 = Uint32List(4); // 128-bit
-    final iv32 = Uint32List.view(iv.buffer);
-    final key32 = Uint32List.view(key.buffer);
-    final salt = Uint8List.view(salt32.buffer);
-    final block = Uint8List.view(block32.buffer);
-    final xkey32 = AESCore.$expandEncryptionKey(key32);
-
-    salt32[0] = iv32[0];
-    salt32[1] = iv32[1];
-    salt32[2] = iv32[2];
-    salt32[3] = iv32[3];
-
-    p = 0;
-    pos = sbyte;
-    j = 16 - sbyte;
-    for (i = 0; i < n; ++i, ++j, ++p, ++pos) {
-      if (pos == sbyte) {
-        block32[0] = salt32[0];
-        block32[1] = salt32[1];
-        block32[2] = salt32[2];
-        block32[3] = salt32[3];
-        AESCore.$encryptLE(block32, xkey32);
-        for (j = sbyte; j < 16; ++j) {
-          salt[j - sbyte] = salt[j];
-        }
-        j = 16 - sbyte;
-        pos = 0;
+      if (forEncryption) {
+        output[i] = block[pos] ^ message[i];
+        salt[16 - sbyte + pos] = output[i];
+      } else {
+        salt[16 - sbyte + pos] = message[i];
+        output[i] = block[pos] ^ message[i];
       }
-      output[p] = block[pos] ^ (salt[j] = message[i]);
     }
 
     return output;
@@ -141,10 +87,10 @@ class AESInCFBMode extends CollateCipher with SaltedCipher {
   String get name => "AES/CFB/${Padding.none.name}";
 
   @override
-  final AESInCFBModeEncrypt encryptor;
+  final AESInCFBModeCipher encryptor;
 
   @override
-  final AESInCFBModeDecrypt decryptor;
+  final AESInCFBModeCipher decryptor;
 
   const AESInCFBMode._({
     required this.encryptor,
@@ -176,8 +122,8 @@ class AESInCFBMode extends CollateCipher with SaltedCipher {
     var iv8 = iv is Uint8List ? iv : Uint8List.fromList(iv);
     var key8 = key is Uint8List ? key : Uint8List.fromList(key);
     return AESInCFBMode._(
-      encryptor: AESInCFBModeEncrypt(key8, iv8, sbyte),
-      decryptor: AESInCFBModeDecrypt(key8, iv8, sbyte),
+      encryptor: AESInCFBModeCipher(true, key8, iv8, sbyte),
+      decryptor: AESInCFBModeCipher(false, key8, iv8, sbyte),
     );
   }
 }
