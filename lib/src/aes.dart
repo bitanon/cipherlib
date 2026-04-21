@@ -293,28 +293,6 @@ class AES {
         tagSize: tagSize,
       );
 
-  /// The XTS or XEX (XOR-Encrypt-XOR) Tweakable Block Cipher with Ciphertext
-  /// Stealing mode is a disk encryption mode of operation for cryptographic
-  /// block ciphers. _It is designed specifically for encrypting data stored on
-  /// block-oriented storage devices_.
-  ///
-  /// This mode combines the advantages of [ecb] and [cbc] while avoiding their
-  /// weaknesses, making it well-suited for disk encryption.
-  ///
-  /// This implementation follows the specification from [1619-2018 - IEEE
-  /// Standard for Cryptographic Protection of Data on Block-Oriented Storage
-  /// Devices][spec].
-  ///
-  /// Parameters:
-  /// - [tweak] The initial tweak value (16-bytes). If you want to use the
-  ///   sector value please use [AESInXTSMode.fromSector].
-  ///
-  /// The [key] is divided in two equal parts for the XTS mode, and first part
-  /// is used as the sector key, second part as the cipher key.
-  ///
-  /// [spec]: https://ieeexplore.ieee.org/document/8637988
-  AESInXTSMode xts(List<int> tweak) => AESInXTSMode(key, tweak);
-
   /// The Infinite Garble Extension (IGE) mode is specifically designed to
   /// provide error propagation, which is useful in certain cryptographic
   /// applications.
@@ -346,4 +324,26 @@ class AES {
         iv: iv,
         padding: padding,
       );
+
+  /// The XTS or XEX (XOR-Encrypt-XOR) Tweakable Block Cipher with Ciphertext
+  /// Stealing mode is a disk encryption mode of operation for cryptographic
+  /// block ciphers. _It is designed specifically for encrypting data stored on
+  /// block-oriented storage devices_.
+  ///
+  /// This mode combines the advantages of [ecb] and [cbc] while avoiding their
+  /// weaknesses, making it well-suited for disk encryption.
+  ///
+  /// This implementation follows the specification from [1619-2018 - IEEE
+  /// Standard for Cryptographic Protection of Data on Block-Oriented Storage
+  /// Devices][spec].
+  ///
+  /// Parameters:
+  /// - [tweak] The initial tweak value (16-bytes). If you want to use the
+  ///   sector value please use [AESInXTSMode.fromSector].
+  ///
+  /// The [key] is divided in two equal parts for the XTS mode, and first part
+  /// is used as the sector key, second part as the cipher key.
+  ///
+  /// [spec]: https://ieeexplore.ieee.org/document/8637988
+  AESInXTSMode xts(List<int> tweak) => AESInXTSMode(key, tweak);
 }

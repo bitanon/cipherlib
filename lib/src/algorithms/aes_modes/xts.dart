@@ -7,339 +7,274 @@ import 'package:hashlib/random.dart' show randomBytes;
 
 import '../../core/aes.dart';
 import '../../core/cipher.dart';
-import '../../core/cipher_sink.dart';
 import '../../utils/nonce.dart';
+import '../../utils/typed_data.dart';
 import '../padding.dart';
 
-/// Multiply [T] by `alpha` = `0x87` in 128-bit Galois Field
-void _multiplyAlpha(Uint8List T) {
-  int c = 0;
-  for (int i = 0; i < 16; i++) {
-    c ^= T[i] << 1;
-    T[i] = c;
-    c >>>= 8;
-  }
-  if (c == 1) {
-    T[0] ^= 0x87;
-  }
-}
+/// Multiply by `alpha` = `0x87` in 128-bit Galois Field
+@pragma('vm:prefer-inline')
+@pragma('dart2js:tryInline')
+void _multiplyAlpha(Uint32List T) {
+  int t0, t1, t2, t3, p;
 
-/// This implementation is derived from [1619-2018 - IEEE Standard for
-/// Cryptographic Protection of Data on Block-Oriented Storage Devices][spec].
-///
-/// [spec]: https://ieeexplore.ieee.org/document/8637988
-class AESInXTSModeEncryptSink extends CipherSink {
-  AESInXTSModeEncryptSink(
-    this._ekey,
-    this._tkey,
-    this._iv,
-  ) {
-    reset();
-  }
+  t0 = T[0];
+  t1 = T[1];
+  t2 = T[2];
+  t3 = T[3];
 
-  int _pos = 0;
-  int _rpos = 0;
-  bool _firstBlockAvailable = false;
-  final Uint8List _ekey;
-  final Uint8List _tkey;
-  final Uint8List _iv;
-  final _residue = Uint8List(16);
-  final _tweak = Uint8List(16);
-  final _block = Uint8List(16); // 128-bit
-  late final _ekey32 = Uint32List.view(_ekey.buffer);
-  late final _tkey32 = Uint32List.view(_tkey.buffer);
-  late final _block32 = Uint32List.view(_block.buffer);
-  late final _tweak32 = Uint32List.view(_tweak.buffer);
-  late final _xekey32 = AESCore.$expandEncryptionKey(_ekey32);
-  late final _xtkey32 = AESCore.$expandEncryptionKey(_tkey32);
+  p = t3 >>> 31;
+  t3 = (t3 << 1) ^ (t2 >>> 31);
+  t2 = (t2 << 1) ^ (t1 >>> 31);
+  t1 = (t1 << 1) ^ (t0 >>> 31);
+  t0 = (t0 << 1) ^ (p * 0x87);
 
-  @override
-  void reset() {
-    super.reset();
-    _pos = 0;
-    _rpos = 0;
-    _firstBlockAvailable = false;
-    for (int i = 0; i < 16; ++i) {
-      _tweak[i] = _iv[i];
-    }
-    AESCore.$encryptLE(_tweak32, _xtkey32);
-  }
-
-  @override
-  @pragma('vm:prefer-inline')
-  Uint8List $add(List<int> data, int start, int end) {
-    int i, j, p, n;
-
-    n = _pos + end - start;
-    if (!closed) n -= 16;
-    n += _firstBlockAvailable ? 16 : _rpos;
-    if (!closed) n -= (n & 15);
-    if (n < 0) n = 0;
-    var output = Uint8List(n);
-
-    p = 0;
-    for (i = start; i < end; ++i) {
-      if (_firstBlockAvailable) {
-        _block[_pos] = _residue[_rpos];
-        _pos++;
-        if (_pos == 16) {
-          for (j = 0; j < 16; j++) {
-            _block[j] ^= _tweak[j];
-          }
-          AESCore.$encryptLE(_block32, _xekey32);
-          for (j = 0; j < 16; ++j) {
-            output[p++] = _block[j] ^ _tweak[j];
-          }
-          _multiplyAlpha(_tweak);
-          _pos = 0;
-        }
-      }
-      _residue[_rpos++] = data[i];
-      if (_rpos == 16) {
-        _firstBlockAvailable = true;
-        _rpos = 0;
-      }
-    }
-
-    if (closed) {
-      if (!_firstBlockAvailable) {
-        throw StateError('The message length must be at least 16-bytes');
-      }
-      n = _pos;
-      for (j = n; j < 16; j++) {
-        _block[j] = _residue[j];
-      }
-      if (n == 0) {
-        // on full block
-        for (j = 0; j < 16; j++) {
-          _block[j] ^= _tweak[j];
-        }
-        AESCore.$encryptLE(_block32, _xekey32);
-        for (j = 0; j < 16; ++j) {
-          output[p++] = _block[j] ^ _tweak[j];
-        }
-      } else {
-        // on partial block
-        for (j = 0; j < 16; j++) {
-          _block[j] ^= _tweak[j];
-        }
-        AESCore.$encryptLE(_block32, _xekey32);
-        for (j = 0; j < 16; j++) {
-          _block[j] ^= _tweak[j];
-        }
-        for (j = 0; j < n; j++) {
-          i = _block[j];
-          _block[j] = _residue[j];
-          _residue[j] = i;
-        }
-        _multiplyAlpha(_tweak);
-        for (j = 0; j < 16; j++) {
-          _block[j] ^= _tweak[j];
-        }
-        AESCore.$encryptLE(_block32, _xekey32);
-        for (j = 0; j < 16; j++) {
-          _block[j] ^= _tweak[j];
-        }
-        for (j = 0; j < 16; ++j) {
-          output[p++] = _block[j];
-        }
-        for (j = 0; j < n; ++j) {
-          output[p++] = _residue[j];
-        }
-      }
-    }
-
-    if (n == p) {
-      return output;
-    } else {
-      return output.sublist(0, p);
-    }
-  }
-}
-
-/// This implementation is derived from [1619-2018 - IEEE Standard for
-/// Cryptographic Protection of Data on Block-Oriented Storage Devices][spec].
-///
-/// [spec]: https://ieeexplore.ieee.org/document/8637988
-class AESInXTSModeDecryptSink extends CipherSink {
-  AESInXTSModeDecryptSink(
-    this._dkey,
-    this._tkey,
-    this._iv,
-  ) {
-    reset();
-  }
-
-  int _pos = 0;
-  int _rpos = 0;
-  bool _firstBlockAvailable = false;
-  final Uint8List _dkey;
-  final Uint8List _tkey;
-  final Uint8List _iv;
-  final _residue = Uint8List(16);
-  final _tweak = Uint8List(16);
-  final _temp = Uint8List(16);
-  final _block = Uint8List(16); // 128-bit
-  late final _dkey32 = Uint32List.view(_dkey.buffer);
-  late final _tkey32 = Uint32List.view(_tkey.buffer);
-  late final _block32 = Uint32List.view(_block.buffer);
-  late final _tweak32 = Uint32List.view(_tweak.buffer);
-  late final _xdkey32 = AESCore.$expandDecryptionKey(_dkey32);
-  late final _xtkey32 = AESCore.$expandEncryptionKey(_tkey32);
-
-  @override
-  void reset() {
-    super.reset();
-    _pos = 0;
-    _rpos = 0;
-    _firstBlockAvailable = false;
-    for (int i = 0; i < 16; ++i) {
-      _tweak[i] = _iv[i];
-    }
-    AESCore.$encryptLE(_tweak32, _xtkey32);
-  }
-
-  @override
-  @pragma('vm:prefer-inline')
-  Uint8List $add(List<int> data, int start, int end) {
-    int i, j, p, n;
-
-    n = _pos + end - start;
-    if (!closed) n -= 16;
-    n += _firstBlockAvailable ? 16 : _rpos;
-    if (!closed) n -= (n & 15);
-    if (n < 0) n = 0;
-    var output = Uint8List(n);
-
-    p = 0;
-    for (i = start; i < end; ++i) {
-      if (_firstBlockAvailable) {
-        _block[_pos] = _residue[_rpos];
-        _pos++;
-        if (_pos == 16) {
-          for (j = 0; j < 16; j++) {
-            _block[j] ^= _tweak[j];
-          }
-          AESCore.$decryptLE(_block32, _xdkey32);
-          for (j = 0; j < 16; ++j) {
-            output[p++] = _block[j] ^ _tweak[j];
-          }
-          _multiplyAlpha(_tweak);
-          _pos = 0;
-        }
-      }
-      _residue[_rpos++] = data[i];
-      if (_rpos == 16) {
-        _firstBlockAvailable = true;
-        _rpos = 0;
-      }
-    }
-
-    if (closed) {
-      if (!_firstBlockAvailable) {
-        throw StateError('The message length must be at least 16-bytes');
-      }
-      n = _pos;
-      for (j = n; j < 16; j++) {
-        _block[j] = _residue[j];
-      }
-      if (n == 0) {
-        // on full block
-        for (j = 0; j < 16; j++) {
-          _block[j] ^= _tweak[j];
-        }
-        AESCore.$decryptLE(_block32, _xdkey32);
-        for (j = 0; j < 16; ++j) {
-          output[p++] = _block[j] ^ _tweak[j];
-        }
-      } else {
-        // on partial block
-        for (j = 0; j < 16; j++) {
-          _temp[j] ^= _tweak[j];
-        }
-        _multiplyAlpha(_tweak);
-        for (j = 0; j < 16; j++) {
-          _block[j] ^= _tweak[j];
-        }
-        AESCore.$decryptLE(_block32, _xdkey32);
-        for (j = 0; j < 16; j++) {
-          _block[j] ^= _tweak[j];
-        }
-        for (j = 0; j < n; j++) {
-          i = _block[j];
-          _block[j] = _residue[j];
-          _residue[j] = i;
-        }
-        for (j = 0; j < 16; j++) {
-          _block[j] ^= _temp[j];
-        }
-        AESCore.$decryptLE(_block32, _xdkey32);
-        for (j = 0; j < 16; ++j) {
-          output[p++] = _block[j] ^ _temp[j];
-        }
-        for (j = 0; j < n; ++j) {
-          output[p++] = _residue[j];
-        }
-      }
-    }
-
-    if (n == p) {
-      return output;
-    } else {
-      return output.sublist(0, p);
-    }
-  }
+  T[0] = t0;
+  T[1] = t1;
+  T[2] = t2;
+  T[3] = t3;
 }
 
 /// Provides encryption for AES cipher in XTS mode.
+///
+/// This implementation is derived from [1619-2018 - IEEE Standard for
+/// Cryptographic Protection of Data on Block-Oriented Storage Devices][spec].
+///
+/// [spec]: https://ieeexplore.ieee.org/document/8637988
 class AESInXTSModeEncrypt extends Cipher with SaltedCipher {
   @override
   String get name => "AES#encrypt/XTS/${Padding.none.name}";
 
   /// Key for the plaintext encryption
-  final Uint8List ekey;
+  final Uint8List key1; // 16, 24, or 32-bytes
 
   /// Key for the tweak encryption
-  final Uint8List tkey;
+  final Uint8List key2; // 16, 24, or 32-bytes
 
+  /// The tweak for the XTS mode
   @override
-  final Uint8List iv;
+  final Uint8List iv; // 16-bytes
 
   const AESInXTSModeEncrypt(
-    this.ekey,
-    this.tkey,
+    this.key1,
+    this.key2,
     this.iv,
   );
 
   @override
   Uint8List convert(List<int> message) {
-    return AESInXTSModeEncryptSink(ekey, tkey, iv).add(message, true);
+    int i, j, n, pos;
+    n = message.length;
+    final output = Uint8List(n);
+    final tweak32 = Uint32List(4);
+    final block32 = Uint32List(4); // 128-bit
+    final iv32 = Uint32List.view(iv.buffer);
+    final ekey32 = Uint32List.view(key1.buffer);
+    final tkey32 = Uint32List.view(key2.buffer);
+    final block = Uint8List.view(block32.buffer);
+    final output32 = Uint32List.view(output.buffer);
+    final xtkey32 = AESCore.$expandEncryptionKey(tkey32);
+    final xekey32 = AESCore.$expandEncryptionKey(ekey32);
+
+    if (n < 16) {
+      throw StateError('The message must be at least 16 bytes');
+    }
+
+    tweak32[0] = iv32[0];
+    tweak32[1] = iv32[1];
+    tweak32[2] = iv32[2];
+    tweak32[3] = iv32[3];
+    AESCore.$encryptLE(tweak32, xtkey32);
+
+    // full blocks except last block when it is partial
+    for (i = 0; i + 16 <= n; i += 16) {
+      block32[0] = (message[i + 0] ^
+          (message[i + 1] << 8) ^
+          (message[i + 2] << 16) ^
+          (message[i + 3] << 24));
+      block32[1] = ((message[i + 4]) ^
+          (message[i + 5] << 8) ^
+          (message[i + 6] << 16) ^
+          message[i + 7] << 24);
+      block32[2] = (message[i + 8] ^
+          (message[i + 9] << 8) ^
+          (message[i + 10] << 16) ^
+          (message[i + 11] << 24));
+      block32[3] = (message[i + 12] ^
+          (message[i + 13] << 8) ^
+          (message[i + 14] << 16) ^
+          (message[i + 15] << 24));
+
+      block32[0] ^= tweak32[0];
+      block32[1] ^= tweak32[1];
+      block32[2] ^= tweak32[2];
+      block32[3] ^= tweak32[3];
+      AESCore.$encryptLE(block32, xekey32);
+      block32[0] ^= tweak32[0];
+      block32[1] ^= tweak32[1];
+      block32[2] ^= tweak32[2];
+      block32[3] ^= tweak32[3];
+
+      j = i >>> 2;
+      output32[j + 0] = block32[0];
+      output32[j + 1] = block32[1];
+      output32[j + 2] = block32[2];
+      output32[j + 3] = block32[3];
+
+      _multiplyAlpha(tweak32);
+    }
+
+    // last block when it is partial
+    if (i < n) {
+      for (pos = 0; i + pos < n; pos++) {
+        output[i + pos] = block[pos];
+        block[pos] = message[i + pos];
+      }
+
+      block32[0] ^= tweak32[0];
+      block32[1] ^= tweak32[1];
+      block32[2] ^= tweak32[2];
+      block32[3] ^= tweak32[3];
+      AESCore.$encryptLE(block32, xekey32);
+      block32[0] ^= tweak32[0];
+      block32[1] ^= tweak32[1];
+      block32[2] ^= tweak32[2];
+      block32[3] ^= tweak32[3];
+
+      j = (i >>> 2) - 4;
+      output32[j + 0] = block32[0];
+      output32[j + 1] = block32[1];
+      output32[j + 2] = block32[2];
+      output32[j + 3] = block32[3];
+    }
+
+    return output;
   }
 }
 
 /// Provides decryption for AES cipher in XTS mode.
+///
+/// This implementation is derived from [1619-2018 - IEEE Standard for
+/// Cryptographic Protection of Data on Block-Oriented Storage Devices][spec].
+///
+/// [spec]: https://ieeexplore.ieee.org/document/8637988
 class AESInXTSModeDecrypt extends Cipher with SaltedCipher {
   @override
   String get name => "AES#decrypt/XTS/${Padding.none.name}";
 
   /// Key for the ciphertext decryption
-  final Uint8List ekey;
+  final Uint8List key1; // 16, 24, or 32-bytes
 
   /// Key for the tweak encryption
-  final Uint8List tkey;
+  final Uint8List key2; // 16, 24, or 32-bytes
 
+  /// The tweak for the XTS mode
   @override
-  final Uint8List iv;
+  final Uint8List iv; // 16-bytes
 
   const AESInXTSModeDecrypt(
-    this.ekey,
-    this.tkey,
+    this.key1,
+    this.key2,
     this.iv,
   );
 
   @override
   Uint8List convert(List<int> message) {
-    return AESInXTSModeDecryptSink(ekey, tkey, iv).add(message, true);
+    int i, j, n, pos;
+    n = message.length;
+    final output = Uint8List(n);
+    final temp32 = Uint32List(4);
+    final tweak32 = Uint32List(4);
+    final block32 = Uint32List(4); // 128-bit
+    final iv32 = Uint32List.view(iv.buffer);
+    final dkey32 = Uint32List.view(key1.buffer);
+    final tkey32 = Uint32List.view(key2.buffer);
+    final block = Uint8List.view(block32.buffer);
+    final output32 = Uint32List.view(output.buffer);
+    final xtkey32 = AESCore.$expandEncryptionKey(tkey32);
+    final xdkey32 = AESCore.$expandDecryptionKey(dkey32);
+
+    if (n < 16) {
+      throw StateError('The message must be at least 16 bytes');
+    }
+
+    tweak32[0] = iv32[0];
+    tweak32[1] = iv32[1];
+    tweak32[2] = iv32[2];
+    tweak32[3] = iv32[3];
+    AESCore.$encryptLE(tweak32, xtkey32);
+
+    // full blocks except last block when it is partial
+    for (i = 0; i + 16 <= n; i += 16) {
+      block32[0] = (message[i + 0] ^
+          (message[i + 1] << 8) ^
+          (message[i + 2] << 16) ^
+          (message[i + 3] << 24));
+      block32[1] = ((message[i + 4]) ^
+          (message[i + 5] << 8) ^
+          (message[i + 6] << 16) ^
+          message[i + 7] << 24);
+      block32[2] = (message[i + 8] ^
+          (message[i + 9] << 8) ^
+          (message[i + 10] << 16) ^
+          (message[i + 11] << 24));
+      block32[3] = (message[i + 12] ^
+          (message[i + 13] << 8) ^
+          (message[i + 14] << 16) ^
+          (message[i + 15] << 24));
+
+      if (i + 16 < n && n < i + 32) {
+        // this is 2nd to last block when last block is partial
+        temp32[0] = tweak32[0];
+        temp32[1] = tweak32[1];
+        temp32[2] = tweak32[2];
+        temp32[3] = tweak32[3];
+        _multiplyAlpha(tweak32);
+      }
+
+      block32[0] ^= tweak32[0];
+      block32[1] ^= tweak32[1];
+      block32[2] ^= tweak32[2];
+      block32[3] ^= tweak32[3];
+      AESCore.$decryptLE(block32, xdkey32);
+      block32[0] ^= tweak32[0];
+      block32[1] ^= tweak32[1];
+      block32[2] ^= tweak32[2];
+      block32[3] ^= tweak32[3];
+
+      j = i >>> 2;
+      output32[j + 0] = block32[0];
+      output32[j + 1] = block32[1];
+      output32[j + 2] = block32[2];
+      output32[j + 3] = block32[3];
+
+      _multiplyAlpha(tweak32);
+    }
+
+    // last block when it is partial
+    if (i < n) {
+      for (pos = 0; i + pos < n; pos++) {
+        output[i + pos] = block[pos];
+        block[pos] = message[i + pos];
+      }
+
+      block32[0] ^= temp32[0];
+      block32[1] ^= temp32[1];
+      block32[2] ^= temp32[2];
+      block32[3] ^= temp32[3];
+      AESCore.$decryptLE(block32, xdkey32);
+      block32[0] ^= temp32[0];
+      block32[1] ^= temp32[1];
+      block32[2] ^= temp32[2];
+      block32[3] ^= temp32[3];
+
+      j = (i >>> 2) - 4;
+      output32[j + 0] = block32[0];
+      output32[j + 1] = block32[1];
+      output32[j + 2] = block32[2];
+      output32[j + 3] = block32[3];
+    }
+
+    return output;
   }
 }
 
@@ -354,29 +289,30 @@ class AESInXTSMode extends CollateCipher with SaltedCipher {
   @override
   final AESInXTSModeDecrypt decryptor;
 
+  /// The tweak for the XTS mode
+  @override
+  Uint8List get iv => encryptor.iv;
+
   const AESInXTSMode._({
     required this.encryptor,
     required this.decryptor,
   });
 
-  @override
-  Uint8List get iv => encryptor.iv;
-
   /// Creates AES cipher in XTS mode.
   ///
   /// Parameters:
   /// - [key] Combined key for the message and tweak (either 32 or 64 bytes).
-  /// - [iv] The initial tweak value (16-bytes).
-  factory AESInXTSMode(List<int> key, [List<int>? iv]) {
-    if (![32, 48, 64].contains(key.length)) {
+  /// - [tweak] The initial tweak value (16-bytes).
+  factory AESInXTSMode(List<int> key, [List<int>? tweak]) {
+    if (key.length != 32 && key.length != 48 && key.length != 64) {
       throw StateError('Invalid key size: ${key.length}');
     }
-    iv ??= randomBytes(16);
-    if (iv.length != 16) {
-      throw StateError('The iv (tweak) must be 16-bytes');
+    tweak ??= randomBytes(16);
+    if (tweak.length != 16) {
+      throw StateError('The tweak (iv) must be 16-bytes');
     }
-    var key8 = key is Uint8List ? key : Uint8List.fromList(key);
-    var iv8 = iv is Uint8List ? iv : Uint8List.fromList(iv);
+    var key8 = toUint8List(key);
+    var iv8 = toUint8List(tweak);
     var mid = key8.length >>> 1;
     var ekey = key8.sublist(0, mid);
     var tkey = key8.sublist(mid);

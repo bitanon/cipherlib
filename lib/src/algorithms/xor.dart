@@ -25,18 +25,19 @@ class XOR extends Cipher {
 
   /// Creates a [XOR] with `List<int>` [key], transforming every elements to
   /// unsigned 8-bit numbers.
-  factory XOR(List<int> key) => XOR._(toUint8List(key));
+  factory XOR(List<int> key) {
+    if (key.isEmpty) {
+      throw ArgumentError.value(key, 'key', 'must not be empty');
+    }
+    return XOR._(toUint8List(key));
+  }
 
   @override
   Uint8List convert(List<int> message) {
-    int i, k;
     int kLen = key.length;
     int mLen = message.length;
     final output = Uint8List(mLen);
-    if (kLen == 0 && mLen > 0) {
-      throw ArgumentError.value(key, 'key', 'must not be empty');
-    }
-    for (i = k = 0; i < output.length; ++i, ++k) {
+    for (int i = 0, k = 0; i < mLen; ++i, ++k) {
       if (k == kLen) {
         k = 0;
       }

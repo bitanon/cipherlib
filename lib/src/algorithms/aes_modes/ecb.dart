@@ -25,11 +25,12 @@ class AESInECBModeEncrypt extends Cipher {
 
   @override
   Uint8List convert(List<int> message) {
-    int i, j, n, pos;
+    int i, j, n, m, pos;
     n = message.length;
+    m = n + 16 - (n & 15);
 
+    final output = Uint8List(m);
     final block32 = Uint32List(4); // 128-bit
-    final output = Uint8List(n + 16 - (n & 15));
     final key32 = Uint32List.view(key.buffer);
     final block = Uint8List.view(block32.buffer);
     final output32 = Uint32List.view(output.buffer);
@@ -84,7 +85,7 @@ class AESInECBModeEncrypt extends Cipher {
       throw StateError('Invalid input size');
     }
 
-    if (i == output.length) {
+    if (i == m) {
       return output;
     } else {
       return output.sublist(0, i);
@@ -114,7 +115,7 @@ class AESInECBModeDecrypt extends Cipher {
     n = message.length;
 
     final output = Uint8List(n);
-    final block32 = Uint32List(16); // 128-bit
+    final block32 = Uint32List(4); // 128-bit
     final key32 = Uint32List.view(key.buffer);
     final output32 = Uint32List.view(output.buffer);
     final xkey32 = AESCore.$expandDecryptionKey(key32);

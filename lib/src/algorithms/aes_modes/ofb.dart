@@ -5,76 +5,10 @@ import 'dart:typed_data';
 
 import 'package:hashlib/random.dart' show randomBytes;
 
-import '../../core/cipher.dart';
-import '../../core/cipher_sink.dart';
 import '../../core/aes.dart';
+import '../../core/cipher.dart';
+import '../../utils/typed_data.dart';
 import '../padding.dart';
-
-/// The sink used for encryption by the [AESInOFBModeCipher] algorithm.
-class AESInOFBModeSink extends CipherSink {
-  AESInOFBModeSink(
-    this._key,
-    this._iv,
-    this._sbyte,
-  ) {
-    reset();
-  }
-
-  int _pos = 0;
-  final Uint8List _key;
-  final Uint8List _iv;
-  final int _sbyte;
-  final _salt = Uint8List(16);
-  final _block = Uint8List(16); // 128-bit
-  late final _key32 = Uint32List.view(_key.buffer);
-  late final _block32 = Uint32List.view(_block.buffer);
-  late final _xkey32 = AESCore.$expandEncryptionKey(_key32);
-
-  @override
-  void reset() {
-    super.reset();
-    _pos = 0;
-    for (int i = 0; i < 16; ++i) {
-      _salt[i] = _iv[i];
-    }
-    _nextBlock();
-  }
-
-  @pragma('vm:prefer-inline')
-  void _nextBlock() {
-    int i;
-    for (i = 0; i < 16; ++i) {
-      _block[i] = _salt[i];
-    }
-    AESCore.$encryptLE(_block32, _xkey32);
-    for (i = _sbyte; i < 16; ++i) {
-      _salt[i - _sbyte] = _salt[i];
-    }
-    for (i = 0; i < _sbyte; ++i) {
-      _salt[16 - _sbyte + i] = _block[i];
-    }
-  }
-
-  @override
-  @pragma('vm:prefer-inline')
-  Uint8List $add(List<int> data, int start, int end) {
-    int i, p;
-    var output = Uint8List(end - start);
-
-    p = 0;
-    for (i = start; i < end;) {
-      for (; _pos < _sbyte && i < end; ++_pos, ++i, ++p) {
-        output[p] = _block[_pos] ^ data[i];
-      }
-      if (_pos == _sbyte) {
-        _nextBlock();
-        _pos = 0;
-      }
-    }
-
-    return output;
-  }
-}
 
 /// Provides encryption for AES cipher in OFB mode.
 class AESInOFBModeCipher extends Cipher with SaltedCipher {
@@ -82,13 +16,13 @@ class AESInOFBModeCipher extends Cipher with SaltedCipher {
   String get name => "AES#cipher/OFB/${Padding.none.name}";
 
   /// Key for the cipher
-  final Uint8List key;
+  final Uint8List key; // 16, 24, or 32-bytes
 
   @override
-  final Uint8List iv;
+  final Uint8List iv; // 16 or 32-bytes
 
   /// Number of bytes to use per block
-  final int sbyte;
+  final int sbyte; // 1..16
 
   const AESInOFBModeCipher(
     this.key,
@@ -98,7 +32,44 @@ class AESInOFBModeCipher extends Cipher with SaltedCipher {
 
   @override
   Uint8List convert(List<int> message) {
-    return AESInOFBModeSink(key, iv, sbyte).add(message, true);
+    int i, j, pos;
+    int n = message.length;
+
+    final output = Uint8List(n);
+    final salt32 = Uint32List(4);
+    final block32 = Uint32List(4); // 128-bit
+    final iv32 = Uint32List.view(iv.buffer);
+    final key32 = Uint32List.view(key.buffer);
+    final salt = Uint8List.view(salt32.buffer);
+    final block = Uint8List.view(block32.buffer);
+    final xkey32 = AESCore.$expandEncryptionKey(key32);
+
+    salt32[0] = iv32[0];
+    salt32[1] = iv32[1];
+    salt32[2] = iv32[2];
+    salt32[3] = iv32[3];
+
+    pos = sbyte;
+    for (i = 0; i < n; ++i, ++pos) {
+      if (pos == sbyte) {
+        block32[0] = salt32[0];
+        block32[1] = salt32[1];
+        block32[2] = salt32[2];
+        block32[3] = salt32[3];
+        AESCore.$encryptLE(block32, xkey32);
+        for (j = sbyte; j < 16; ++j) {
+          salt[j - sbyte] = salt[j];
+        }
+        for (j = 0; j < sbyte; ++j) {
+          salt[j + 16 - sbyte] = block[j];
+        }
+        j = 16 - sbyte;
+        pos = 0;
+      }
+      output[i] = block[pos] ^ message[i];
+    }
+
+    return output;
   }
 }
 
@@ -132,12 +103,12 @@ class AESInOFBMode extends CollateCipher with SaltedCipher {
     int sbyte = 8,
   }) {
     iv ??= randomBytes(16);
-    if (iv.length < 16) {
-      throw StateError('IV must be at least 16-bytes');
+    if (iv.length != 16) {
+      throw StateError('IV must be exactly 16-bytes');
     }
-    var iv8 = iv is Uint8List ? iv : Uint8List.fromList(iv);
-    var key8 = key is Uint8List ? key : Uint8List.fromList(key);
-    var cipher = AESInOFBModeCipher(key8, iv8, sbyte);
+    final iv8 = toUint8List(iv);
+    final key8 = toUint8List(key);
+    final cipher = AESInOFBModeCipher(key8, iv8, sbyte);
     return AESInOFBMode._(
       encryptor: cipher,
       decryptor: cipher,

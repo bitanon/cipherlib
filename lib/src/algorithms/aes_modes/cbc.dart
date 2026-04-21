@@ -3,11 +3,11 @@
 
 import 'dart:typed_data';
 
-import 'package:cipherlib/src/utils/typed_data.dart';
 import 'package:hashlib/random.dart' show randomBytes;
 
 import '../../core/aes.dart';
 import '../../core/cipher.dart';
+import '../../utils/typed_data.dart';
 import '../padding.dart';
 
 /// Provides encryption for AES cipher in CBC mode.
@@ -103,7 +103,7 @@ class AESInCBCModeEncrypt extends Cipher with SaltedCipher {
       throw StateError('Invalid input size');
     }
 
-    if (i == output.length) {
+    if (i == m) {
       return output;
     } else {
       return output.sublist(0, i);
@@ -134,11 +134,11 @@ class AESInCBCModeDecrypt extends Cipher with SaltedCipher {
   @override
   Uint8List convert(List<int> message) {
     int i, j;
+    int s0, s1, s2, s3;
+    int t0, t1, t2, t3;
     int n = message.length;
 
     final output = Uint8List(n);
-    final salt32 = Uint32List(4);
-    final temp32 = Uint32List(4);
     final block32 = Uint32List(4); // 128-bit
     final iv32 = Uint32List.view(iv.buffer);
     final key32 = Uint32List.view(key.buffer);
@@ -149,10 +149,10 @@ class AESInCBCModeDecrypt extends Cipher with SaltedCipher {
       throw StateError('Invalid input size');
     }
 
-    salt32[0] = iv32[0];
-    salt32[1] = iv32[1];
-    salt32[2] = iv32[2];
-    salt32[3] = iv32[3];
+    s0 = iv32[0];
+    s1 = iv32[1];
+    s2 = iv32[2];
+    s3 = iv32[3];
 
     // process 16-byte blocks
     for (i = 0; i + 16 <= n; i += 16) {
@@ -173,23 +173,23 @@ class AESInCBCModeDecrypt extends Cipher with SaltedCipher {
           (message[i + 14] << 16) ^
           (message[i + 15] << 24));
 
-      temp32[0] = block32[0];
-      temp32[1] = block32[1];
-      temp32[2] = block32[2];
-      temp32[3] = block32[3];
+      t0 = block32[0];
+      t1 = block32[1];
+      t2 = block32[2];
+      t3 = block32[3];
 
       AESCore.$decryptLE(block32, xkey32);
 
       j = i >>> 2;
-      output32[j + 0] = block32[0] ^ salt32[0];
-      output32[j + 1] = block32[1] ^ salt32[1];
-      output32[j + 2] = block32[2] ^ salt32[2];
-      output32[j + 3] = block32[3] ^ salt32[3];
+      output32[j + 0] = block32[0] ^ s0;
+      output32[j + 1] = block32[1] ^ s1;
+      output32[j + 2] = block32[2] ^ s2;
+      output32[j + 3] = block32[3] ^ s3;
 
-      salt32[0] = temp32[0];
-      salt32[1] = temp32[1];
-      salt32[2] = temp32[2];
-      salt32[3] = temp32[3];
+      s0 = t0;
+      s1 = t1;
+      s2 = t2;
+      s3 = t3;
     }
 
     return padding.unpad(output);

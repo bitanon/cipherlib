@@ -14,8 +14,8 @@ void main() {
     test('name', () {
       expect(XOR(Uint8List(1)).name, 'XOR');
     });
-    test('rejects empty key if message is not empty', () {
-      expect(xor([], []), equals([]));
+    test('rejects empty key', () {
+      expect(() => xor([], []), throwsArgumentError);
       expect(() => xor([1], []), throwsArgumentError);
     });
     test('allows empty message', () {
@@ -102,11 +102,6 @@ void main() {
     });
     test("empty message", () {
       final key = Uint8List.fromList([0x00]);
-      final plain = Uint8List.fromList([]);
-      expect(xor(plain, key), equals([]));
-    });
-    test("empty key and message", () {
-      final key = Uint8List.fromList([]);
       final plain = Uint8List.fromList([]);
       expect(xor(plain, key), equals([]));
     });

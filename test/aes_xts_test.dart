@@ -65,7 +65,7 @@ void main() {
     });
   });
 
-  // https://csrc.nist.gov/pubs/sp/800/38/a/finals
+  // https://standards.ieee.org/ieee/1619/4205/
   group('IEEE Standard 1619-2007', () {
     group('Vector 1', () {
       var key = fromHex(
