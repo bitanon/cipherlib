@@ -10,10 +10,16 @@ import '../../core/cipher.dart';
 import '../../utils/typed_data.dart';
 import '../padding.dart';
 
+// TODO: can we use bits instead of blocks of bytes for (sbyte)?
+
 /// Provides encryption for AES cipher in OFB mode.
 class AESInOFBModeCipher extends Cipher with SaltedCipher {
   @override
-  String get name => "AES#cipher/OFB/${Padding.none.name}";
+  String get name =>
+      "AES#${forEncryption ? 'encrypt' : 'decrypt'}/OFB/${Padding.none.name}";
+
+  /// Whether the cipher is for encryption or decryption
+  final bool forEncryption;
 
   /// Key for the cipher
   final Uint8List key; // 16, 24, or 32-bytes
@@ -25,6 +31,7 @@ class AESInOFBModeCipher extends Cipher with SaltedCipher {
   final int sbyte; // 1..16
 
   const AESInOFBModeCipher(
+    this.forEncryption,
     this.key,
     this.iv,
     this.sbyte,
@@ -108,10 +115,9 @@ class AESInOFBMode extends CollateCipher with SaltedCipher {
     }
     final iv8 = toUint8List(iv);
     final key8 = toUint8List(key);
-    final cipher = AESInOFBModeCipher(key8, iv8, sbyte);
     return AESInOFBMode._(
-      encryptor: cipher,
-      decryptor: cipher,
+      encryptor: AESInOFBModeCipher(true, key8, iv8, sbyte),
+      decryptor: AESInOFBModeCipher(false, key8, iv8, sbyte),
     );
   }
 }

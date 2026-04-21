@@ -21,13 +21,13 @@ void main() {
     });
     test("encryptor and decryptor is the same", () {
       var aes = AES(key).ofb(iv);
-      expect(aes.encryptor, aes.decryptor);
+      expect(aes.encryptor, isNot(equals(aes.decryptor)));
     });
     test("encryptor name is correct", () {
-      expect(AES(key).ofb(iv).encryptor.name, "AES#cipher/OFB/NoPadding");
+      expect(AES(key).ofb(iv).encryptor.name, "AES#encrypt/OFB/NoPadding");
     });
     test("decryptor name is correct", () {
-      expect(AES(key).ofb(iv).decryptor.name, "AES#cipher/OFB/NoPadding");
+      expect(AES(key).ofb(iv).decryptor.name, "AES#decrypt/OFB/NoPadding");
     });
   });
 

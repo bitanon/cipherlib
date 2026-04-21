@@ -133,10 +133,10 @@ class AESInCBCModeDecrypt extends Cipher with SaltedCipher {
 
   @override
   Uint8List convert(List<int> message) {
-    int i, j;
+    int i, j, n;
     int s0, s1, s2, s3;
     int t0, t1, t2, t3;
-    int n = message.length;
+    n = message.length;
 
     final output = Uint8List(n);
     final block32 = Uint32List(4); // 128-bit

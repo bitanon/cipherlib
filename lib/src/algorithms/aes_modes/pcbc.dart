@@ -31,11 +31,12 @@ class AESInPCBCModeEncrypt extends Cipher with SaltedCipher {
 
   @override
   Uint8List convert(List<int> message) {
-    int i, j, pos;
+    int i, j, n, m, pos;
     int h0, h1, h2, h3;
     int s0, s1, s2, s3;
-    int n = message.length;
-    int m = n + 16 - (n & 15);
+    n = message.length;
+    m = n + 16 - (n & 15);
+
     final output = Uint8List(m);
     final block32 = Uint32List(4); // 128-bit
     final iv32 = Uint32List.view(iv.buffer);

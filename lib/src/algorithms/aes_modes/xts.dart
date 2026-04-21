@@ -64,6 +64,10 @@ class AESInXTSModeEncrypt extends Cipher with SaltedCipher {
   Uint8List convert(List<int> message) {
     int i, j, n, pos;
     n = message.length;
+    if (n < 16) {
+      throw StateError('The message must be at least 16 bytes');
+    }
+
     final output = Uint8List(n);
     final tweak32 = Uint32List(4);
     final block32 = Uint32List(4); // 128-bit
@@ -75,10 +79,7 @@ class AESInXTSModeEncrypt extends Cipher with SaltedCipher {
     final xtkey32 = AESCore.$expandEncryptionKey(tkey32);
     final xekey32 = AESCore.$expandEncryptionKey(ekey32);
 
-    if (n < 16) {
-      throw StateError('The message must be at least 16 bytes');
-    }
-
+    // encrypt tweak
     tweak32[0] = iv32[0];
     tweak32[1] = iv32[1];
     tweak32[2] = iv32[2];
@@ -181,6 +182,10 @@ class AESInXTSModeDecrypt extends Cipher with SaltedCipher {
   Uint8List convert(List<int> message) {
     int i, j, n, pos;
     n = message.length;
+    if (n < 16) {
+      throw StateError('The message must be at least 16 bytes');
+    }
+
     final output = Uint8List(n);
     final temp32 = Uint32List(4);
     final tweak32 = Uint32List(4);
@@ -193,10 +198,7 @@ class AESInXTSModeDecrypt extends Cipher with SaltedCipher {
     final xtkey32 = AESCore.$expandEncryptionKey(tkey32);
     final xdkey32 = AESCore.$expandDecryptionKey(dkey32);
 
-    if (n < 16) {
-      throw StateError('The message must be at least 16 bytes');
-    }
-
+    // encrypt tweak
     tweak32[0] = iv32[0];
     tweak32[1] = iv32[1];
     tweak32[2] = iv32[2];
