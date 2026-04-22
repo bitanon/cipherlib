@@ -97,6 +97,88 @@ void main() {
       var cipher = salsa20(sample, key, nonce: nonce);
       expect(output, equals(cipher));
     });
+
+    // https://github.com/golang/crypto/blob/master/salsa20/salsa20_test.go
+    test('Go crypto test #1', () {
+      final key = fromHex(
+        '0053A6F94C9FF24598EB3E91E4378ADD3083D6297CCF2275C81B6EC11467BA0D',
+      );
+      final nonce = fromHex('0D74DB42A91077DE');
+      final expectedXor = fromHex(
+        'C349B6A51A3EC9B712EAED3F90D8BCEE69B7628645F251A996F55260C62EF31F'
+        'D6C6B0AEA94E136C9D984AD2DF3578F78E457527B03A0450580DD874F63B1AB9',
+      );
+
+      final output = salsa20(Uint8List(131072), key, nonce: nonce);
+      final blockXor = Uint8List(64);
+      for (int i = 0; i < output.length; i += 64) {
+        for (int j = 0; j < 64; ++j) {
+          blockXor[j] ^= output[i + j];
+        }
+      }
+
+      expect(blockXor, equals(expectedXor));
+    });
+    test('Go crypto test #2', () {
+      final key = fromHex(
+        '0558ABFE51A4F74A9DF04396E93C8FE23588DB2E81D4277ACD2073C6196CBF12',
+      );
+      final nonce = fromHex('167DE44BB21980E7');
+      final expectedXor = fromHex(
+        'C3EAAF32836BACE32D04E1124231EF47E101367D6305413A0EEB07C60698A287'
+        '6E4D031870A739D6FFDDD208597AFF0A47AC17EDB0167DD67EBA84F1883D4DFD',
+      );
+
+      final output = salsa20(Uint8List(131072), key, nonce: nonce);
+      final blockXor = Uint8List(64);
+      for (int i = 0; i < output.length; i += 64) {
+        for (int j = 0; j < 64; ++j) {
+          blockXor[j] ^= output[i + j];
+        }
+      }
+
+      expect(blockXor, equals(expectedXor));
+    });
+    test('Go crypto test #3', () {
+      final key = fromHex(
+        '0A5DB00356A9FC4FA2F5489BEE4194E73A8DE03386D92C7FD22578CB1E71C417',
+      );
+      final nonce = fromHex('1F86ED54BB2289F0');
+      final expectedXor = fromHex(
+        '3CD23C3DC90201ACC0CF49B440B6C417F0DC8D8410A716D5314C059E14B1A8D9'
+        'A9FB8EA3D9C8DAE12B21402F674AA95C67B1FC514E994C9D3F3A6E41DFF5BBA6',
+      );
+
+      final output = salsa20(Uint8List(131072), key, nonce: nonce);
+      final blockXor = Uint8List(64);
+      for (int i = 0; i < output.length; i += 64) {
+        for (int j = 0; j < 64; ++j) {
+          blockXor[j] ^= output[i + j];
+        }
+      }
+
+      expect(blockXor, equals(expectedXor));
+    });
+    test('Go crypto test #4', () {
+      final key = fromHex(
+        '0F62B5085BAE0154A7FA4DA0F34699EC3F92E5388BDE3184D72A7DD02376C91C',
+      );
+      final nonce = fromHex('288FF65DC42B92F9');
+      final expectedXor = fromHex(
+        'E00EBCCD70D69152725F9987982178A2E2E139C7BCBE04CA8A0E99E318D9AB76'
+        'F988C8549F75ADD790BA4F81C176DA653C1A043F11A958E169B6D2319F4EEC1A',
+      );
+
+      final output = salsa20(Uint8List(131072), key, nonce: nonce);
+      final blockXor = Uint8List(64);
+      for (int i = 0; i < output.length; i += 64) {
+        for (int j = 0; j < 64; ++j) {
+          blockXor[j] ^= output[i + j];
+        }
+      }
+
+      expect(blockXor, equals(expectedXor));
+    });
   });
 
   group('correctness', () {

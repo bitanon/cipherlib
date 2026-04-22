@@ -79,6 +79,26 @@ void main() {
   });
 
   group('known inputs', () {
+    // https://www.rfc-editor.org/rfc/rfc8439.txt (Section 2.3.2)
+    test('RFC 8439 block-function keystream vector', () {
+      final key = fromHex(
+        "000102030405060708090a0b0c0d0e0f"
+        "101112131415161718191a1b1c1d1e1f",
+      );
+      final nonce = fromHex(
+        "000000090000004a00000000",
+      );
+      final counter = Nonce64.int32(1);
+      final expected = fromHex(
+        "10f1e7e4d13b5915500fdd1fa32071c4"
+        "c7d1f4c733c068030422aa9ac3d46c4e"
+        "d2826446079faa0914c2d705d98b02a2"
+        "b5129cd1de164eb9cbd083e8a2503c4e",
+      );
+      var cipher = chacha20(Uint8List(64), key, nonce: nonce, counter: counter);
+      expect(cipher, equals(expected));
+    });
+
     test('RFC 8439 example-1', () {
       var key = fromHex(
         "000102030405060708090a0b0c0d0e0f"
