@@ -227,8 +227,8 @@ class AESInCBCMode extends CollateCipher with SaltedCipher {
     Padding padding = Padding.pkcs7,
   }) {
     iv ??= randomBytes(16);
-    if (iv.length < 16) {
-      throw StateError('IV must be at least 16-bytes');
+    if (iv.length != 16) {
+      throw StateError('IV must be exactly 16-bytes');
     }
     final iv8 = toUint8List(iv);
     final key8 = toUint8List(key);
