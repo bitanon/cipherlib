@@ -8,13 +8,7 @@
 [![pub points](https://img.shields.io/pub/points/cipherlib?logo=dart&color=teal)](https://pub.dev/packages/cipherlib/score)
 [![popularity](https://img.shields.io/pub/popularity/cipherlib?logo=dart)](https://pub.dev/packages/cipherlib/score)
 
-Implementations of cryptographic algorithms for encryption and decryption in Dart.
-
-## Depencencies
-
-There are only 1 dependency used by this package:
-
-- [hashlib](https://pub.dev/packages/hashlib)
+A pure Dart library for cryptography that implements symmetric ciphers such as AES (with various modes), ChaCha20, XChaCha20, Salsa20, XSalsa20, and XOR, along with AEAD variants using Poly1305. Its only runtime dependency is [`hashlib`](https://pub.dev/packages/hashlib).
 
 ## Features
 
@@ -55,7 +49,7 @@ Check the [API Reference](https://pub.dev/documentation/cipherlib/latest/cipherl
 
 ## Usage
 
-Examples can be found inside the `example` folder.
+Examples can be found inside the [example](https://github.com/bitanon/cipherlib/tree/main/example) folder.
 
 <!-- file: example/cipherlib_example.dart -->
 
