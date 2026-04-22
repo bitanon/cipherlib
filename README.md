@@ -1,12 +1,13 @@
 # cipherlib
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/bitanon/cipherlib)
 [![package version](https://img.shields.io/pub/v/cipherlib?label=pub.dev)](https://pub.dev/packages/cipherlib)
 [![dart support](https://img.shields.io/badge/dart-%3E%3D%202.19.0-0175C2?logo=dart&logoColor=white)](https://dart.dev/guides/whats-new)
 [![test](https://github.com/bitanon/cipherlib/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/bitanon/cipherlib/actions/workflows/test.yml)
 [![codecov](https://codecov.io/gh/bitanon/cipherlib/graph/badge.svg?token=ISIYJ8MNI0)](https://codecov.io/gh/bitanon/cipherlib)
 [![likes](https://img.shields.io/pub/likes/cipherlib?logo=dart)](https://pub.dev/packages/cipherlib/score)
 [![pub points](https://img.shields.io/pub/points/cipherlib?logo=dart&color=teal)](https://pub.dev/packages/cipherlib/score)
-
+[![Pub Monthly Downloads](https://img.shields.io/pub/dm/cipherlib)](https://pub.dev/packages/cipherlib/score)
 
 A pure-Dart symmetric cryptography library with modern stream ciphers, AEAD support, and a broad AES mode set.
 
