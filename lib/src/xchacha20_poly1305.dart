@@ -81,7 +81,7 @@ extension XChaCha20ExtentionForPoly1305 on XChaCha20 {
 /// - [counter] : Initial block number.
 /// - [mac] : A 128-bit or 16-bytes long authentication tag for verification.
 ///
-/// Throws: [AssertionError] on [mac] verification failure.
+/// Throws: [StateError] on [mac] verification failure.
 ///
 /// Both the encryption and decryption can be done using this same method.
 AEADResultWithIV xchacha20poly1305(
@@ -99,7 +99,7 @@ AEADResultWithIV xchacha20poly1305(
     aad: aad,
   );
   if (mac != null && !algo.verify(message, mac)) {
-    throw AssertionError('Message authenticity check failed');
+    throw StateError('Message authenticity check failed');
   }
   return algo.sign(message);
 }

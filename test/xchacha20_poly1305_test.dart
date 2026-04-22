@@ -122,7 +122,7 @@ void main() {
                   aad: aad,
                   mac: verify.mac.bytes,
                 ),
-            throwsA(isA<AssertionError>()));
+            throwsA(isA<StateError>()));
       }
     });
   });
