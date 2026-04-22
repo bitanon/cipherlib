@@ -47,10 +47,13 @@ class ChaCha20Poly1305 extends AEADCipher<ChaCha20, Poly1305>
 
   @override
   @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   AEADResultWithIV sign(List<int> message) =>
       super.sign(message).withIV(cipher.iv);
 
   @override
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   void resetIV() {
     cipher.resetIV();
     algo.keypair.setAll(0, cipher.$otk());

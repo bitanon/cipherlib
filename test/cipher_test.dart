@@ -137,6 +137,30 @@ void main() {
         expect(cipher.iv, iv);
         expect(cipher.iv, isNot(Uint8List(16)));
       });
+
+      test('resetIV only mutates the IV view range', () {
+        final backing = Uint8List.fromList(List.generate(32, (i) => i));
+        final ivView = Uint8List.view(backing.buffer, 8, 16);
+        final before = Uint8List.fromList(backing);
+        final cipher = TestSaltedCipher(ivView);
+
+        cipher.resetIV();
+
+        for (int i = 0; i < 8; i++) {
+          expect(
+            backing[i],
+            equals(before[i]),
+            reason: 'prefix byte $i should remain unchanged',
+          );
+        }
+        for (int i = 24; i < backing.length; i++) {
+          expect(
+            backing[i],
+            equals(before[i]),
+            reason: 'suffix byte $i should remain unchanged',
+          );
+        }
+      });
     });
 
     group('CollateCipher Tests', () {

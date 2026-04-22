@@ -283,7 +283,7 @@ class AES {
   /// [spec]: https://csrc.nist.gov/pubs/sp/800/38/d/final
   AESInGCMMode gcm(
     List<int> iv, {
-    Iterable<int>? aad,
+    List<int>? aad,
     int tagSize = 16,
   }) =>
       AESInGCMMode(

@@ -330,10 +330,14 @@ class AESInGCMModeCipherCore {
       tag[j] ^= first[j];
     }
 
+    bool valid = true;
     for (j = 0; j < tagSize; ++j) {
       if (tag[j] != message[n + j]) {
-        throw StateError('Message authentication check failed');
+        valid = false;
       }
+    }
+    if (!valid) {
+      throw StateError('Message authentication check failed');
     }
 
     return output;
@@ -436,18 +440,22 @@ class AESInGCMMode extends CollateCipher with SaltedCipher {
     Iterable<int>? aad,
     int tagSize = 16,
   }) {
-    if (key.length != 16 && key.length != 24 && key.length != 32) {
-      throw StateError('Key must be 16, 24, or 32 bytes');
-    }
     if (tagSize < 1) {
       throw StateError('Tag size must be at least 1');
     } else if (tagSize > 16) {
       throw StateError('Tag size must be at most 16');
     }
+
+    final key8 = toUint8List(key);
+    if (key8.length != 16 && key8.length != 24 && key8.length != 32) {
+      throw StateError('Key must be 16, 24, or 32 bytes');
+    }
+
     iv ??= randomBytes(12);
     final iv8 = toUint8List(iv);
-    final key8 = toUint8List(key);
+
     final aad8 = aad != null ? toUint8List(aad) : null;
+
     return AESInGCMMode._(
       encryptor: AESInGCMModeEncrypt(
         key8,

@@ -3,10 +3,11 @@
 
 import 'dart:typed_data';
 
-import 'package:hashlib/random.dart' show randomBytes;
+import 'package:cipherlib/random.dart' show randomBytes;
 
 import '../core/cipher.dart';
 import '../utils/nonce.dart';
+import '../utils/typed_data.dart';
 
 const int _mask32 = 0xFFFFFFFF;
 
@@ -20,23 +21,23 @@ const int _mask32 = 0xFFFFFFFF;
 /// See also:
 /// - [XChaCha20] for better security with 192-bit nonce
 class ChaCha20 extends Cipher with SaltedCipher {
-  final Uint8List _nonce;
-  final int _counterBytes;
-
   @override
   String get name => "ChaCha20";
 
   /// Key for the cipher
   final Uint8List key;
 
+  @override
+  final Uint8List iv;
+
+  /// The number of bytes from the IV used for the counter
+  final int counterBytes;
+
   const ChaCha20._(
     this.key,
-    this._nonce, [
-    this._counterBytes = 8,
+    this.iv, [
+    this.counterBytes = 8,
   ]);
-
-  @override
-  Uint8List get iv => _nonce;
 
   /// Creates an instance with a [key], [nonce], and [counter] containing a
   /// list of bytes.
@@ -49,7 +50,7 @@ class ChaCha20 extends Cipher with SaltedCipher {
     if (key.length != 16 && key.length != 32) {
       throw ArgumentError('The key should be either 16 or 32 bytes');
     }
-    var key8 = key is Uint8List ? key : Uint8List.fromList(key);
+    final key8 = toUint8List(key);
 
     // validate nonce
     Uint8List nonce8;
@@ -96,9 +97,9 @@ class ChaCha20 extends Cipher with SaltedCipher {
   Uint8List $otk() {
     var state32 = Uint32List(16);
     var key32 = Uint32List.view(key.buffer);
-    var iv32 = Uint32List.view(_nonce.buffer);
+    var iv32 = Uint32List.view(iv.buffer);
     var nonce32 = Uint32List(4);
-    if (_counterBytes == 4) {
+    if (counterBytes == 4) {
       nonce32[1] = iv32[1];
     }
     nonce32[2] = iv32[2];
@@ -117,7 +118,7 @@ class ChaCha20 extends Cipher with SaltedCipher {
     final state32 = Uint32List(16);
     final state = Uint8List.view(state32.buffer);
     final key32 = Uint32List.view(key.buffer);
-    final nonce32 = Uint32List.view(_nonce.buffer);
+    final nonce32 = Uint32List.view(iv.buffer);
 
     iv32[0] = nonce32[0];
     iv32[1] = nonce32[1];
@@ -127,7 +128,7 @@ class ChaCha20 extends Cipher with SaltedCipher {
     for (i = 0; i < message.length;) {
       _process(state32, key32, iv32);
       ++iv32[0];
-      if (iv32[0] == 0 && _counterBytes == 8) {
+      if (iv32[0] == 0 && counterBytes == 8) {
         ++iv32[1];
       }
       for (p = 0; p < 64 && i < message.length; ++p, ++i) {
@@ -314,28 +315,28 @@ class ChaCha20 extends Cipher with SaltedCipher {
 ///
 /// See also:
 /// - [ChaCha20]
-class XChaCha20 extends ChaCha20 {
-  final Uint8List _xkey;
-  final Uint8List _xnonce;
-  final Nonce64? _xcounter;
-
+class XChaCha20 extends Cipher with SaltedCipher {
   @override
   String get name => "XChaCha20";
 
-  const XChaCha20._(
-    this._xkey,
-    this._xnonce,
-    this._xcounter,
-    Uint8List key,
-    Uint8List iv,
-    int counterBytes,
-  ) : super._(key, iv, counterBytes);
+  /// The internal ChaCha20 cipher instance
+  final ChaCha20 internal;
+
+  /// The key used by the XChaCha20 algorithm
+  final Uint8List key;
 
   @override
-  Uint8List get iv => _xnonce;
+  final Uint8List iv;
 
-  /// The IV used by the base algorithm
-  Uint8List get activeIV => _nonce;
+  /// The counter used by the XChaCha20 algorithm
+  final Nonce64? counter;
+
+  const XChaCha20._(
+    this.key,
+    this.iv,
+    this.counter,
+    this.internal,
+  );
 
   /// Creates a [XChaCha20] with [key], and [nonce].
   ///
@@ -349,7 +350,6 @@ class XChaCha20 extends ChaCha20 {
     if (key.length != 16 && key.length != 32) {
       throw ArgumentError('The key should be either 16 or 32 bytes');
     }
-    var key8 = key is Uint8List ? key : Uint8List.fromList(key);
 
     // validate nonce
     int counterSize = 8;
@@ -363,21 +363,38 @@ class XChaCha20 extends ChaCha20 {
     } else if (nonce.length != 24) {
       throw ArgumentError('The nonce should be either 24, 28 or 32 bytes');
     }
-    var nonce8 = nonce is Uint8List ? nonce : Uint8List.fromList(nonce);
 
-    var instance = XChaCha20._(
+    final key8 = toUint8List(key);
+    final nonce8 = toUint8List(nonce);
+    final internal = ChaCha20._(Uint8List(32), Uint8List(16), counterSize);
+
+    return XChaCha20._(
       key8,
       nonce8,
       counter,
-      Uint8List(32),
-      Uint8List(16),
-      counterSize,
-    );
-    instance._hchacha20();
-    return instance;
+      internal,
+    ).._hchacha20();
   }
 
+  /// Key used by the internal ChaCha20 cipher instance
+  Uint8List get subkey => internal.key;
+
+  /// IV used by the internal ChaCha20 cipher instance
+  Uint8List get subnonce => internal.iv;
+
+  /// The One-Time-Key used for AEAD cipher
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  Uint8List $otk() => internal.$otk();
+
   @override
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  Uint8List convert(List<int> message) => internal.convert(message);
+
+  @override
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   void resetIV() {
     super.resetIV();
     _hchacha20();
@@ -385,50 +402,45 @@ class XChaCha20 extends ChaCha20 {
 
   void _hchacha20() {
     // HChaCha20 State from key and first 16 byte of nonce
-    var state32 = Uint32List(16);
-    var key32 = Uint32List.view(_xkey.buffer);
-    var nonce32 = Uint32List.view(_xnonce.buffer);
-    ChaCha20._process(state32, key32, nonce32, true);
+    final state32 = Uint32List(16);
+    final xkey32 = Uint32List.view(key.buffer);
+    final xnonce32 = Uint32List.view(iv.buffer);
+    final iv32 = Uint32List.view(internal.iv.buffer);
+    final key32 = Uint32List.view(internal.key.buffer);
+    ChaCha20._process(state32, xkey32, xnonce32, true);
 
     // Take first 128-bit and last 128-bit from state as subkey
-    var subkey32 = Uint32List.fromList([
-      state32[0],
-      state32[1],
-      state32[2],
-      state32[3],
-      state32[12],
-      state32[13],
-      state32[14],
-      state32[15],
-    ]);
-    var subkey = Uint8List.view(subkey32.buffer);
-    for (int i = 0; i < key.length; i++) {
-      key[i] = subkey[i];
-    }
+    key32[0] = state32[0];
+    key32[1] = state32[1];
+    key32[2] = state32[2];
+    key32[3] = state32[3];
+    key32[4] = state32[12];
+    key32[5] = state32[13];
+    key32[6] = state32[14];
+    key32[7] = state32[15];
 
     // Use the subkey and remaining 8 byte of nonce
-    var iv32 = Uint32List.view(_nonce.buffer);
-    if (_xnonce.length == 32) {
-      iv32[0] = nonce32[4];
-      iv32[1] = nonce32[5];
-      iv32[2] = nonce32[6];
-      iv32[3] = nonce32[7];
+    if (iv.length == 32) {
+      iv32[0] = xnonce32[4];
+      iv32[1] = xnonce32[5];
+      iv32[2] = xnonce32[6];
+      iv32[3] = xnonce32[7];
     } else {
-      if (_xcounter == null) {
+      if (counter == null) {
         iv32[0] = 1;
         iv32[1] = 0;
       } else {
-        var counter32 = Uint32List.view(_xcounter!.bytes.buffer);
+        final counter32 = Uint32List.view(counter!.bytes.buffer);
         iv32[0] = counter32[0];
         iv32[1] = counter32[1];
       }
-      if (_xnonce.length == 28) {
-        iv32[1] = nonce32[4];
-        iv32[2] = nonce32[5];
-        iv32[3] = nonce32[6];
+      if (iv.length == 28) {
+        iv32[1] = xnonce32[4];
+        iv32[2] = xnonce32[5];
+        iv32[3] = xnonce32[6];
       } else {
-        iv32[2] = nonce32[4];
-        iv32[3] = nonce32[5];
+        iv32[2] = xnonce32[4];
+        iv32[3] = xnonce32[5];
       }
     }
   }

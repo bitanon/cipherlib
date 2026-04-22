@@ -3,7 +3,7 @@
 
 import 'dart:typed_data';
 
-import 'package:hashlib/random.dart' show randomBytes;
+import 'package:hashlib/random.dart';
 
 import '../core/cipher.dart';
 import '../utils/nonce.dart';
@@ -21,21 +21,19 @@ const int _mask32 = 0xFFFFFFFF;
 /// See also:
 /// - [XSalsa20] for better security with 192-bit nonce
 class Salsa20 extends Cipher with SaltedCipher {
-  final Uint8List _nonce;
+  @override
+  String get name => "Salsa20";
+
+  @override
+  final Uint8List iv;
 
   /// Key for the cipher
   final Uint8List key;
 
-  @override
-  String get name => "Salsa20";
-
   const Salsa20._(
     this.key,
-    this._nonce,
+    this.iv,
   );
-
-  @override
-  Uint8List get iv => _nonce;
 
   /// Creates an instance with a [key], [nonce], and [counter] containing a
   /// list of bytes.
@@ -79,7 +77,7 @@ class Salsa20 extends Cipher with SaltedCipher {
   Uint8List $otk() {
     final state32 = Uint32List(16);
     final key32 = Uint32List.view(key.buffer);
-    final nonce32 = Uint32List.view(_nonce.buffer);
+    final nonce32 = Uint32List.view(iv.buffer);
     _process(state32, key32, nonce32);
     return Uint8List.view(state32.buffer).sublist(0, 32);
   }
@@ -94,7 +92,7 @@ class Salsa20 extends Cipher with SaltedCipher {
     final state32 = Uint32List(16);
     final key32 = Uint32List.view(key.buffer);
     final state = Uint8List.view(state32.buffer);
-    final nonce32 = Uint32List.view(_nonce.buffer);
+    final nonce32 = Uint32List.view(iv.buffer);
 
     iv32[0] = nonce32[0];
     iv32[1] = nonce32[1];
@@ -258,27 +256,28 @@ class Salsa20 extends Cipher with SaltedCipher {
 ///
 /// See also:
 /// - [Salsa20]
-class XSalsa20 extends Salsa20 {
-  final Uint8List _xkey;
-  final Uint8List _xnonce;
-  final Nonce64? _xcounter;
-
+class XSalsa20 extends Cipher with SaltedCipher {
   @override
   String get name => "XSalsa20";
 
-  const XSalsa20._(
-    this._xkey,
-    this._xnonce,
-    this._xcounter,
-    Uint8List key,
-    Uint8List iv,
-  ) : super._(key, iv);
+  /// The internal Salsa20 cipher instance
+  final Salsa20 internal;
+
+  /// The key used by the XSalsa20 algorithm
+  final Uint8List key;
 
   @override
-  Uint8List get iv => _xnonce;
+  final Uint8List iv;
 
-  /// The IV used by the base algorithm
-  Uint8List get activeIV => _nonce;
+  /// The counter used by the XSalsa20 algorithm
+  final Nonce64? counter;
+
+  const XSalsa20._(
+    this.key,
+    this.iv,
+    this.counter,
+    this.internal,
+  );
 
   /// Creates a [XSalsa20] with [key], and [nonce].
   ///
@@ -292,7 +291,6 @@ class XSalsa20 extends Salsa20 {
     if (key.length != 16 && key.length != 32) {
       throw ArgumentError('The key should be either 16 or 32 bytes');
     }
-    final key8 = toUint8List(key);
 
     // validate nonce
     nonce ??= randomBytes(32);
@@ -302,18 +300,38 @@ class XSalsa20 extends Salsa20 {
     if (nonce.length == 32 && counter != null) {
       throw ArgumentError('Counter is not expected with 32-byte nonce');
     }
-    final nonce8 = toUint8List(nonce);
+
+    final key8 = toUint8List(key).sublist(0);
+    final nonce8 = toUint8List(nonce).sublist(0);
+    final internal = Salsa20._(Uint8List(32), Uint8List(16));
 
     return XSalsa20._(
       key8,
       nonce8,
       counter,
-      Uint8List(32),
-      Uint8List(16),
+      internal,
     ).._hsalsa20();
   }
 
+  /// Key used by the internal Salsa20 cipher instance
+  Uint8List get subkey => internal.key;
+
+  /// IV used by the internal Salsa20 cipher instance
+  Uint8List get subnonce => internal.iv;
+
+  /// The One-Time-Key used for AEAD cipher
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  Uint8List $otk() => internal.$otk();
+
   @override
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  Uint8List convert(List<int> message) => internal.convert(message);
+
+  @override
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   void resetIV() {
     super.resetIV();
     _hsalsa20();
@@ -321,36 +339,31 @@ class XSalsa20 extends Salsa20 {
 
   void _hsalsa20() {
     // HSalsa20 state from key and first 128-bit of nonce
-    var state32 = Uint32List(16);
-    var key32 = Uint32List.view(_xkey.buffer);
-    var nonce32 = Uint32List.view(_xnonce.buffer);
-    Salsa20._process(state32, key32, nonce32, true);
+    final state32 = Uint32List(16);
+    final xkey32 = Uint32List.view(key.buffer);
+    final xnonce32 = Uint32List.view(iv.buffer);
+    final iv32 = Uint32List.view(internal.iv.buffer);
+    final key32 = Uint32List.view(internal.key.buffer);
+    Salsa20._process(state32, xkey32, xnonce32, true);
 
     // Take first 128-bit and last 128-bit from state as subkey
-    var subkey32 = Uint32List.fromList([
-      state32[0],
-      state32[5],
-      state32[10],
-      state32[15],
-      state32[6],
-      state32[7],
-      state32[8],
-      state32[9],
-    ]);
-    var subkey = Uint8List.view(subkey32.buffer);
-    for (int i = 0; i < key.length; i++) {
-      key[i] = subkey[i];
-    }
+    key32[0] = state32[0];
+    key32[1] = state32[5];
+    key32[2] = state32[10];
+    key32[3] = state32[15];
+    key32[4] = state32[6];
+    key32[5] = state32[7];
+    key32[6] = state32[8];
+    key32[7] = state32[9];
 
     // Use the subkey and last 128-bit of nonce or 96-bit nonce and counter.
-    var iv32 = Uint32List.view(_nonce.buffer);
-    iv32[0] = nonce32[4];
-    iv32[1] = nonce32[5];
-    if (_xnonce.length == 32) {
-      iv32[2] = nonce32[6];
-      iv32[3] = nonce32[7];
-    } else if (_xcounter != null) {
-      var counter32 = Uint32List.view(_xcounter!.bytes.buffer);
+    iv32[0] = xnonce32[4];
+    iv32[1] = xnonce32[5];
+    if (iv.length == 32) {
+      iv32[2] = xnonce32[6];
+      iv32[3] = xnonce32[7];
+    } else if (counter != null) {
+      final counter32 = Uint32List.view(counter!.bytes.buffer);
       iv32[2] = counter32[0];
       iv32[3] = counter32[1];
     }

@@ -2,11 +2,41 @@
 // All rights reserved. Check LICENSE file for details.
 
 import 'dart:typed_data';
+import 'dart:collection';
 
 import 'package:cipherlib/cipherlib.dart';
 import 'package:cipherlib/codecs.dart';
 import 'package:cipherlib/random.dart';
 import 'package:test/test.dart';
+
+class CountingTagReadList extends ListBase<int> {
+  final List<int> _data;
+  final int tagStart;
+  int tagReads = 0;
+
+  CountingTagReadList(this._data, this.tagStart);
+
+  @override
+  int get length => _data.length;
+
+  @override
+  set length(int newLength) {
+    _data.length = newLength;
+  }
+
+  @override
+  int operator [](int index) {
+    if (index >= tagStart) {
+      tagReads++;
+    }
+    return _data[index];
+  }
+
+  @override
+  void operator []=(int index, int value) {
+    _data[index] = value;
+  }
+}
 
 void main() {
   group('validation', () {
@@ -48,6 +78,16 @@ void main() {
           );
         }
       }
+    });
+    test("decrypt should read all tag bytes before failing", () {
+      final cipher = AES(key).gcm(iv, tagSize: 16);
+      final valid = cipher.encrypt(Uint8List(0));
+      final tampered = Uint8List.fromList(valid);
+      tampered[0] ^= 1;
+      final wrapped = CountingTagReadList(tampered, 0);
+
+      expect(() => cipher.decrypt(wrapped), throwsStateError);
+      expect(wrapped.tagReads, equals(16));
     });
   });
 

@@ -62,25 +62,37 @@ void main() {
       var text = randomBytes(100);
       xchacha20poly1305(text, key);
     });
-  });
-
-  group('correctness', () {
+    test('subkey is same as internal key', () {
+      var x = XChaCha20Poly1305(Uint8List(32));
+      expect(x.cipher.subkey, equals(x.cipher.internal.key));
+    });
+    test('subnonce is same as internal iv', () {
+      var x = XChaCha20Poly1305(Uint8List(32));
+      expect(x.cipher.subnonce, equals(x.cipher.internal.iv));
+    });
     test('reset iv', () {
       var x = XChaCha20Poly1305(Uint8List(32));
-      var iv = [...x.iv];
-      var key1 = [...x.cipher.key];
-      var key2 = [...x.algo.keypair];
+      var iv = [...x.cipher.iv];
+      var key = [...x.cipher.key];
+      var hkey = [...x.algo.keypair];
+      var subkey = [...x.cipher.subkey];
+      var subnonce = [...x.cipher.subnonce];
+
       var tag1 = x.sign(const [1, 2, 3, 4]).mac.bytes;
-      var activeIV = [...x.cipher.activeIV];
       x.resetIV();
-      expect(iv, isNot(equals(x.iv)));
-      expect(key1, isNot(equals(x.cipher.key)));
-      expect(key2, isNot(equals(x.algo.keypair)));
-      expect(activeIV, isNot(equals(x.cipher.activeIV)));
+
+      expect(key, equals(x.cipher.key));
+      expect(iv, isNot(equals(x.cipher.iv)));
+      expect(subnonce, isNot(equals(x.cipher.subnonce)));
+      expect(subkey, isNot(equals(x.cipher.subkey)));
+      expect(hkey, isNot(equals(x.algo.keypair)));
+
       var tag2 = x.sign(const [1, 2, 3, 4]).mac.bytes;
       expect(tag1, isNot(equals(tag2)));
     });
+  });
 
+  group('correctness', () {
     test('sign and verify', () {
       for (int i = 1; i < 100; ++i) {
         final key = randomBytes(32);

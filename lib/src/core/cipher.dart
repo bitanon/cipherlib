@@ -52,7 +52,11 @@ abstract class SaltedCipher implements CipherBase {
 
   /// Replaces current IV with a new random one
   @pragma('vm:prefer-inline')
-  void resetIV() => fillRandom(iv.buffer);
+  void resetIV() => fillRandom(
+        iv.buffer,
+        start: iv.offsetInBytes,
+        length: iv.lengthInBytes,
+      );
 }
 
 /// Template for Cipher algorithm which does not use the same logic for

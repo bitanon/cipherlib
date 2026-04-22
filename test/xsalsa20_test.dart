@@ -44,11 +44,20 @@ void main() {
         }
       }
     });
+    test('subkey is same as internal key', () {
+      var x = XSalsa20(Uint8List(32));
+      expect(x.subkey, equals(x.internal.key));
+    });
+    test('subnonce is same as internal iv', () {
+      var x = XSalsa20(Uint8List(32));
+      expect(x.subnonce, equals(x.internal.iv));
+    });
     test('If counter is not provided, default one is used', () {
       final key = Uint8List(32);
       final nonce = List.filled(24, 1);
       final algo = XSalsa20(key, nonce);
-      expect(algo.activeIV,
+      expect(algo.iv, equals(nonce));
+      expect(algo.subnonce,
           equals([1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0]));
     });
     test('Counter is set correctly when provided', () {
@@ -56,7 +65,8 @@ void main() {
       final nonce = List.filled(24, 1);
       final counter = Nonce64.bytes([2, 2, 2, 2, 2, 2, 2, 2]);
       final algo = XSalsa20(key, nonce, counter);
-      expect(algo.activeIV,
+      expect(algo.iv, equals(nonce));
+      expect(algo.subnonce,
           equals([1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2]));
     });
     test('random nonce is used if nonce is null, ', () {
@@ -66,13 +76,21 @@ void main() {
     });
     test('reset iv', () {
       var x = XSalsa20(Uint8List(32));
-      var iv = [...x.iv];
-      var key = [...x.key];
-      var activeIV = [...x.activeIV];
+      var key = [...x.subkey];
+      var iv = [...x.subnonce];
+      var xkey = [...x.key];
+      var xnonce = [...x.iv];
       x.resetIV();
-      expect(iv, isNot(equals(x.iv)));
-      expect(key, isNot(equals(x.key)));
-      expect(activeIV, isNot(equals(x.activeIV)));
+      expect(xkey, equals(x.key));
+      expect(xnonce, isNot(equals(x.iv)));
+      expect(key, isNot(equals(x.subkey)));
+      expect(iv, isNot(equals(x.subnonce)));
+    });
+    test('constructor should not mutate caller key buffer', () {
+      final original = Uint8List.fromList(List.generate(32, (i) => i));
+      final key = Uint8List.fromList(original);
+      XSalsa20(key, Uint8List(24));
+      expect(key, equals(original));
     });
   });
 
