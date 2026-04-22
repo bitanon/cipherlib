@@ -1,20 +1,30 @@
 # cipherlib
 
-[![plugin version](https://img.shields.io/pub/v/cipherlib?label=pub)](https://pub.dev/packages/cipherlib)
-[![dart support](https://img.shields.io/badge/dart-%3e%3d%202.19.0-39f?logo=dart)](https://dart.dev/guides/whats-new)
+[![package version](https://img.shields.io/pub/v/cipherlib?label=pub.dev)](https://pub.dev/packages/cipherlib)
+[![dart support](https://img.shields.io/badge/dart-%3E%3D%202.19.0-0175C2?logo=dart&logoColor=white)](https://dart.dev/guides/whats-new)
 [![test](https://github.com/bitanon/cipherlib/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/bitanon/cipherlib/actions/workflows/test.yml)
 [![codecov](https://codecov.io/gh/bitanon/cipherlib/graph/badge.svg?token=ISIYJ8MNI0)](https://codecov.io/gh/bitanon/cipherlib)
 [![likes](https://img.shields.io/pub/likes/cipherlib?logo=dart)](https://pub.dev/packages/cipherlib/score)
 [![pub points](https://img.shields.io/pub/points/cipherlib?logo=dart&color=teal)](https://pub.dev/packages/cipherlib/score)
-[![popularity](https://img.shields.io/pub/popularity/cipherlib?logo=dart)](https://pub.dev/packages/cipherlib/score)
 
-A pure Dart library for cryptography that implements symmetric ciphers such as AES (with various modes), ChaCha20, XChaCha20, Salsa20, XSalsa20, and XOR, along with AEAD variants using Poly1305. Its only runtime dependency is [`hashlib`](https://pub.dev/packages/hashlib).
+
+A pure-Dart symmetric cryptography library with modern stream ciphers, AEAD support, and a broad AES mode set.
+
+`cipherlib` provides AES (multiple modes), ChaCha20/XChaCha20, Salsa20/XSalsa20, XOR, and Poly1305-based AEAD variants. The only runtime dependency is [`hashlib`](https://pub.dev/packages/hashlib).
+
+## At a glance
+
+- Pure Dart implementation with no native bindings.
+- One-shot and stream APIs for common cipher workflows.
+- Broad AES mode coverage, including GCM and XTS.
+- Modern AEAD options: ChaCha20-Poly1305, XChaCha20-Poly1305, Salsa20-Poly1305, XSalsa20-Poly1305.
+- Cross-library comparisons and benchmark data included.
 
 ## Features
 
 | Ciphers            | Public class and methods                    |    Source     |
 | ------------------ | ------------------------------------------- | :-----------: |
-| AES                | `AES`,                                      | NIST.FIPS.197 |
+| AES                | `AES`                                      | NIST.FIPS.197 |
 | XOR                | `XOR`, `xor`, `xorStream`                   |   Wikipedia   |
 | ChaCha20           | `ChaCha20`, `chacha20`, `chacha20Stream`    |   RFC-8439    |
 | ChaCha20/Poly1305  | `ChaCha20Poly1305`, `chacha20poly1305`      |   RFC-8439    |
@@ -45,11 +55,11 @@ The following import will give you access to all of the algorithms in this packa
 import 'package:cipherlib/cipherlib.dart';
 ```
 
-Check the [API Reference](https://pub.dev/documentation/cipherlib/latest/cipherlib/cipherlib-library.html) for details.
+API docs: [cipherlib library reference](https://pub.dev/documentation/cipherlib/latest/cipherlib/cipherlib-library.html)
 
 ## Usage
 
-Examples can be found inside the [example](https://github.com/bitanon/cipherlib/tree/main/example) folder.
+Start with the full runnable examples in [example](https://github.com/bitanon/cipherlib/tree/main/example) folder.
 
 <!-- file: example/cipherlib_example.dart -->
 
