@@ -41,6 +41,20 @@ void main() {
       expect(AES.byte(key).ecb().decryptor.name, "AES#decrypt/ECB/Byte");
       expect(AES.pkcs7(key).ecb().decryptor.name, "AES#decrypt/ECB/PKCS7");
     });
+    test('throws error on invalid key size', () {
+      expect(
+          () => AESInECBMode(Uint8List(15)).encrypt(input), throwsStateError);
+      expect(
+          () => AESInECBMode(Uint8List(17)).encrypt(input), throwsStateError);
+      expect(
+          () => AESInECBMode(Uint8List(23)).encrypt(input), throwsStateError);
+      expect(
+          () => AESInECBMode(Uint8List(25)).encrypt(input), throwsStateError);
+      expect(
+          () => AESInECBMode(Uint8List(31)).encrypt(input), throwsStateError);
+      expect(
+          () => AESInECBMode(Uint8List(33)).encrypt(input), throwsStateError);
+    });
   });
 
   // https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.197-upd1.pdf

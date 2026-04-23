@@ -28,6 +28,14 @@ void main() {
     test("accepts null IV", () {
       expect(() => AESInCFBMode(key).encrypt(input), returnsNormally);
     });
+    test("iv must be exactly 16-bytes", () {
+      expect(() => AES(key).cfb(Uint8List(0)), throwsStateError);
+      expect(() => AES(key).cfb(Uint8List(15)), throwsStateError);
+      expect(() => AES(key).cfb(Uint8List(16)), returnsNormally);
+      expect(() => AES(key).cfb(Uint8List(17)), throwsStateError);
+      expect(() => AES(key).cfb(Uint8List(32)), throwsStateError);
+      expect(() => AES(key).cfb(Uint8List(33)), throwsStateError);
+    });
     test("encryptor name is correct", () {
       expect(AES(key).cfb(iv).encryptor.name, "AES#encrypt/CFB/NoPadding");
     });

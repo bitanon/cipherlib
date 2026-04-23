@@ -5,6 +5,7 @@ import 'dart:typed_data';
 
 import '../../core/aes.dart';
 import '../../core/cipher.dart';
+import '../../utils/typed_data.dart';
 import '../padding.dart';
 
 /// Provides encryption for AES cipher in ECB mode.
@@ -181,7 +182,10 @@ class AESInECBMode extends CollateCipher {
     List<int> key, [
     Padding padding = Padding.pkcs7,
   ]) {
-    var key8 = key is Uint8List ? key : Uint8List.fromList(key);
+    if (key.length != 16 && key.length != 24 && key.length != 32) {
+      throw StateError('Key must be 16, 24, or 32 bytes');
+    }
+    final key8 = toUint8List(key);
     return AESInECBMode._(
       encryptor: AESInECBModeEncrypt(key8, padding),
       decryptor: AESInECBModeDecrypt(key8, padding),

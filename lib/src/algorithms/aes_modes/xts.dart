@@ -313,11 +313,11 @@ class AESInXTSMode extends CollateCipher with SaltedCipher {
     if (tweak.length != 16) {
       throw StateError('The tweak (iv) must be 16-bytes');
     }
-    var key8 = toUint8List(key);
-    var iv8 = toUint8List(tweak);
-    var mid = key8.length >>> 1;
-    var ekey = key8.sublist(0, mid);
-    var tkey = key8.sublist(mid);
+    final key8 = toUint8List(key);
+    int mid = key8.length >>> 1;
+    final iv8 = toUint8List(tweak);
+    final ekey = key8.sublist(0, mid);
+    final tkey = key8.sublist(mid);
     return AESInXTSMode._(
       encryptor: AESInXTSModeEncrypt(ekey, tkey, iv8),
       decryptor: AESInXTSModeDecrypt(ekey, tkey, iv8),

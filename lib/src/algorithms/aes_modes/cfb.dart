@@ -116,8 +116,8 @@ class AESInCFBMode extends CollateCipher with SaltedCipher {
       throw StateError('sbyte must be between 1 and 16');
     }
     iv ??= randomBytes(16);
-    if (iv.length < 16) {
-      throw StateError('IV must be at least 16-bytes');
+    if (iv.length != 16) {
+      throw StateError('IV must be exactly 16-bytes');
     }
     var iv8 = iv is Uint8List ? iv : Uint8List.fromList(iv);
     var key8 = key is Uint8List ? key : Uint8List.fromList(key);

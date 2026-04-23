@@ -42,6 +42,20 @@ void main() {
       expect(AES.byte(key).ige(iv).decryptor.name, "AES#decrypt/IGE/Byte");
       expect(AES.pkcs7(key).ige(iv).decryptor.name, "AES#decrypt/IGE/PKCS7");
     });
+    test('throws error on invalid key size', () {
+      expect(
+          () => AESInIGEMode(Uint8List(15)).encrypt(input), throwsStateError);
+      expect(
+          () => AESInIGEMode(Uint8List(17)).encrypt(input), throwsStateError);
+      expect(
+          () => AESInIGEMode(Uint8List(23)).encrypt(input), throwsStateError);
+      expect(
+          () => AESInIGEMode(Uint8List(25)).encrypt(input), throwsStateError);
+      expect(
+          () => AESInIGEMode(Uint8List(31)).encrypt(input), throwsStateError);
+      expect(
+          () => AESInIGEMode(Uint8List(33)).encrypt(input), throwsStateError);
+    });
     test('throws error on invalid input size', () {
       var aes = AES.noPadding(Uint8List(16)).ige(Uint8List(32));
       expect(() => aes.encrypt(Uint8List(10)), throwsStateError);

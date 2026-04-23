@@ -7,6 +7,7 @@ import 'package:hashlib/random.dart' show randomBytes;
 
 import '../../core/aes.dart';
 import '../../core/cipher.dart';
+import '../../utils/typed_data.dart';
 import '../padding.dart';
 
 /// Provides encryption for AES cipher in PCBC mode.
@@ -246,8 +247,8 @@ class AESInPCBCMode extends CollateCipher with SaltedCipher {
     if (iv.length != 16) {
       throw StateError('IV must be exactly 16-bytes');
     }
-    var iv8 = iv is Uint8List ? iv : Uint8List.fromList(iv);
-    var key8 = key is Uint8List ? key : Uint8List.fromList(key);
+    final iv8 = toUint8List(iv);
+    final key8 = toUint8List(key);
     return AESInPCBCMode._(
       encryptor: AESInPCBCModeEncrypt(key8, iv8, padding),
       decryptor: AESInPCBCModeDecrypt(key8, iv8, padding),
