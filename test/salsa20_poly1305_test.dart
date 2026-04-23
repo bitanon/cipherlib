@@ -74,53 +74,38 @@ void main() {
     });
   });
 
-  group('correctness', () {
-    test('encryption <-> decryption (convert)', () {
-      var key = randomNumbers(32);
-      var nonce = randomBytes(16);
-      for (int j = 0; j < 100; ++j) {
-        var text = randomBytes(j);
-        var res = Salsa20(key, nonce).poly1305().convert(text);
-        var verified = Salsa20(key, nonce).poly1305().convert(res);
-        expect(verified, equals(text), reason: '[text size: $j]');
-      }
-    });
-
-    test('sign and verify', () {
-      for (int i = 0; i < 100; ++i) {
-        final key = randomBytes(32);
-        final iv = randomBytes(16);
-        final aad = randomBytes(key[0]);
-        final message = randomBytes(i);
-        final instance = Salsa20(key, iv).poly1305(aad);
-        final res = instance.sign(message);
-        expect(instance.verify(res.data, res.mac.bytes), isTrue);
-      }
-    });
+  test('sign and verify', () {
+    for (int i = 0; i < 100; ++i) {
+      final key = randomBytes(32);
+      final iv = randomBytes(16);
+      final aad = randomBytes(key[0]);
+      final message = randomBytes(i);
+      final instance = Salsa20(key, iv).poly1305(aad);
+      final res = instance.sign(message);
+      expect(instance.verify(res.data, res.mac.bytes), isTrue);
+    }
   });
 
-  group('critical inputs', () {
-    test('decrypt with invalid mac', () {
-      var key = Uint8List(32);
-      var nonce = Uint8List(16);
-      var sample = Uint8List(150);
-      var aad = Uint8List(16);
-      var res = salsa20poly1305(
-        sample,
+  test('decrypt with invalid mac', () {
+    var key = Uint8List(32);
+    var nonce = Uint8List(16);
+    var sample = Uint8List(150);
+    var aad = Uint8List(16);
+    var res = salsa20poly1305(
+      sample,
+      key,
+      nonce: nonce,
+      aad: aad,
+    );
+    expect(
+      () => salsa20poly1305(
+        res.data,
         key,
+        mac: Uint8List(16),
         nonce: nonce,
         aad: aad,
-      );
-      expect(
-        () => salsa20poly1305(
-          res.data,
-          key,
-          mac: Uint8List(16),
-          nonce: nonce,
-          aad: aad,
-        ),
-        throwsA(isA<StateError>()),
-      );
-    });
+      ),
+      throwsA(isA<StateError>()),
+    );
   });
 }

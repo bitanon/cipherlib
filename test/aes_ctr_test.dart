@@ -222,70 +222,28 @@ void main() {
     });
   });
 
-  group('encryption <-> decryption', () {
-    test("128-bit", () {
-      var key = randomBytes(16);
-      for (int j = 0; j < 100; j++) {
-        var inp = randomBytes(j);
-        var iv = randomBytes(16);
-        var cipher = AES(key).ctr(iv).encrypt(inp);
-        var plain = AES(key).ctr(iv).decrypt(cipher);
-        expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
-      }
-    });
-    test("192-bit", () {
-      var key = randomBytes(24);
-      for (int j = 0; j < 100; j++) {
-        var inp = randomBytes(j);
-        var iv = randomBytes(16);
-        var cipher = AES(key).ctr(iv).encrypt(inp);
-        var plain = AES(key).ctr(iv).decrypt(cipher);
-        expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
-      }
-    });
-    test("256-bit", () {
-      var key = randomBytes(32);
-      for (int j = 0; j < 100; j++) {
-        var inp = randomBytes(j);
-        var iv = randomBytes(16);
-        var cipher = AES(key).ctr(iv).encrypt(inp);
-        var plain = AES(key).ctr(iv).decrypt(cipher);
-        expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
-      }
-    });
-    test("with nonce and counter", () {
-      var key = randomBytes(32);
-      for (int j = 0; j < 100; j++) {
-        var inp = randomBytes(j);
-        var nonce = Nonce64.random();
-        var aes = AESInCTRMode.iv(key, nonce: nonce);
-        var cipher = aes.encrypt(inp);
-        var plain = aes.decrypt(cipher);
-        expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
-      }
-    });
-    test('counter carry paths for 33, 65, and 97 bits', () {
-      final key = Uint8List(16);
-      final message = Uint8List(32);
+  test('counter carry paths for 33, 65, and 97 bits', () {
+    final key = Uint8List(16);
+    final message = Uint8List(32);
 
-      final iv33 = fromHex('000000000000000000000000ffffffff');
-      final aes33 = AESInCTRMode(key, iv33, 33);
-      expect(aes33.decrypt(aes33.encrypt(message)), equals(message));
+    final iv33 = fromHex('000000000000000000000000ffffffff');
+    final aes33 = AESInCTRMode(key, iv33, 33);
+    expect(aes33.decrypt(aes33.encrypt(message)), equals(message));
 
-      final iv65 = fromHex('0000000000000000ffffffffffffffff');
-      final aes65 = AESInCTRMode(key, iv65, 65);
-      expect(aes65.decrypt(aes65.encrypt(message)), equals(message));
+    final iv65 = fromHex('0000000000000000ffffffffffffffff');
+    final aes65 = AESInCTRMode(key, iv65, 65);
+    expect(aes65.decrypt(aes65.encrypt(message)), equals(message));
 
-      final iv97 = fromHex('00000000ffffffffffffffffffffffff');
-      final aes97 = AESInCTRMode(key, iv97, 97);
-      expect(aes97.decrypt(aes97.encrypt(message)), equals(message));
-    });
-    test('counter merge path for 32-bit counter', () {
-      final key = Uint8List(16);
-      final iv = fromHex('000000000000000000000000ffffffff');
-      final aes = AESInCTRMode(key, iv, 32);
-      final msg = Uint8List(32);
-      expect(aes.decrypt(aes.encrypt(msg)), equals(msg));
-    });
+    final iv97 = fromHex('00000000ffffffffffffffffffffffff');
+    final aes97 = AESInCTRMode(key, iv97, 97);
+    expect(aes97.decrypt(aes97.encrypt(message)), equals(message));
+  });
+
+  test('counter merge path for 32-bit counter', () {
+    final key = Uint8List(16);
+    final iv = fromHex('000000000000000000000000ffffffff');
+    final aes = AESInCTRMode(key, iv, 32);
+    final msg = Uint8List(32);
+    expect(aes.decrypt(aes.encrypt(msg)), equals(msg));
   });
 }

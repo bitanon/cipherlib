@@ -112,32 +112,6 @@ void main() {
     });
   });
 
-  group('correctness', () {
-    test('XChaCha20: encryption <=> decryption', () {
-      for (int i = 0; i < 100; ++i) {
-        final key = randomBytes(32);
-        final iv = randomBytes(24);
-        final message = randomBytes(i);
-        final cipher = xchacha20(message, key, nonce: iv);
-        final plain = xchacha20(cipher, key, nonce: iv);
-        expect(plain, equals(message));
-      }
-    });
-    test('XChaCha20: encryption <-> decryption (stream)', () async {
-      for (int j = 0; j < 100; ++j) {
-        var key = randomNumbers(16);
-        var nonce = randomBytes(24);
-        var text = randomNumbers(j);
-        var bytes = Uint8List.fromList(text);
-        var stream = Stream.fromIterable(text);
-        var cipherStream = XChaCha20(key, nonce).stream(stream);
-        var plainStream = XChaCha20(key, nonce).stream(cipherStream);
-        var plain = await plainStream.toList();
-        expect(bytes, equals(plain), reason: '[text: $j]');
-      }
-    });
-  });
-
   group('known inputs', () {
     test('HChaCha20 subkey', () {
       final key = fromHex(

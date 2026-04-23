@@ -1,7 +1,6 @@
 // Copyright (c) 2023, Sudipto Chandra
 // All rights reserved. Check LICENSE file for details.
 
-import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:cipherlib/cipherlib.dart';
@@ -23,27 +22,27 @@ class CipherlibBenchmark extends SyncBenchmark {
   }
 }
 
-class CipherlibStreamBenchmark extends AsyncBenchmark {
-  final Stream<int> input;
-  final Uint8List key;
+// class CipherlibStreamBenchmark extends AsyncBenchmark {
+//   final Stream<int> input;
+//   final Uint8List key;
 
-  CipherlibStreamBenchmark(int size)
-      : input = Stream.fromIterable(List.filled(size, 0x3f)),
-        key = Uint8List.fromList(List.filled(100, 0x9f)),
-        super('cipherlib', size);
+//   CipherlibStreamBenchmark(int size)
+//       : input = Stream.fromIterable(List.filled(size, 0x3f)),
+//         key = Uint8List.fromList(List.filled(100, 0x9f)),
+//         super('cipherlib', size);
 
-  @override
-  Future<void> run() async {
-    await XOR(key).stream(input).drain();
-  }
-}
+//   @override
+//   Future<void> run() async {
+//     await XOR(key).stream(input).drain();
+//   }
+// }
 
 void main() async {
   print('--------- XOR ----------');
   for (var size in [1 << 20, 1 << 10, 1 << 5]) {
     print('---- message: ${formatSize(size)} ----');
     await CipherlibBenchmark(size).measureRate();
-    await CipherlibStreamBenchmark(size).measureRate();
+    // await CipherlibStreamBenchmark(size).measureRate();
     print('');
   }
 }

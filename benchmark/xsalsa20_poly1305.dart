@@ -24,29 +24,11 @@ class CipherlibBenchmark extends SyncBenchmark {
   }
 }
 
-class CipherlibStreamBenchmark extends AsyncBenchmark {
-  final Stream<int> input;
-  final Uint8List key;
-  final Uint8List nonce;
-
-  CipherlibStreamBenchmark(int size)
-      : input = Stream.fromIterable(List.filled(size, 0x3f)),
-        key = Uint8List.fromList(List.filled(32, 0x9f)),
-        nonce = Uint8List.fromList(List.filled(32, 0x2f)),
-        super('cipherlib', size);
-
-  @override
-  Future<void> run() async {
-    await XSalsa20(key, nonce).poly1305().stream(input).drain();
-  }
-}
-
 void main() async {
   print('--------- XSalsa20/Poly1305 ----------');
   for (int size in [1 << 20, 1 << 10, 1 << 5]) {
     print('---- message: ${formatSize(size)} ----');
     await CipherlibBenchmark(size).measureRate();
-    await CipherlibStreamBenchmark(size).measureRate();
     print('');
   }
 }

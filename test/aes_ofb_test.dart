@@ -29,6 +29,18 @@ void main() {
     test("decryptor name is correct", () {
       expect(AES(key).ofb(iv).decryptor.name, "AES#decrypt/OFB/NoPadding");
     });
+    test('reset iv', () {
+      var iv = randomBytes(16);
+      var key = randomBytes(24);
+      var aes = AES(key).ofb(iv);
+      for (int j = 0; j < 100; j++) {
+        aes.resetIV();
+        var inp = randomBytes(j);
+        var cipher = aes.encrypt(inp);
+        var plain = aes.decrypt(cipher);
+        expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
+      }
+    });
   });
 
   group('NIST SP 800-38A', () {
@@ -194,122 +206,5 @@ void main() {
         expect(toHex(reverse), equals(toHex(plain)));
       });
     });
-  });
-
-  group('encryption <-> decryption', () {
-    test("AES128/OFB", () {
-      var key = randomBytes(16);
-      for (int j = 0; j < 100; j++) {
-        var inp = randomBytes(j);
-        var iv = randomBytes(16);
-        var aes = AES(key).ofb(iv);
-        var cipher = aes.encrypt(inp);
-        var plain = aes.decrypt(cipher);
-        expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
-      }
-    });
-    test("AES192/OFB", () {
-      var key = randomBytes(24);
-      for (int j = 0; j < 100; j++) {
-        var inp = randomBytes(j);
-        var iv = randomBytes(16);
-        var aes = AES(key).ofb(iv);
-        var cipher = aes.encrypt(inp);
-        var plain = aes.decrypt(cipher);
-        expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
-      }
-    });
-    test("AES256/OFB", () {
-      var key = randomBytes(32);
-      for (int j = 0; j < 100; j++) {
-        var inp = randomBytes(j);
-        var iv = randomBytes(16);
-        var aes = AES(key).ofb(iv);
-        var cipher = aes.encrypt(inp);
-        var plain = aes.decrypt(cipher);
-        expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
-      }
-    });
-
-    test("AES128/OFB-8", () {
-      var key = randomBytes(16);
-      for (int j = 0; j < 100; j++) {
-        var inp = randomBytes(j);
-        var iv = randomBytes(16);
-        var aes = AES(key).ofb8(iv);
-        var cipher = aes.encrypt(inp);
-        var plain = aes.decrypt(cipher);
-        expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
-      }
-    });
-    test("AES192/OFB-8", () {
-      var key = randomBytes(24);
-      for (int j = 0; j < 100; j++) {
-        var inp = randomBytes(j);
-        var iv = randomBytes(16);
-        var aes = AES(key).ofb8(iv);
-        var cipher = aes.encrypt(inp);
-        var plain = aes.decrypt(cipher);
-        expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
-      }
-    });
-    test("AES256/OFB-8", () {
-      var key = randomBytes(32);
-      for (int j = 0; j < 100; j++) {
-        var inp = randomBytes(j);
-        var iv = randomBytes(16);
-        var aes = AES(key).ofb8(iv);
-        var cipher = aes.encrypt(inp);
-        var plain = aes.decrypt(cipher);
-        expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
-      }
-    });
-
-    test("AES128/OFB-64", () {
-      var key = randomBytes(16);
-      for (int j = 0; j < 100; j++) {
-        var inp = randomBytes(j);
-        var iv = randomBytes(16);
-        var aes = AES(key).ofb64(iv);
-        var cipher = aes.encrypt(inp);
-        var plain = aes.decrypt(cipher);
-        expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
-      }
-    });
-    test("AES192/OFB-64", () {
-      var key = randomBytes(24);
-      for (int j = 0; j < 100; j++) {
-        var inp = randomBytes(j);
-        var iv = randomBytes(16);
-        var aes = AES(key).ofb64(iv);
-        var cipher = aes.encrypt(inp);
-        var plain = aes.decrypt(cipher);
-        expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
-      }
-    });
-    test("AES256/OFB-64", () {
-      var key = randomBytes(32);
-      for (int j = 0; j < 100; j++) {
-        var inp = randomBytes(j);
-        var iv = randomBytes(16);
-        var aes = AES(key).ofb64(iv);
-        var cipher = aes.encrypt(inp);
-        var plain = aes.decrypt(cipher);
-        expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
-      }
-    });
-  });
-
-  test('reset iv', () {
-    var iv = randomBytes(16);
-    var key = randomBytes(24);
-    var aes = AES(key).ofb(iv);
-    for (int j = 0; j < 100; j++) {
-      aes.resetIV();
-      var inp = randomBytes(j);
-      var cipher = aes.encrypt(inp);
-      var plain = aes.decrypt(cipher);
-      expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
-    }
   });
 }

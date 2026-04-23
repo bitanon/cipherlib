@@ -4,7 +4,7 @@ import 'src/stream_integration.dart';
 
 Future<void> main() async {
   runAesIntegration();
-  await runStreamIntegration();
   runAeadIntegration();
+  runStreamIntegration();
   print('integration_consumer: all checks passed');
 }

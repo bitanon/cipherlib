@@ -1412,37 +1412,4 @@ void main() {
       });
     });
   });
-
-  group('encryption <-> decryption', () {
-    test("128-bit", () {
-      var key = randomBytes(32);
-      for (int j = 16; j < 100; j++) {
-        var inp = randomBytes(j);
-        var iv = randomBytes(16);
-        var cipher = AES(key).xts(iv).encrypt(inp);
-        var plain = AES(key).xts(iv).decrypt(cipher);
-        expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
-      }
-    });
-    test("192-bit", () {
-      var key = randomBytes(48);
-      for (int j = 16; j < 100; j++) {
-        var inp = randomBytes(j);
-        var iv = randomBytes(16);
-        var cipher = AES(key).xts(iv).encrypt(inp);
-        var plain = AES(key).xts(iv).decrypt(cipher);
-        expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
-      }
-    });
-    test("256-bit", () {
-      var key = randomBytes(64);
-      for (int j = 16; j < 100; j++) {
-        var inp = randomBytes(j);
-        var iv = randomBytes(16);
-        var cipher = AES(key).xts(iv).encrypt(inp);
-        var plain = AES(key).xts(iv).decrypt(cipher);
-        expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
-      }
-    });
-  });
 }

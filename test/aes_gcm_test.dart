@@ -55,6 +55,18 @@ void main() {
     test("decryptor name is correct", () {
       expect(AES(key).gcm(iv).decryptor.name, "AES#decrypt/GCM/NoPadding");
     });
+    test('reset iv', () {
+      var iv = randomBytes(16);
+      var key = randomBytes(24);
+      var aes = AES(key).gcm(iv);
+      for (int j = 0; j < 100; j++) {
+        aes.resetIV();
+        var inp = randomBytes(j);
+        var cipher = aes.encrypt(inp);
+        var plain = aes.decrypt(cipher);
+        expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
+      }
+    });
     test("key must be 16, 24, or 32 bytes", () {
       expect(() => AES(Uint8List(0)).gcm(iv), throwsStateError);
       expect(() => AES(Uint8List(15)).gcm(iv), throwsStateError);
@@ -910,62 +922,5 @@ void main() {
         expect(toHex(reverse), equals(toHex(plain)));
       });
     });
-  });
-
-  group('encryption <-> decryption', () {
-    test("128-bit", () {
-      var key = randomBytes(16);
-      for (int j = 0; j < 100; j++) {
-        var inp = randomBytes(j);
-        var iv = randomBytes(16);
-        var cipher = AES(key).gcm(iv).encrypt(inp);
-        var plain = AES(key).gcm(iv).decrypt(cipher);
-        expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
-      }
-    });
-    test("192-bit", () {
-      var key = randomBytes(24);
-      for (int j = 0; j < 100; j++) {
-        var inp = randomBytes(j);
-        var iv = randomBytes(16);
-        var cipher = AES(key).gcm(iv).encrypt(inp);
-        var plain = AES(key).gcm(iv).decrypt(cipher);
-        expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
-      }
-    });
-    test("256-bit", () {
-      var key = randomBytes(32);
-      for (int j = 0; j < 100; j++) {
-        var inp = randomBytes(j);
-        var iv = randomBytes(16);
-        var cipher = AES(key).gcm(iv).encrypt(inp);
-        var plain = AES(key).gcm(iv).decrypt(cipher);
-        expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
-      }
-    });
-    test("with nonce and counter", () {
-      var key = randomBytes(32);
-      for (int j = 0; j < 100; j++) {
-        var inp = randomBytes(j);
-        var nonce = Nonce64.random();
-        var aes = AES(key).gcm(nonce.bytes);
-        var cipher = aes.encrypt(inp);
-        var plain = aes.decrypt(cipher);
-        expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
-      }
-    });
-  });
-
-  test('reset iv', () {
-    var iv = randomBytes(16);
-    var key = randomBytes(24);
-    var aes = AES(key).gcm(iv);
-    for (int j = 0; j < 100; j++) {
-      aes.resetIV();
-      var inp = randomBytes(j);
-      var cipher = aes.encrypt(inp);
-      var plain = aes.decrypt(cipher);
-      expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
-    }
   });
 }

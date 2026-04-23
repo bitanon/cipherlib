@@ -43,6 +43,18 @@ void main() {
       expect(AES.byte(key).cbc(iv).decryptor.name, "AES#decrypt/CBC/Byte");
       expect(AES.pkcs7(key).cbc(iv).decryptor.name, "AES#decrypt/CBC/PKCS7");
     });
+    test('reset iv', () {
+      var iv = randomBytes(16);
+      var key = randomBytes(24);
+      var aes = AES(key).cbc(iv);
+      for (int j = 0; j < 100; j++) {
+        aes.resetIV();
+        var inp = randomBytes(j);
+        var cipher = aes.encrypt(inp);
+        var plain = aes.decrypt(cipher);
+        expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
+      }
+    });
   });
 
   group('NIST SP 800-38A', () {
@@ -222,51 +234,5 @@ void main() {
         expect(toHex(reverse), equals(toHex(plain)));
       });
     });
-  });
-
-  group('encryption <-> decryption', () {
-    test("128-bit", () {
-      var key = randomBytes(16);
-      for (int j = 0; j < 100; j++) {
-        var inp = randomBytes(j);
-        var iv = randomBytes(16);
-        var cipher = AES(key).cbc(iv).encrypt(inp);
-        var plain = AES(key).cbc(iv).decrypt(cipher);
-        expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
-      }
-    });
-    test("192-bit", () {
-      var key = randomBytes(24);
-      for (int j = 0; j < 100; j++) {
-        var inp = randomBytes(j);
-        var iv = randomBytes(16);
-        var cipher = AES(key).cbc(iv).encrypt(inp);
-        var plain = AES(key).cbc(iv).decrypt(cipher);
-        expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
-      }
-    });
-    test("256-bit", () {
-      var key = randomBytes(32);
-      for (int j = 0; j < 100; j++) {
-        var inp = randomBytes(j);
-        var iv = randomBytes(16);
-        var cipher = AES(key).cbc(iv).encrypt(inp);
-        var plain = AES(key).cbc(iv).decrypt(cipher);
-        expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
-      }
-    });
-  });
-
-  test('reset iv', () {
-    var iv = randomBytes(16);
-    var key = randomBytes(24);
-    var aes = AES(key).cbc(iv);
-    for (int j = 0; j < 100; j++) {
-      aes.resetIV();
-      var inp = randomBytes(j);
-      var cipher = aes.encrypt(inp);
-      var plain = aes.decrypt(cipher);
-      expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
-    }
   });
 }

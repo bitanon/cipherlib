@@ -1,191 +1,159 @@
-import 'dart:async';
-
 import 'package:cipherlib/cipherlib.dart';
 import 'package:cipherlib/codecs.dart';
 import 'package:cipherlib/random.dart';
 
 import 'assertions.dart';
 
-Future<void> runStreamIntegration() async {
-  xorApis();
-  await streamCipherStreams();
-  await streamCipherWithCounter();
-  await cipherBindMatchesConvert();
-  streamCipherBuffers();
-  chacha20ShortKey();
-  chacha20SixteenByteNonce();
-  salsa20LongNonce();
+void runStreamIntegration() {
+  chacha20Variants();
+  xchacha20Variants();
+  salsa20Variants();
+  xsalsa20Variants();
+  resetIvBehaviors();
+  xorRoundTrip();
 }
 
-void xorApis() {
-  print('----- XOR -----');
-  final key = randomBytes(11);
-  final msg = toUtf8('stream xor demo');
-  final ct = xor(msg, key);
-  if (!bytesEq(XOR(key).convert(msg), ct)) {
-    throw StateError('XOR class vs top-level xor mismatch');
-  }
-  final pt = xor(ct, key);
-  if (!bytesEq(pt, msg)) {
-    throw StateError('XOR round-trip failed');
-  }
-  print('  round-trip: ok');
-  print('');
-}
-
-Future<void> checkStream(Cipher cipher, List<int> message) async {
-  final direct = cipher.convert(message);
-  final out = await cipher
-      .stream(Stream<int>.fromIterable(message))
-      .fold<List<int>>(<int>[], (p, e) => p..add(e));
-  if (!bytesEq(out, direct)) {
-    throw StateError('${cipher.name} stream counter vs buffer mismatch');
-  }
-  print('  ${cipher.name}: ok');
-}
-
-Future<void> streamCipherStreams() async {
-  print('----- stream APIs (chunked) -----');
+void chacha20Variants() {
+  print('----- ChaCha20 variants -----');
+  const plain = 'stream cipher sample';
+  final payload = toUtf8(plain);
   final key = randomBytes(32);
-  final message = List<int>.generate(500, (i) => i & 255);
-  await checkStream(ChaCha20(key, randomBytes(12)), message);
-  await checkStream(XChaCha20(key, randomBytes(24)), message);
-  await checkStream(Salsa20(key, randomBytes(8)), message);
-  await checkStream(XSalsa20(key, randomBytes(24)), message);
-  print('');
-}
 
-/// Stream helpers honor Nonce64 counter (matches buffer API).
-Future<void> streamCipherWithCounter() async {
-  print('----- stream APIs + Nonce64 counter -----');
-  final key = randomBytes(32);
-  final ctr = Nonce64.int64(11);
-  final message = List<int>.generate(300, (i) => i & 255);
-  await checkStream(ChaCha20(key, randomBytes(12), ctr), message);
-  await checkStream(XChaCha20(key, randomBytes(24), ctr), message);
-  await checkStream(Salsa20(key, randomBytes(8), ctr), message);
-  await checkStream(XSalsa20(key, randomBytes(24), ctr), message);
-  print('');
-}
-
-/// `Cipher.bind` applies convert per chunk; one chunk equals convert.
-Future<void> cipherBindMatchesConvert() async {
-  print('----- Cipher.bind (matches convert for one chunk) -----');
-  final ck = randomBytes(32);
-  final cn = randomBytes(12);
-  final cha = ChaCha20(ck, cn);
-  final buf = List<int>.generate(120, (i) => i & 255);
-  final direct = cha.convert(buf);
-  final streamed = await cha
-      .bind(Stream<List<int>>.fromIterable([buf]))
-      .fold<List<int>>(<int>[], (a, b) => a..addAll(b));
-  if (!bytesEq(direct, streamed)) {
-    throw StateError('ChaCha20 bind diverged from convert');
-  }
-
-  final xk = randomBytes(11);
-  final xor = XOR(xk);
-  final xd = xor.convert(buf);
-  final xs = await xor
-      .bind(Stream<List<int>>.fromIterable([buf]))
-      .fold<List<int>>(<int>[], (a, b) => a..addAll(b));
-  if (!bytesEq(xd, xs)) {
-    throw StateError('XOR bind diverged from convert');
-  }
-  print('  ChaCha20 / XOR: ok');
-  print('');
-}
-
-void streamCipherBuffers() {
-  print('----- stream ciphers (buffer) + Nonce64 -----');
-  final msg = toUtf8('nonce counter demo');
-  final k32 = randomBytes(32);
-  final nCha = randomBytes(12);
+  final nonce8 = randomBytes(8);
+  final nonce12 = randomBytes(12);
+  final nonce16 = randomBytes(16);
   final ctr = Nonce64.int64(7);
 
-  final c1 = chacha20(msg, k32, nonce: nCha, counter: ctr);
-  final c2 = chacha20(c1, k32, nonce: nCha, counter: ctr);
-  if (!bytesEq(c2, msg)) {
-    throw StateError('ChaCha20 counter round-trip failed');
-  }
+  final c8 = chacha20(payload, key, nonce: nonce8, counter: ctr);
+  final p8 = chacha20(c8, key, nonce: nonce8, counter: ctr);
+  expectSameUtf8(p8, plain);
 
-  final xk = randomBytes(32);
-  final xn = randomBytes(24);
-  final x1 = xchacha20(msg, xk, nonce: xn);
-  final x2 = xchacha20(x1, xk, nonce: xn);
-  if (!bytesEq(x2, msg)) {
-    throw StateError('XChaCha20 round-trip failed');
-  }
+  final c12 = ChaCha20(key, nonce12, Nonce64.int32(3)).convert(payload);
+  final p12 = ChaCha20(key, nonce12, Nonce64.int32(3)).convert(c12);
+  expectSameUtf8(p12, plain);
 
-  final sk = randomBytes(32);
-  final sn = randomBytes(8);
-  final s1 = salsa20(msg, sk, nonce: sn);
-  final s2 = salsa20(s1, sk, nonce: sn);
-  if (!bytesEq(s2, msg)) {
-    throw StateError('Salsa20 round-trip failed');
-  }
+  final c16 = chacha20(payload, key, nonce: nonce16);
+  final p16 = chacha20(c16, key, nonce: nonce16);
+  expectSameUtf8(p16, plain);
 
-  final uxk = randomBytes(32);
-  final uxn = randomBytes(24);
-  final u1 = xsalsa20(msg, uxk, nonce: uxn);
-  final u2 = xsalsa20(u1, uxk, nonce: uxn);
-  if (!bytesEq(u2, msg)) {
-    throw StateError('XSalsa20 round-trip failed');
-  }
-  print('  symmetric encrypt/decrypt: ok');
+  print('  nonce 8/12/16 byte paths: ok');
   print('');
 }
 
-void chacha20ShortKey() {
-  print('----- ChaCha20 (128-bit key / 96-bit nonce) -----');
-  final msg = toUtf8('short key');
-  final key16 = randomBytes(16);
-  final nonce = randomBytes(12);
-  final c = chacha20(msg, key16, nonce: nonce);
-  final p = chacha20(c, key16, nonce: nonce);
-  if (!bytesEq(p, msg)) {
-    throw StateError('ChaCha20 128-bit key round-trip failed');
-  }
-  print('  round-trip: ok');
-  print('');
-
-  print('----- ChaCha20 (64-bit nonce) -----');
-  final msg8 = toUtf8('ietf compat');
+void xchacha20Variants() {
+  print('----- XChaCha20 variants -----');
+  const plain = 'xchacha stream sample';
+  final payload = toUtf8(plain);
   final key = randomBytes(32);
+  final ctr = Nonce64.int64(9);
+
+  final nonce24 = randomBytes(24);
+  final c24 = xchacha20(payload, key, nonce: nonce24, counter: ctr);
+  final p24 = xchacha20(c24, key, nonce: nonce24, counter: ctr);
+  expectSameUtf8(p24, plain);
+
+  final nonce28 = randomBytes(28);
+  final c28 = XChaCha20(key, nonce28, Nonce64.int32(11)).convert(payload);
+  final p28 = XChaCha20(key, nonce28, Nonce64.int32(11)).convert(c28);
+  expectSameUtf8(p28, plain);
+
+  final nonce32 = randomBytes(32);
+  final c32 = xchacha20(payload, key, nonce: nonce32);
+  final p32 = xchacha20(c32, key, nonce: nonce32);
+  expectSameUtf8(p32, plain);
+
+  print('  nonce 24/28/32 byte paths: ok');
+  print('');
+}
+
+void salsa20Variants() {
+  print('----- Salsa20 variants -----');
+  const plain = 'salsa stream sample';
+  final payload = toUtf8(plain);
+  final key = randomBytes(32);
+  final ctr = Nonce64.int64(13);
+
   final nonce8 = randomBytes(8);
-  final cx = chacha20(msg8, key, nonce: nonce8);
-  final px = chacha20(cx, key, nonce: nonce8);
-  if (!bytesEq(px, msg8)) {
-    throw StateError('ChaCha20 8-byte nonce round-trip failed');
-  }
-  print('  round-trip: ok');
-  print('');
-}
+  final c8 = salsa20(payload, key, nonce: nonce8, counter: ctr);
+  final p8 = salsa20(c8, key, nonce: nonce8, counter: ctr);
+  expectSameUtf8(p8, plain);
 
-void chacha20SixteenByteNonce() {
-  print('----- ChaCha20 (128-bit nonce, raw) -----');
-  final msg = toUtf8('raw 16 byte nonce');
-  final key = randomBytes(32);
   final nonce16 = randomBytes(16);
-  final c = chacha20(msg, key, nonce: nonce16);
-  final p = chacha20(c, key, nonce: nonce16);
-  if (!bytesEq(p, msg)) {
-    throw StateError('ChaCha20 16-byte nonce round-trip failed');
-  }
-  print('  round-trip: ok');
+  final c16 = Salsa20(key, nonce16).convert(payload);
+  final p16 = Salsa20(key, nonce16).convert(c16);
+  expectSameUtf8(p16, plain);
+
+  print('  nonce 8/16 byte paths: ok');
   print('');
 }
 
-void salsa20LongNonce() {
-  print('----- Salsa20 (128-bit nonce) -----');
-  final msg = toUtf8('wide nonce');
+void xsalsa20Variants() {
+  print('----- XSalsa20 variants -----');
+  const plain = 'xsalsa stream sample';
+  final payload = toUtf8(plain);
   final key = randomBytes(32);
-  final nonce = randomBytes(16);
-  final c = salsa20(msg, key, nonce: nonce);
-  final p = salsa20(c, key, nonce: nonce);
-  if (!bytesEq(p, msg)) {
-    throw StateError('Salsa20 16-byte nonce round-trip failed');
+  final ctr = Nonce64.int64(17);
+
+  final nonce24 = randomBytes(24);
+  final c24 = xsalsa20(payload, key, nonce: nonce24, counter: ctr);
+  final p24 = xsalsa20(c24, key, nonce: nonce24, counter: ctr);
+  expectSameUtf8(p24, plain);
+
+  final nonce32 = randomBytes(32);
+  final c32 = XSalsa20(key, nonce32).convert(payload);
+  final p32 = XSalsa20(key, nonce32).convert(c32);
+  expectSameUtf8(p32, plain);
+
+  print('  nonce 24/32 byte paths: ok');
+  print('');
+}
+
+void resetIvBehaviors() {
+  print('----- Salted cipher resetIV -----');
+  final msg = toUtf8('same payload');
+
+  final chacha = ChaCha20(randomBytes(32), randomBytes(12));
+  final out1 = chacha.convert(msg);
+  chacha.resetIV();
+  final out2 = chacha.convert(msg);
+  if (bytesEq(out1, out2)) {
+    throw StateError('ChaCha20.resetIV expected a different output');
   }
-  print('  round-trip: ok');
+
+  final xsalsa = XSalsa20(randomBytes(32), randomBytes(24)).poly1305();
+  final sealed1 = xsalsa.sign(msg);
+  xsalsa.resetIV();
+  final sealed2 = xsalsa.sign(msg);
+  if (bytesEq(sealed1.mac.bytes, sealed2.mac.bytes)) {
+    throw StateError('XSalsa20Poly1305.resetIV expected a different tag');
+  }
+
+  print('  ChaCha20 / XSalsa20-Poly1305: ok');
+  print('');
+}
+
+void xorRoundTrip() {
+  print('----- XOR helper + class -----');
+  final key = toUtf8('xor-key');
+  final plain = toUtf8('XOR integration');
+
+  final helperOut = xor(plain, key);
+  final helperBack = xor(helperOut, key);
+  if (!bytesEq(helperBack, plain)) {
+    throw StateError('xor helper round-trip mismatch');
+  }
+
+  final cipher = XOR(key);
+  final classOut = cipher.convert(plain);
+  final classBack = cipher.convert(classOut);
+  if (!bytesEq(classBack, plain)) {
+    throw StateError('XOR class round-trip mismatch');
+  }
+
+  if (!bytesEq(helperOut, classOut)) {
+    throw StateError('xor helper and XOR class output mismatch');
+  }
+
+  print('  helper/class round-trip parity: ok');
   print('');
 }

@@ -1,13 +1,10 @@
 // Copyright (c) 2024, Sudipto Chandra
 // All rights reserved. Check LICENSE file for details.
 
-import 'dart:async' show Stream, StreamTransformer;
 import 'dart:convert' show Encoding;
 import 'dart:typed_data' show Uint8List;
 
 import 'package:hashlib/random.dart' show fillRandom;
-
-import '../utils/chunk_stream.dart';
 
 /// Template for all Cipher algorithms in this package
 abstract class CipherBase {
@@ -19,30 +16,31 @@ abstract class CipherBase {
 
 /// Template for Cipher algorithm that uses the same logic for
 /// both encryption and decryption.
-abstract class Cipher
-    implements CipherBase, StreamTransformer<List<int>, Uint8List> {
+abstract class Cipher implements CipherBase {
+  // TODO: StreamTransformer<List<int>, Uint8List>
   const Cipher();
 
   /// Transforms the [message].
   Uint8List convert(List<int> message);
 
-  @override
-  Stream<Uint8List> bind(Stream<List<int>> stream) => stream.map(convert);
+  // TODO: Disable StreamTransformer support for now
+  // @override
+  // Stream<Uint8List> bind(Stream<List<int>> stream) => stream.map(convert);
 
-  @override
-  StreamTransformer<RS, RT> cast<RS, RT>() {
-    throw UnsupportedError('StreamCipherBase does not allow casting');
-  }
+  // @override
+  // StreamTransformer<RS, RT> cast<RS, RT>() {
+  //   throw UnsupportedError('StreamCipherBase does not allow casting');
+  // }
 
-  /// Transforms the [stream]
-  Stream<int> stream(Stream<int> stream, [int chunkSize = 1024]) async* {
-    final chunk = asChunkedStream(chunkSize, stream);
-    await for (var data in bind(chunk)) {
-      for (var byte in data) {
-        yield byte;
-      }
-    }
-  }
+  // /// Transforms the [stream]
+  // Stream<int> stream(Stream<int> stream, [int chunkSize = 1024]) async* {
+  //   final chunk = asChunkedStream(chunkSize, stream);
+  //   await for (var data in bind(chunk)) {
+  //     for (var byte in data) {
+  //       yield byte;
+  //     }
+  //   }
+  // }
 }
 
 /// Mixin to use a random initialization vector or salt with the Cipher

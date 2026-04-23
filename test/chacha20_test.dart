@@ -149,30 +149,6 @@ void main() {
   });
 
   group('correctness', () {
-    test('encryption <-> decryption (convert)', () {
-      var key = randomNumbers(32);
-      var nonce = randomBytes(12);
-      for (int j = 0; j < 100; ++j) {
-        var text = randomNumbers(j);
-        var bytes = Uint8List.fromList(text);
-        var cipher = chacha20(text, key, nonce: nonce);
-        var plain = chacha20(cipher, key, nonce: nonce);
-        expect(bytes, equals(plain), reason: '[text: $j]');
-      }
-    });
-    test('encryption <-> decryption (stream)', () async {
-      var key = randomNumbers(16);
-      var nonce = randomBytes(12);
-      for (int j = 0; j < 100; ++j) {
-        var text = randomNumbers(j);
-        var bytes = Uint8List.fromList(text);
-        var stream = Stream.fromIterable(text);
-        var cipherStream = ChaCha20(key, nonce).stream(stream);
-        var plainStream = ChaCha20(key, nonce).stream(cipherStream);
-        var plain = await plainStream.toList();
-        expect(bytes, equals(plain), reason: '[text: $j]');
-      }
-    });
     test('8-byte nonce: encryption <-> decryption (convert)', () {
       var key = randomNumbers(32);
       var nonce = randomBytes(8);

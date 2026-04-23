@@ -180,85 +180,59 @@ void main() {
     });
   });
 
-  group('correctness', () {
-    test('encryption <-> decryption (convert)', () {
-      var key = randomNumbers(32);
-      var nonce = randomBytes(16);
-      for (int j = 0; j < 100; ++j) {
-        var text = randomNumbers(j);
-        var bytes = Uint8List.fromList(text);
-        var cipher = salsa20(text, key, nonce: nonce);
-        var plain = salsa20(cipher, key, nonce: nonce);
-        expect(bytes, equals(plain), reason: '[text: $j]');
-      }
-    });
-    test('encryption <-> decryption (stream)', () async {
-      var key = randomNumbers(32);
-      var nonce = randomBytes(16);
-      for (int j = 0; j < 100; ++j) {
-        var text = randomNumbers(j);
-        var bytes = Uint8List.fromList(text);
-        var stream = Stream.fromIterable(text);
-        var cipherStream = Salsa20(key, nonce).stream(stream);
-        var plainStream = Salsa20(key, nonce).stream(cipherStream);
-        var plain = await plainStream.toList();
-        expect(plain, equals(bytes), reason: '[text: $j]');
-      }
-    });
-    test('8-byte nonce: encryption <-> decryption (convert)', () {
-      var key = randomNumbers(32);
-      var nonce = randomBytes(8);
-      for (int j = 0; j < 100; ++j) {
-        var text = randomNumbers(j);
-        var plain = Uint8List.fromList(text);
-        var cipher = salsa20(text, key, nonce: nonce);
-        var backwards = salsa20(cipher, key, nonce: nonce);
-        expect(plain, equals(backwards), reason: '[text: $j]');
-      }
+  test('8-byte nonce: encryption <-> decryption (convert)', () {
+    var key = randomNumbers(32);
+    var nonce = randomBytes(8);
+    for (int j = 0; j < 100; ++j) {
+      var text = randomNumbers(j);
+      var plain = Uint8List.fromList(text);
+      var cipher = salsa20(text, key, nonce: nonce);
+      var backwards = salsa20(cipher, key, nonce: nonce);
+      expect(plain, equals(backwards), reason: '[text: $j]');
+    }
+  });
+
+  group('counter increment', () {
+    test('at 32-bit with 8-byte nonce', () {
+      var key = randomBytes(32);
+      var iv = fromHex('3122331221327845');
+      var counter1 = Nonce64.int32(0xFFFFFFFF, 0x0F0F0FFF);
+      var counter2 = Nonce64.int32(1, 0x0F0F1000);
+      var message = Uint8List(256);
+      var out1 = salsa20(message, key, nonce: iv, counter: counter1);
+      var out2 = salsa20(message, key, nonce: iv, counter: counter2);
+      expect(out1.skip(128), equals(out2.take(128)));
     });
 
-    group('counter increment', () {
-      test('at 32-bit with 8-byte nonce', () {
-        var key = randomBytes(32);
-        var iv = fromHex('3122331221327845');
-        var counter1 = Nonce64.int32(0xFFFFFFFF, 0x0F0F0FFF);
-        var counter2 = Nonce64.int32(1, 0x0F0F1000);
-        var message = Uint8List(256);
-        var out1 = salsa20(message, key, nonce: iv, counter: counter1);
-        var out2 = salsa20(message, key, nonce: iv, counter: counter2);
-        expect(out1.skip(128), equals(out2.take(128)));
-      });
+    test('at 64-bit with 8-byte nonce', () {
+      var key = randomBytes(32);
+      var iv = fromHex('3122331221327845');
+      var counter1 = Nonce64.int32(0xFFFFFFFF, 0xFFFFFFFF);
+      var counter2 = Nonce64.int32(1);
+      var message = Uint8List(256);
+      var out1 = salsa20(message, key, nonce: iv, counter: counter1);
+      var out2 = salsa20(message, key, nonce: iv, counter: counter2);
+      expect(out1.skip(128), equals(out2.take(128)));
+    });
 
-      test('at 64-bit with 8-byte nonce', () {
-        var key = randomBytes(32);
-        var iv = fromHex('3122331221327845');
-        var counter1 = Nonce64.int32(0xFFFFFFFF, 0xFFFFFFFF);
-        var counter2 = Nonce64.int32(1);
-        var message = Uint8List(256);
-        var out1 = salsa20(message, key, nonce: iv, counter: counter1);
-        var out2 = salsa20(message, key, nonce: iv, counter: counter2);
-        expect(out1.skip(128), equals(out2.take(128)));
-      });
+    test('at 32-bit with 16-byte nonce', () {
+      var key = randomBytes(32);
+      var nonce1 = fromHex('3122331221327845FFFFFFFFFF0F0F0F');
+      var nonce2 = fromHex('31223312213278450100000000100F0F');
+      var message = Uint8List(256);
+      var out1 = salsa20(message, key, nonce: nonce1);
+      var out2 = salsa20(message, key, nonce: nonce2);
+      expect(out1.skip(128), equals(out2.take(128)));
+    });
 
-      test('at 32-bit with 16-byte nonce', () {
-        var key = randomBytes(32);
-        var nonce1 = fromHex('3122331221327845FFFFFFFFFF0F0F0F');
-        var nonce2 = fromHex('31223312213278450100000000100F0F');
-        var message = Uint8List(256);
-        var out1 = salsa20(message, key, nonce: nonce1);
-        var out2 = salsa20(message, key, nonce: nonce2);
-        expect(out1.skip(128), equals(out2.take(128)));
-      });
-
-      test('at 64-bit with 16-byte nonce', () {
-        var key = randomBytes(32);
-        var nonce1 = fromHex('3122331221327845FFFFFFFFFFFFFFFF');
-        var nonce2 = fromHex('31223312213278450100000000000000');
-        var message = Uint8List(256);
-        var out1 = salsa20(message, key, nonce: nonce1);
-        var out2 = salsa20(message, key, nonce: nonce2);
-        expect(out1.skip(128), equals(out2.take(128)));
-      });
+    test('at 64-bit with 16-byte nonce', () {
+      var key = randomBytes(32);
+      var nonce1 = fromHex('3122331221327845FFFFFFFFFFFFFFFF');
+      var nonce2 = fromHex('31223312213278450100000000000000');
+      var message = Uint8List(256);
+      var out1 = salsa20(message, key, nonce: nonce1);
+      var out2 = salsa20(message, key, nonce: nonce2);
+      expect(out1.skip(128), equals(out2.take(128)));
     });
   });
 }

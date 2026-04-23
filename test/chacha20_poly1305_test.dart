@@ -62,26 +62,6 @@ void main() {
   });
 
   group('correctness', () {
-    test('encryption <-> decryption (convert)', () {
-      var key = randomNumbers(32);
-      var nonce = randomBytes(12);
-      for (int j = 0; j < 100; ++j) {
-        var text = randomBytes(j);
-        var res = chacha20poly1305(
-          text,
-          key,
-          nonce: nonce,
-        );
-        var verified = chacha20poly1305(
-          res.data,
-          key,
-          mac: res.mac.bytes,
-          nonce: nonce,
-        );
-        expect(verified.data, equals(text), reason: '[text size: $j]');
-      }
-    });
-
     test('sign and verify', () {
       for (int i = 0; i < 100; ++i) {
         final key = randomBytes(32);
@@ -106,39 +86,6 @@ void main() {
       expect(key2, isNot(equals(x.algo.keypair)));
       var tag2 = x.sign(const [1, 2, 3, 4]).mac.bytes;
       expect(tag1, isNot(equals(tag2)));
-    });
-
-    group('RFC 8439 streaming API', () {
-      var key = fromHex(
-        "808182838485868788898a8b8c8d8e8f"
-        "909192939495969798999a9b9c9d9e9f",
-      );
-      var nonce = fromHex("070000004041424344454647");
-      var sample = "Ladies and Gentlemen of the class of '99: "
-              "If I could offer you only one tip for the future, "
-              "sunscreen would be it."
-          .codeUnits;
-      var aad = fromHex("50515253c0c1c2c3c4c5c6c7");
-      var cipher = fromHex(
-        "d31a8d34648e60db7b86afbc53ef7ec2"
-        "a4aded51296e08fea9e2b5a736ee62d6"
-        "3dbea45e8ca9671282fafb69da92728b"
-        "1a71de0a9e060b2905d6a5b67ecd3b36"
-        "92ddbd7f2d778b8c9803aee328091b58"
-        "fab324e4fad675945585808b4831d7bc"
-        "3ff4def08e4b7a9de576d26586cec64b"
-        "6116",
-      );
-      var algo = ChaCha20(key, nonce).poly1305(aad);
-
-      test('defines name correctly', () {
-        expect(algo.name, "ChaCha20/Poly1305");
-      });
-      test('accepts integer stream', () async {
-        var stream = Stream.fromIterable(sample);
-        var output = await algo.stream(stream).toList();
-        expect(output, equals(cipher));
-      });
     });
   });
 

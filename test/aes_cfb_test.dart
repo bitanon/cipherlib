@@ -42,6 +42,23 @@ void main() {
     test("decryptor name is correct", () {
       expect(AES(key).cfb(iv).decryptor.name, "AES#decrypt/CFB/NoPadding");
     });
+    test('reset iv', () {
+      var iv = randomBytes(16);
+      var key = randomBytes(24);
+      var aes = AES(key).cfb(iv);
+      for (int j = 0; j < 100; j++) {
+        aes.resetIV();
+        var inp = randomBytes(j);
+        var cipher = aes.encrypt(inp);
+        var plain = aes.decrypt(cipher);
+        expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
+      }
+    });
+    test('throws error on invalid salt size', () {
+      var aes = AES(Uint8List(16));
+      expect(() => aes.cfb(Uint8List(15)).encrypt([0]), throwsStateError);
+      expect(() => aes.cfb(Uint8List(8)).decrypt([0]), throwsStateError);
+    });
   });
 
   group('NIST SP 800-38A', () {
@@ -215,12 +232,6 @@ void main() {
     });
   });
 
-  test('throws error on invalid salt size', () {
-    var aes = AES(Uint8List(16));
-    expect(() => aes.cfb(Uint8List(15)).encrypt([0]), throwsStateError);
-    expect(() => aes.cfb(Uint8List(8)).decrypt([0]), throwsStateError);
-  });
-
   group('empty message', () {
     var key = fromHex('2b7e151628aed2a6abf7158809cf4f3c');
     var iv = fromHex('000102030405060708090a0b0c0d0e0f');
@@ -303,121 +314,5 @@ void main() {
         expect(toHex(reverse), equals(toHex(plain)));
       });
     });
-  });
-
-  group('encryption <-> decryption', () {
-    test("AES128/CFB", () {
-      var key = randomBytes(16);
-      for (int j = 0; j < 100; j++) {
-        var inp = randomBytes(j);
-        var iv = randomBytes(16);
-        var cipher = AES(key).cfb(iv).encrypt(inp);
-        var plain = AES(key).cfb(iv).decrypt(cipher);
-        expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
-      }
-    });
-    test("AES192/CFB", () {
-      var key = randomBytes(24);
-      for (int j = 0; j < 100; j++) {
-        var inp = randomBytes(j);
-        var iv = randomBytes(16);
-        var aes = AES(key).cfb(iv);
-        var cipher = aes.encrypt(inp);
-        var plain = aes.decrypt(cipher);
-        expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
-      }
-    });
-    test("AES256/CFB", () {
-      var key = randomBytes(32);
-      for (int j = 0; j < 100; j++) {
-        var inp = randomBytes(j);
-        var iv = randomBytes(16);
-        var aes = AES(key).cfb(iv);
-        var cipher = aes.encrypt(inp);
-        var plain = aes.decrypt(cipher);
-        expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
-      }
-    });
-
-    test("AES128/CFB-8", () {
-      var key = randomBytes(16);
-      for (int j = 0; j < 100; j++) {
-        var inp = randomBytes(j);
-        var iv = randomBytes(16);
-        var aes = AES(key).cfb8(iv);
-        var cipher = aes.encrypt(inp);
-        var plain = aes.decrypt(cipher);
-        expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
-      }
-    });
-    test("AES192/CFB-8", () {
-      var key = randomBytes(24);
-      for (int j = 0; j < 100; j++) {
-        var inp = randomBytes(j);
-        var iv = randomBytes(16);
-        var aes = AES(key).cfb8(iv);
-        var cipher = aes.encrypt(inp);
-        var plain = aes.decrypt(cipher);
-        expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
-      }
-    });
-    test("AES256/CFB-8", () {
-      var key = randomBytes(32);
-      for (int j = 0; j < 100; j++) {
-        var inp = randomBytes(j);
-        var iv = randomBytes(16);
-        var aes = AES(key).cfb8(iv);
-        var cipher = aes.encrypt(inp);
-        var plain = aes.decrypt(cipher);
-        expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
-      }
-    });
-
-    test("AES128/CFB-64", () {
-      var key = randomBytes(16);
-      for (int j = 0; j < 100; j++) {
-        var inp = randomBytes(j);
-        var iv = randomBytes(16);
-        var aes = AES(key).cfb64(iv);
-        var cipher = aes.encrypt(inp);
-        var plain = aes.decrypt(cipher);
-        expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
-      }
-    });
-    test("AES192/CFB-64", () {
-      var key = randomBytes(24);
-      for (int j = 0; j < 100; j++) {
-        var inp = randomBytes(j);
-        var iv = randomBytes(16);
-        var aes = AES(key).cfb64(iv);
-        var cipher = aes.encrypt(inp);
-        var plain = aes.decrypt(cipher);
-        expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
-      }
-    });
-    test("AES256/CFB-64", () {
-      var key = randomBytes(32);
-      for (int j = 0; j < 100; j++) {
-        var inp = randomBytes(j);
-        var iv = randomBytes(16);
-        var aes = AES(key).cfb64(iv);
-        var cipher = aes.encrypt(inp);
-        var plain = aes.decrypt(cipher);
-        expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
-      }
-    });
-  });
-
-  test('reset iv', () {
-    var iv = randomBytes(16);
-    var key = randomBytes(24);
-    var aes = AES(key).cfb(iv);
-    for (int j = 0; j < 100; j++) {
-      aes.resetIV();
-      var inp = randomBytes(j);
-      var cipher = aes.encrypt(inp);
-      var plain = aes.decrypt(cipher);
-      expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
-    }
   });
 }

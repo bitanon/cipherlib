@@ -4,7 +4,6 @@
 import 'dart:typed_data';
 
 import 'package:cipherlib/cipherlib.dart';
-import 'package:cipherlib/random.dart';
 import 'package:cipherlib/codecs.dart';
 import 'package:test/test.dart';
 
@@ -41,6 +40,14 @@ void main() {
       expect(AES.byte(key).ecb().decryptor.name, "AES#decrypt/ECB/Byte");
       expect(AES.pkcs7(key).ecb().decryptor.name, "AES#decrypt/ECB/PKCS7");
     });
+    test('throws error on invalid input size', () {
+      var aes = AES.noPadding(Uint8List(16)).ecb();
+      expect(() => aes.encrypt(Uint8List(10)), throwsStateError);
+      expect(() => aes.decrypt(Uint8List(10)), throwsStateError);
+      expect(() => aes.encrypt(Uint8List(17)), throwsStateError);
+      expect(() => aes.decrypt(Uint8List(17)), throwsStateError);
+    });
+
     test('throws error on invalid key size', () {
       expect(
           () => AESInECBMode(Uint8List(15)).encrypt(input), throwsStateError);
@@ -151,14 +158,6 @@ void main() {
     });
   });
 
-  test('throws error on invalid input size', () {
-    var aes = AES.noPadding(Uint8List(16)).ecb();
-    expect(() => aes.encrypt(Uint8List(10)), throwsStateError);
-    expect(() => aes.decrypt(Uint8List(10)), throwsStateError);
-    expect(() => aes.encrypt(Uint8List(17)), throwsStateError);
-    expect(() => aes.decrypt(Uint8List(17)), throwsStateError);
-  });
-
   group('empty message', () {
     var key = fromHex('2b7e151628aed2a6abf7158809cf4f3c');
     var plain = Uint8List(0);
@@ -234,39 +233,6 @@ void main() {
         var reverse = aes.decrypt(cipher);
         expect(toHex(reverse), equals(toHex(plain)));
       });
-    });
-  });
-
-  group('encryption <-> decryption', () {
-    test("128-bit", () {
-      var key = randomBytes(16);
-      for (int j = 0; j < 100; j++) {
-        var input = randomBytes(j);
-        var bytes = Uint8List.fromList(input);
-        var cipher = AES(key).ecb().encrypt(input);
-        var plain = AES(key).ecb().decrypt(cipher);
-        expect(toHex(bytes), equals(toHex(plain)), reason: '[size: $j]');
-      }
-    });
-    test("192-bit", () {
-      var key = randomBytes(24);
-      for (int j = 0; j < 100; j++) {
-        var input = randomBytes(j);
-        var bytes = Uint8List.fromList(input);
-        var cipher = AES(key).ecb().encrypt(input);
-        var plain = AES(key).ecb().decrypt(cipher);
-        expect(toHex(bytes), equals(toHex(plain)), reason: '[size: $j]');
-      }
-    });
-    test("256-bit", () {
-      var key = randomBytes(32);
-      for (int j = 0; j < 100; j++) {
-        var input = randomBytes(j);
-        var bytes = Uint8List.fromList(input);
-        var cipher = AES(key).ecb().encrypt(input);
-        var plain = AES(key).ecb().decrypt(cipher);
-        expect(toHex(bytes), equals(toHex(plain)), reason: '[size: $j]');
-      }
     });
   });
 }

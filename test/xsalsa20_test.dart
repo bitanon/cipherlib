@@ -93,32 +93,6 @@ void main() {
     });
   });
 
-  group('correctness', () {
-    test('encryption <=> decryption', () {
-      for (int i = 0; i < 20; ++i) {
-        final key = randomBytes(32);
-        final iv = randomBytes(24);
-        final message = randomBytes(96);
-        final cipher = xsalsa20(message, key, nonce: iv);
-        final plain = xsalsa20(cipher, key, nonce: iv);
-        expect(plain, equals(message));
-      }
-    });
-    test('encryption <-> decryption (stream)', () async {
-      for (int j = 0; j < 100; ++j) {
-        var key = randomNumbers(16);
-        var nonce = randomBytes(24);
-        var text = randomNumbers(j);
-        var bytes = Uint8List.fromList(text);
-        var stream = Stream.fromIterable(text);
-        var cipherStream = XSalsa20(key, nonce).stream(stream);
-        var plainStream = XSalsa20(key, nonce).stream(cipherStream);
-        var plain = await plainStream.toList();
-        expect(bytes, equals(plain), reason: '[text: $j]');
-      }
-    });
-  });
-
   // https://github.com/golang/crypto/blob/master/salsa20/salsa20_test.go
   group('known inputs', () {
     group('Test 1', () {

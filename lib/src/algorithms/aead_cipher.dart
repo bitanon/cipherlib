@@ -1,7 +1,6 @@
 // Copyright (c) 2024, Sudipto Chandra
 // All rights reserved. Check LICENSE file for details.
 
-import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:hashlib/hashlib.dart' show HashDigest, MACHashBase;
@@ -76,20 +75,21 @@ class AEADCipher<C extends Cipher, M extends MACHashBase> implements Cipher {
   @pragma('vm:prefer-inline')
   Uint8List convert(List<int> message) => cipher.convert(message);
 
-  @override
-  @pragma('vm:prefer-inline')
-  Stream<Uint8List> bind(Stream<List<int>> stream) =>
-      stream.map(cipher.convert);
+  // TODO: Disable StreamTransformer for now
+  // @override
+  // @pragma('vm:prefer-inline')
+  // Stream<Uint8List> bind(Stream<List<int>> stream) =>
+  //     stream.map(cipher.convert);
 
-  @override
-  @pragma('vm:prefer-inline')
-  Stream<int> stream(Stream<int> stream, [int chunkSize = 1024]) =>
-      cipher.stream(stream, chunkSize);
+  // @override
+  // @pragma('vm:prefer-inline')
+  // Stream<int> stream(Stream<int> stream, [int chunkSize = 1024]) =>
+  //     cipher.stream(stream, chunkSize);
 
-  @override
-  StreamTransformer<RS, RT> cast<RS, RT>() {
-    throw UnsupportedError('AEADCipher does not allow casting');
-  }
+  // @override
+  // StreamTransformer<RS, RT> cast<RS, RT>() {
+  //   throw UnsupportedError('AEADCipher does not allow casting');
+  // }
 
   /// Generates a message authentication code for the [data].
   HashDigest $mac(List<int> data) {

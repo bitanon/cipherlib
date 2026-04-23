@@ -3,11 +3,11 @@
 
 // ignore_for_file: always_declare_return_types
 
-import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
-import 'package:test/test.dart';
+
 import 'package:cipherlib/cipherlib.dart';
+import 'package:test/test.dart';
 
 // Concrete implementation of CipherBase for testing
 class TestCipherBase extends CipherBase {
@@ -69,62 +69,13 @@ void main() {
     });
   });
 
-  group('correctness', () {
-    group('StreamCipherBase', () {
-      test('bind transforms stream correctly', () async {
-        final cipher = TestCipher();
-        final input = [
-          [1, 2, 3],
-          [4, 5, 6],
-        ];
-        final expected =
-            input.map((e) => e.map((e) => e + 1).toList()).toList();
-        final inputStream = Stream.fromIterable(input);
-        final resultStream = cipher.bind(inputStream);
-        final result = await resultStream.toList();
-        expect(result, equals(expected));
-      });
-
-      test('cast method should cast StreamTransformer correctly', () {
-        final cipher = TestCipher();
-        expect(() => cipher.cast<String, String>(), throwsUnsupportedError);
-      });
-    });
-
-    group('Cipher Tests', () {
-      test('convert transforms message correctly', () {
-        final cipher = TestCipher();
-        expect(cipher.name, 'TestCipher');
-        final message = [1, 2, 3, 4, 5, 6];
-        final result = cipher.convert(message);
-        expect(result, Uint8List.fromList([2, 3, 4, 5, 6, 7]));
-      });
-
-      test('bind with empty stream yields no output', () async {
-        final cipher = TestCipher();
-        final inputStream = Stream<List<int>>.empty();
-        final resultStream = cipher.bind(inputStream);
-        final result = await resultStream.toList();
-        expect(result, []);
-      });
-
-      test('stream with empty stream returns empty list', () async {
-        final cipher = TestCipher();
-        final inputStream = Stream<int>.empty();
-        final resultStream = cipher.stream(inputStream);
-        final result = await resultStream.toList();
-        expect(result, []);
-      });
-
-      test('stream transforms stream of integers correctly', () async {
-        final cipher = TestCipher();
-        final input = List.generate(2500, (index) => index % 256);
-        final outout = List.generate(2500, (index) => (index + 1) % 256);
-        final inputStream = Stream.fromIterable(input);
-        final resultStream = cipher.stream(inputStream);
-        final result = await resultStream.toList();
-        expect(result, equals(outout));
-      });
+  group('Cipher Tests', () {
+    test('convert transforms message correctly', () {
+      final cipher = TestCipher();
+      expect(cipher.name, 'TestCipher');
+      final message = [1, 2, 3, 4, 5, 6];
+      final result = cipher.convert(message);
+      expect(result, Uint8List.fromList([2, 3, 4, 5, 6, 7]));
     });
 
     group('SaltedCipher Tests', () {
@@ -179,20 +130,6 @@ void main() {
       test('decrypt method should decrypt data correctly', () {
         final message = [2, 3, 4];
         final decrypted = cipher.decrypt(message);
-        expect(decrypted, [3, 4, 5]);
-      });
-
-      test('encryptStream method should encrypt stream correctly', () async {
-        final stream = Stream.fromIterable([1, 2, 3]);
-        final encryptedStream = cipher.encryptor.stream(stream);
-        final encrypted = await encryptedStream.toList();
-        expect(encrypted, [2, 3, 4]);
-      });
-
-      test('decryptStream method should decrypt stream correctly', () async {
-        final stream = Stream.fromIterable([2, 3, 4]);
-        final decryptedStream = cipher.decryptor.stream(stream);
-        final decrypted = await decryptedStream.toList();
         expect(decrypted, [3, 4, 5]);
       });
 
