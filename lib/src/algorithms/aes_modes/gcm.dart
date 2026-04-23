@@ -440,10 +440,8 @@ class AESInGCMMode extends CollateCipher with SaltedCipher {
     Iterable<int>? aad,
     int tagSize = 16,
   }) {
-    if (tagSize < 1) {
-      throw StateError('Tag size must be at least 1');
-    } else if (tagSize > 16) {
-      throw StateError('Tag size must be at most 16');
+    if (tagSize < 1 || tagSize > 16) {
+      throw StateError('Tag size must be between 1 and 16');
     }
 
     final key8 = toUint8List(key);

@@ -258,6 +258,9 @@ class AESInIGEMode extends CollateCipher with SaltedCipher {
     List<int>? iv,
     Padding padding = Padding.pkcs7,
   }) {
+    if (key.length != 16 && key.length != 24 && key.length != 32) {
+      throw StateError('Key must be 16, 24, or 32 bytes');
+    }
     iv ??= randomBytes(32);
     if (iv.length != 16 && iv.length != 32) {
       throw StateError('IV must be 16 or 32-bytes');

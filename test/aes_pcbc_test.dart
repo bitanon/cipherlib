@@ -4,8 +4,8 @@
 import 'dart:typed_data';
 
 import 'package:cipherlib/cipherlib.dart';
-import 'package:cipherlib/random.dart';
 import 'package:cipherlib/codecs.dart';
+import 'package:cipherlib/random.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -54,6 +54,11 @@ void main() {
       expect(() => aes.pcbc(Uint8List(15)).encrypt([0]), throwsStateError);
       expect(() => aes.pcbc(Uint8List(8)).decrypt([0]), throwsStateError);
       expect(aes.pcbc(Uint8List(16)).encrypt([]).length, 16);
+    });
+    test('no padding returns exact block length', () {
+      final plain = Uint8List.fromList(List<int>.generate(16, (i) => i));
+      final out = AES.noPadding(key).pcbc(iv).encrypt(plain);
+      expect(out.length, equals(16));
     });
   });
 

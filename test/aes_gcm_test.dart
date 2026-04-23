@@ -1,8 +1,8 @@
 // Copyright (c) 2024, Sudipto Chandra
 // All rights reserved. Check LICENSE file for details.
 
-import 'dart:typed_data';
 import 'dart:collection';
+import 'dart:typed_data';
 
 import 'package:cipherlib/cipherlib.dart';
 import 'package:cipherlib/codecs.dart';
@@ -88,6 +88,14 @@ void main() {
 
       expect(() => cipher.decrypt(wrapped), throwsStateError);
       expect(wrapped.tagReads, equals(16));
+    });
+    test('core counter increment propagates carry to highest byte', () {
+      final core =
+          AESInGCMModeCipherCore(Uint8List(16), Uint8List(12), null, 16);
+      core.initialize();
+      core.counter.setRange(12, 16, const [0xFF, 0xFF, 0xFF, 0xFF]);
+      final out = core.encrypt(Uint8List(16));
+      expect(out.length, equals(32));
     });
   });
 

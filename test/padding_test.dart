@@ -25,6 +25,11 @@ void main() {
       expect(() => Padding.none.unpad(Uint8List(5), -1), throwsStateError);
       expect(() => Padding.none.unpad(Uint8List(5), 6), throwsStateError);
     });
+
+    test('getPadLength is always zero', () {
+      expect(Padding.none.getPadLength(Uint8List(0)), equals(0));
+      expect(Padding.none.getPadLength(Uint8List(4), 2), equals(0));
+    });
   });
 
   group('PaddingScheme.zero', () {
@@ -47,6 +52,8 @@ void main() {
       expect(() => Padding.zero.pad(Uint8List(5), -1), throwsStateError);
       expect(() => Padding.zero.pad(Uint8List(5), 5), throwsStateError);
       expect(() => Padding.zero.pad(Uint8List(5), 6), throwsStateError);
+      expect(() => Padding.zero.pad(Uint8List(5), 0, -1), throwsStateError);
+      expect(() => Padding.zero.pad(Uint8List(5), 0, 6), throwsStateError);
     });
 
     test('can pad without the size parameter', () {
@@ -175,6 +182,11 @@ void main() {
       expect(() => Padding.ansi.getPadLength(block), throwsStateError);
     });
 
+    test('throws when size is zero', () {
+      expect(
+          () => Padding.ansi.getPadLength(Uint8List(0), 0), throwsStateError);
+    });
+
     test('throws when padding bytes are not valid', () {
       var block = Uint8List.fromList([0xFF, 0xFF, 0xFF, 0, 3]);
       expect(() => Padding.ansi.getPadLength(block), throwsStateError);
@@ -255,6 +267,11 @@ void main() {
     test('throws when sign byte is zero', () {
       var block = Uint8List.fromList([0xFF, 0xFF, 0, 0, 0]);
       expect(() => Padding.pkcs7.getPadLength(block), throwsStateError);
+    });
+
+    test('throws when size is zero', () {
+      expect(
+          () => Padding.pkcs7.getPadLength(Uint8List(0), 0), throwsStateError);
     });
   });
 

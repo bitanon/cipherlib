@@ -19,6 +19,36 @@ void main() {
       expect(out.length, equals(8));
     });
 
+    test('toUint8List converts full TypedData view without slicing', () {
+      final backing = Uint8List.fromList(List.generate(16, (i) => i + 3));
+      final fullView = Int8List.view(backing.buffer);
+
+      final out = toUint8List(fullView);
+
+      expect(out, equals(backing));
+    });
+
+    test('toUint8List handles plain List<int>', () {
+      final out = toUint8List(<int>[9, 8, 7, 6]);
+      expect(out, equals(Uint8List.fromList([9, 8, 7, 6])));
+    });
+
+    test('toUint8List clones a sliced Uint8List view', () {
+      final backing = Uint8List.fromList(List.generate(10, (i) => i));
+      final slice = Uint8List.view(backing.buffer, 2, 5);
+
+      final out = toUint8List(slice);
+
+      expect(out, equals(Uint8List.fromList([2, 3, 4, 5, 6])));
+      slice[0] = 99;
+      expect(out[0], equals(2));
+    });
+
+    test('toUint8List handles non-list iterables', () {
+      final out = toUint8List({1, 2, 3, 4});
+      expect(out, equals(Uint8List.fromList([1, 2, 3, 4])));
+    });
+
     test('AES/GCM accepts non-Uint8 typed slices correctly', () {
       final keyBytes = Uint8List.fromList(List.generate(16, (i) => i + 1));
       final ivBytes = Uint8List.fromList(List.generate(12, (i) => i + 20));

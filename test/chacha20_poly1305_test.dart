@@ -5,9 +5,8 @@ import 'dart:typed_data';
 
 import 'package:cipherlib/cipherlib.dart';
 import 'package:cipherlib/codecs.dart';
+import 'package:hashlib/random.dart';
 import 'package:test/test.dart';
-
-import 'utils.dart';
 
 void main() {
   group('known inputs', () {
@@ -89,14 +88,14 @@ void main() {
         final iv = randomBytes(16);
         final aad = randomBytes(key[0]);
         final message = randomBytes(i);
-        final instance = ChaCha20Poly1305(key, nonce: iv, aad: aad);
+        final instance = ChaCha20(key, iv).poly1305(aad);
         final res = instance.sign(message);
         expect(instance.verify(res.data, res.mac.bytes), isTrue);
       }
     });
 
     test('reset iv', () {
-      var x = ChaCha20Poly1305(Uint8List(32));
+      var x = ChaCha20(Uint8List(32)).poly1305();
       var iv = [...x.iv];
       var key1 = [...x.cipher.key];
       var key2 = [...x.algo.keypair];
@@ -130,11 +129,7 @@ void main() {
         "3ff4def08e4b7a9de576d26586cec64b"
         "6116",
       );
-      var algo = ChaCha20Poly1305(
-        key,
-        aad: aad,
-        nonce: nonce,
-      );
+      var algo = ChaCha20(key, nonce).poly1305(aad);
 
       test('defines name correctly', () {
         expect(algo.name, "ChaCha20/Poly1305");
@@ -172,7 +167,7 @@ void main() {
           nonce: nonce,
           aad: aad,
         ),
-        throwsA((e) => e is AssertionError),
+        throwsA(isA<StateError>()),
       );
     });
   });

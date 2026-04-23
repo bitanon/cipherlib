@@ -14,6 +14,11 @@ import 'utils/nonce.dart';
 /// stream cipher for encryption and [Poly1305] for generating message
 /// authentication code.
 ///
+/// This class can not be instantiated directly, instead use this method:
+/// ```dart
+/// final algo = XChaCha20(key, nonce, counter).poly1305(aad);
+/// ```
+///
 /// This implementation is based on the [RFC-8439][rfc]
 ///
 /// [rfc]: https://www.rfc-editor.org/rfc/rfc8439.html
@@ -24,21 +29,6 @@ class XChaCha20Poly1305 extends AEADCipher<XChaCha20, Poly1305>
     super.algo,
     super.aad,
   );
-
-  /// Creates a new instance of the [XChaCha20Poly1305] cipher.
-  ///
-  /// Parameters:
-  /// - [key] : Either 16 or 32 bytes key.
-  /// - [nonce] : Either 8 or 12 bytes nonce.
-  /// - [aad] : Additional authenticated data.
-  /// - [counter] : Initial block number.
-  factory XChaCha20Poly1305(
-    List<int> key, {
-    List<int>? nonce,
-    Nonce64? counter,
-    List<int>? aad,
-  }) =>
-      XChaCha20(key, nonce, counter).poly1305(aad);
 
   @override
   Uint8List get iv => cipher.iv;
@@ -66,6 +56,7 @@ extension XChaCha20ExtentionForPoly1305 on XChaCha20 {
   ///
   /// The [Poly1305] hash instance is initialized by a 32-byte long OTK.
   @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   XChaCha20Poly1305 poly1305([List<int>? aad]) =>
       XChaCha20Poly1305._(this, Poly1305($otk()), aad);
 }
@@ -92,12 +83,7 @@ AEADResultWithIV xchacha20poly1305(
   List<int>? aad,
   Nonce64? counter,
 }) {
-  var algo = XChaCha20Poly1305(
-    key,
-    nonce: nonce,
-    counter: counter,
-    aad: aad,
-  );
+  final algo = XChaCha20(key, nonce, counter).poly1305(aad);
   if (mac != null && !algo.verify(message, mac)) {
     throw StateError('Message authenticity check failed');
   }

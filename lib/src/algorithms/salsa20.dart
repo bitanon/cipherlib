@@ -37,6 +37,11 @@ class Salsa20 extends Cipher with SaltedCipher {
 
   /// Creates an instance with a [key], [nonce], and [counter] containing a
   /// list of bytes.
+  ///
+  /// Parameters:
+  /// - [key] : Either 16 or 32 bytes key.
+  /// - [nonce] : Either 8 or 16 bytes nonce.
+  /// - [counter] : 64-bit counter. (Default: 0)
   factory Salsa20(
     List<int> key, [
     List<int>? nonce,
@@ -281,7 +286,10 @@ class XSalsa20 extends Cipher with SaltedCipher {
 
   /// Creates a [XSalsa20] with [key], and [nonce].
   ///
-  /// Every elements of the both list is transformed to unsigned 8-bit numbers.
+  /// Parameters:
+  /// - [key] : Either 16 or 32 bytes key.
+  /// - [nonce] : Either 24 or 32 bytes nonce. (Default: random)
+  /// - [counter] : 64-bit counter. (Default: 0)
   factory XSalsa20(
     List<int> key, [
     List<int>? nonce,
@@ -293,7 +301,7 @@ class XSalsa20 extends Cipher with SaltedCipher {
     }
 
     // validate nonce
-    nonce ??= randomBytes(32);
+    nonce ??= randomBytes(counter == null ? 32 : 24);
     if (nonce.length != 24 && nonce.length != 32) {
       throw ArgumentError('The nonce should be either 24 or 32 bytes');
     }

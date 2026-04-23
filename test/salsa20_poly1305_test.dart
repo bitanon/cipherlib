@@ -4,14 +4,13 @@
 import 'dart:typed_data';
 
 import 'package:cipherlib/cipherlib.dart';
+import 'package:hashlib/random.dart';
 import 'package:test/test.dart';
-
-import 'utils.dart';
 
 void main() {
   group('validation', () {
     test('name', () {
-      expect(Salsa20Poly1305(Uint8List(32)).name, "Salsa20/Poly1305");
+      expect(Salsa20(Uint8List(32)).poly1305().name, "Salsa20/Poly1305");
     });
     test('accepts empty message', () {
       final key = randomNumbers(32);
@@ -36,8 +35,7 @@ void main() {
       final key = Uint8List(32);
       final iv = Uint8List(32);
       final c = Nonce64.zero();
-      expect(() => Salsa20Poly1305(key, nonce: iv, counter: c),
-          throwsArgumentError);
+      expect(() => Salsa20(key, iv, c).poly1305(), throwsArgumentError);
     });
     test('The nonce should be either 8 or 16 bytes', () {
       var key = Uint8List(32);
@@ -53,7 +51,7 @@ void main() {
     test('returns the original nonce', () {
       final key = Uint8List(32);
       final nonce = List.filled(16, 1);
-      final algo = Salsa20Poly1305(key, nonce: nonce);
+      final algo = Salsa20(key, nonce).poly1305();
       expect(algo.cipher.iv, equals(nonce));
     });
     test('random nonce is used if nonce is null, ', () {
@@ -62,7 +60,7 @@ void main() {
       salsa20poly1305(text, key);
     });
     test('reset iv', () {
-      var x = Salsa20Poly1305(Uint8List(32));
+      var x = Salsa20(Uint8List(32)).poly1305();
       var iv = [...x.iv];
       var key1 = [...x.cipher.key];
       var key2 = [...x.algo.keypair];
@@ -82,8 +80,8 @@ void main() {
       var nonce = randomBytes(16);
       for (int j = 0; j < 100; ++j) {
         var text = randomBytes(j);
-        var res = Salsa20Poly1305(key, nonce: nonce).convert(text);
-        var verified = Salsa20Poly1305(key, nonce: nonce).convert(res);
+        var res = Salsa20(key, nonce).poly1305().convert(text);
+        var verified = Salsa20(key, nonce).poly1305().convert(res);
         expect(verified, equals(text), reason: '[text size: $j]');
       }
     });
@@ -94,7 +92,7 @@ void main() {
         final iv = randomBytes(16);
         final aad = randomBytes(key[0]);
         final message = randomBytes(i);
-        final instance = Salsa20Poly1305(key, nonce: iv, aad: aad);
+        final instance = Salsa20(key, iv).poly1305(aad);
         final res = instance.sign(message);
         expect(instance.verify(res.data, res.mac.bytes), isTrue);
       }
@@ -121,7 +119,7 @@ void main() {
           nonce: nonce,
           aad: aad,
         ),
-        throwsA((e) => e is AssertionError),
+        throwsA(isA<StateError>()),
       );
     });
   });

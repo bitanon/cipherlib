@@ -20,7 +20,7 @@ class CipherlibBenchmark extends SyncBenchmark {
 
   @override
   void run() {
-    Salsa20Poly1305(key, nonce: nonce).convert(input);
+    Salsa20(key, nonce).poly1305().convert(input);
   }
 }
 
@@ -37,7 +37,7 @@ class CipherlibStreamBenchmark extends AsyncBenchmark {
 
   @override
   Future<void> run() async {
-    await Salsa20Poly1305(key, nonce: nonce).stream(input).drain();
+    await Salsa20(key, nonce).poly1305().stream(input).drain();
   }
 }
 

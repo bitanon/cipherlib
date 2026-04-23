@@ -125,6 +125,7 @@ class AES {
   /// - [iv] (initialization vector) is the random 16-byte salt. For CTR mode
   ///   this is a combination of 64-bit Nonce and 64-bit Counter values in
   ///   Big-Endian order.
+  /// - [counterBits] Number of bits to use for the counter (1-128)
   ///
   /// ```
   ///                         (Key)       PT1
@@ -154,7 +155,7 @@ class AES {
   ///
   /// Parameters:
   /// - [iv] (initialization vector) is the random 16-byte salt.
-  /// - [sbyte] number of bytes to take per block. (Default: 16)
+  /// - [sbyte] number of bytes between 1 and 16 (Default: 16).
   ///
   /// ```
   ///          Key                 PT1 (s-bit)
@@ -201,6 +202,7 @@ class AES {
   ///
   /// Parameters:
   /// - [iv] (initialization vector) is the random 16-byte salt.
+  /// - [sbyte] number of bytes between 1 and 16 (Default: 16).
   ///
   /// ```
   ///         (Key)          PT1
@@ -272,8 +274,8 @@ class AES {
   ///
   /// Parameters:
   /// - [iv] (initialization vector) is the random salt of arbitrary length.
-  /// - [aad] (additional authentication data) is used to generated unique tag.
-  /// - [tagSize] Length of the authentication tag in bytes. (Default: 16)
+  /// - [aad] Additional authentication data for tag generation.
+  /// - [tagSize] authentication tag size between 1 and 16 (Default: 16).
   ///
   /// The encryption output of this mode is combined with the ciphertext and
   /// 128-bit message authentication tag. During decryption, the authentication

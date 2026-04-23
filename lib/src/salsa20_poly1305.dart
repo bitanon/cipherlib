@@ -13,27 +13,17 @@ import 'utils/nonce.dart';
 /// Salsa20-Poly1305 is a cryptographic algorithm combining the [Salsa20]
 /// stream cipher for encryption and the [Poly1305] for generating message
 /// authentication code.
+///
+/// This class can not be instantiated directly, instead use this method:
+/// ```dart
+/// final algo = Salsa20(key, nonce, counter).poly1305(aad);
+/// ```
 class Salsa20Poly1305 extends AEADCipher<Salsa20, Poly1305> with SaltedCipher {
   const Salsa20Poly1305._(
     super.cipher,
     super.algo,
     super.aad,
   );
-
-  /// Creates a new instance of the [Salsa20Poly1305] cipher.
-  ///
-  /// Parameters:
-  /// - [key] : Either 16 or 32 bytes key.
-  /// - [nonce] : Either 8 or 16 bytes nonce.
-  /// - [aad] : Additional authenticated data.
-  /// - [counter] : Initial block number.
-  factory Salsa20Poly1305(
-    List<int> key, {
-    List<int>? nonce,
-    Nonce64? counter,
-    List<int>? aad,
-  }) =>
-      Salsa20(key, nonce, counter).poly1305(aad);
 
   @override
   Uint8List get iv => cipher.iv;
@@ -61,9 +51,9 @@ extension Salsa20ExtentionForPoly1305 on Salsa20 {
   ///
   /// The [Poly1305] hash instance is initialized by a 32-byte long OTK.
   @pragma('vm:prefer-inline')
-  Salsa20Poly1305 poly1305([List<int>? aad]) {
-    return Salsa20Poly1305._(this, Poly1305($otk()), aad);
-  }
+  @pragma('dart2js:tryInline')
+  Salsa20Poly1305 poly1305([List<int>? aad]) =>
+      Salsa20Poly1305._(this, Poly1305($otk()), aad);
 }
 
 /// Encrypts or Decrypts the [message] using Salsa20 cipher and generates an
@@ -77,7 +67,7 @@ extension Salsa20ExtentionForPoly1305 on Salsa20 {
 /// - [counter] : Initial block number.
 /// - [mac] : A 128-bit or 16-bytes long authentication tag for verification.
 ///
-/// Throws: [AssertionError] on [mac] verification failure.
+/// Throws: [StateError] on [mac] verification failure.
 ///
 /// Both the encryption and decryption can be done using this same method.
 AEADResultWithIV salsa20poly1305(
@@ -88,14 +78,9 @@ AEADResultWithIV salsa20poly1305(
   List<int>? aad,
   Nonce64? counter,
 }) {
-  var algo = Salsa20Poly1305(
-    key,
-    nonce: nonce,
-    counter: counter,
-    aad: aad,
-  );
+  final algo = Salsa20(key, nonce, counter).poly1305(aad);
   if (mac != null && !algo.verify(message, mac)) {
-    throw AssertionError('Message authenticity check failed');
+    throw StateError('Message authenticity check failed');
   }
   return algo.sign(message);
 }

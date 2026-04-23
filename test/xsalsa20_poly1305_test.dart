@@ -4,14 +4,13 @@
 import 'dart:typed_data';
 
 import 'package:cipherlib/cipherlib.dart';
+import 'package:hashlib/random.dart';
 import 'package:test/test.dart';
-
-import 'utils.dart';
 
 void main() {
   group('validation', () {
     test('name', () {
-      expect(XSalsa20Poly1305(Uint8List(32)).name, "XSalsa20/Poly1305");
+      expect(XSalsa20(Uint8List(32)).poly1305().name, "XSalsa20/Poly1305");
     });
     test('accepts empty message', () {
       final key = randomNumbers(32);
@@ -36,8 +35,7 @@ void main() {
       final key = Uint8List(32);
       final iv = Uint8List(32);
       final c = Nonce64.zero();
-      expect(() => XSalsa20Poly1305(key, nonce: iv, counter: c),
-          throwsArgumentError);
+      expect(() => XSalsa20(key, iv, c).poly1305(), throwsArgumentError);
     });
     test('The nonce should be either 24 or 32 bytes', () {
       var key = Uint8List(32);
@@ -53,8 +51,15 @@ void main() {
     test('returns the original nonce', () {
       final key = Uint8List(32);
       final nonce = List.filled(32, 1);
-      final algo = XSalsa20Poly1305(key, nonce: nonce);
+      final algo = XSalsa20(key, nonce).poly1305();
       expect(algo.cipher.iv, equals(nonce));
+    });
+    test('iv getter forwards nonce from cipher', () {
+      final key = Uint8List(32);
+      final nonce = List.filled(24, 7);
+      final algo = XSalsa20(key, nonce).poly1305();
+      expect(algo.iv, equals(algo.cipher.iv));
+      expect(algo.iv, equals(nonce));
     });
     test('random nonce is used if nonce is null, ', () {
       var key = randomNumbers(32);
@@ -62,15 +67,15 @@ void main() {
       xsalsa20poly1305(text, key);
     });
     test('subkey is same as internal key', () {
-      var x = XSalsa20Poly1305(Uint8List(32));
+      var x = XSalsa20(Uint8List(32)).poly1305();
       expect(x.cipher.subkey, equals(x.cipher.internal.key));
     });
     test('subnonce is same as internal iv', () {
-      var x = XSalsa20Poly1305(Uint8List(32));
+      var x = XSalsa20(Uint8List(32)).poly1305();
       expect(x.cipher.subnonce, equals(x.cipher.internal.iv));
     });
     test('reset iv', () {
-      var x = XSalsa20Poly1305(Uint8List(32));
+      var x = XSalsa20(Uint8List(32)).poly1305();
       var iv = [...x.cipher.iv];
       var key = [...x.cipher.key];
       var hkey = [...x.algo.keypair];

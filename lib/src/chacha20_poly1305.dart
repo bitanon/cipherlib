@@ -16,6 +16,12 @@ import 'utils/nonce.dart';
 /// It provides both confidentiality and integrity protection, making it a
 /// popular choice for secure communication protocols like TLS.
 ///
+///
+/// This class can not be instantiated directly, instead use this method:
+/// ```dart
+/// final algo = ChaCha20(key, nonce, counter).poly1305(aad);
+/// ```
+///
 /// This implementation is based on the [RFC-8439][rfc]
 ///
 /// [rfc]: https://www.rfc-editor.org/rfc/rfc8439.html
@@ -26,21 +32,6 @@ class ChaCha20Poly1305 extends AEADCipher<ChaCha20, Poly1305>
     super.algo,
     super.aad,
   );
-
-  /// Creates a new instance of the [ChaCha20Poly1305] cipher.
-  ///
-  /// Parameters:
-  /// - [key] : Either 16 or 32 bytes key.
-  /// - [nonce] : Either 8 or 12 bytes nonce.
-  /// - [aad] : Additional authenticated data.
-  /// - [counter] : Initial block number.
-  factory ChaCha20Poly1305(
-    List<int> key, {
-    List<int>? nonce,
-    Nonce64? counter,
-    List<int>? aad,
-  }) =>
-      ChaCha20(key, nonce, counter).poly1305(aad);
 
   @override
   Uint8List get iv => cipher.iv;
@@ -68,6 +59,7 @@ extension ChaCha20ExtentionForPoly1305 on ChaCha20 {
   ///
   /// The [Poly1305] hash instance is initialized by a 32-byte long OTK.
   @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   ChaCha20Poly1305 poly1305([List<int>? aad]) =>
       ChaCha20Poly1305._(this, Poly1305($otk()), aad);
 }
@@ -83,7 +75,7 @@ extension ChaCha20ExtentionForPoly1305 on ChaCha20 {
 /// - [counter] : Initial block number.
 /// - [mac] : A 128-bit or 16-bytes long authentication tag for verification.
 ///
-/// Throws: [AssertionError] on [mac] verification failure.
+/// Throws: [StateError] on [mac] verification failure.
 ///
 /// Both the encryption and decryption can be done using this same method.
 AEADResultWithIV chacha20poly1305(
@@ -94,14 +86,9 @@ AEADResultWithIV chacha20poly1305(
   List<int>? aad,
   Nonce64? counter,
 }) {
-  var algo = ChaCha20Poly1305(
-    key,
-    nonce: nonce,
-    counter: counter,
-    aad: aad,
-  );
+  final algo = ChaCha20(key, nonce, counter).poly1305(aad);
   if (mac != null && !algo.verify(message, mac)) {
-    throw AssertionError('Message authenticity check failed');
+    throw StateError('Message authenticity check failed');
   }
   return algo.sign(message);
 }

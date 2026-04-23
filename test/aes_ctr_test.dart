@@ -35,6 +35,14 @@ void main() {
       expect(() => aes.ctr(Uint8List(17)).encrypt([0]), throwsStateError);
       expect(() => aes.ctr(Uint8List(8)).decrypt([0]), throwsStateError);
     });
+    test('throws error on invalid counter bits', () {
+      expect(() => AESInCTRMode(key, iv, 0), throwsStateError);
+      expect(() => AESInCTRMode(key, iv, 129), throwsStateError);
+    });
+    test('iv constructor accepts null nonce and counter', () {
+      final out = AESInCTRMode.iv(key).encrypt(const [1, 2, 3, 4]);
+      expect(out.length, equals(4));
+    });
     test('reset iv', () {
       var iv = randomBytes(16);
       var key = randomBytes(24);
@@ -255,6 +263,29 @@ void main() {
         var plain = aes.decrypt(cipher);
         expect(toHex(plain), equals(toHex(inp)), reason: '[size: $j]');
       }
+    });
+    test('counter carry paths for 33, 65, and 97 bits', () {
+      final key = Uint8List(16);
+      final message = Uint8List(32);
+
+      final iv33 = fromHex('000000000000000000000000ffffffff');
+      final aes33 = AESInCTRMode(key, iv33, 33);
+      expect(aes33.decrypt(aes33.encrypt(message)), equals(message));
+
+      final iv65 = fromHex('0000000000000000ffffffffffffffff');
+      final aes65 = AESInCTRMode(key, iv65, 65);
+      expect(aes65.decrypt(aes65.encrypt(message)), equals(message));
+
+      final iv97 = fromHex('00000000ffffffffffffffffffffffff');
+      final aes97 = AESInCTRMode(key, iv97, 97);
+      expect(aes97.decrypt(aes97.encrypt(message)), equals(message));
+    });
+    test('counter merge path for 32-bit counter', () {
+      final key = Uint8List(16);
+      final iv = fromHex('000000000000000000000000ffffffff');
+      final aes = AESInCTRMode(key, iv, 32);
+      final msg = Uint8List(32);
+      expect(aes.decrypt(aes.encrypt(msg)), equals(msg));
     });
   });
 }

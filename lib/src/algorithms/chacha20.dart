@@ -41,6 +41,11 @@ class ChaCha20 extends Cipher with SaltedCipher {
 
   /// Creates an instance with a [key], [nonce], and [counter] containing a
   /// list of bytes.
+  ///
+  /// Parameters:
+  /// - [key] : Either 16 or 32 bytes key.
+  /// - [nonce] : Either 8, 12 or 16 bytes nonce. (Default: random)
+  /// - [counter] : 64-bit counter. (Default: 1)
   factory ChaCha20(
     List<int> key, [
     List<int>? nonce,

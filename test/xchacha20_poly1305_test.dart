@@ -5,15 +5,15 @@ import 'dart:typed_data';
 
 import 'package:cipherlib/cipherlib.dart';
 import 'package:cipherlib/codecs.dart';
+import 'package:hashlib/random.dart';
 import 'package:test/test.dart';
 
 import 'fixtures/xchacha20_vectors.dart';
-import 'utils.dart';
 
 void main() {
   group('validation', () {
     test('name', () {
-      expect(XChaCha20Poly1305(Uint8List(32)).name, "XChaCha20/Poly1305");
+      expect(XChaCha20(Uint8List(32)).poly1305().name, "XChaCha20/Poly1305");
     });
     test('accepts empty message', () {
       final key = randomNumbers(32);
@@ -48,14 +48,21 @@ void main() {
     test('Counter is not expected with 32-byte nonce', () {
       final key = Uint8List(32);
       final c = Nonce64.zero();
-      expect(() => XChaCha20Poly1305(key, nonce: Uint8List(32), counter: c),
+      expect(() => XChaCha20(key, Uint8List(32), c).poly1305(),
           throwsArgumentError);
     });
     test('returns the original nonce', () {
       final key = Uint8List(32);
       final nonce = List.filled(32, 1);
-      final algo = XChaCha20Poly1305(key, nonce: nonce);
+      final algo = XChaCha20(key, nonce).poly1305();
       expect(algo.cipher.iv, equals(nonce));
+    });
+    test('iv getter forwards nonce from cipher', () {
+      final key = Uint8List(32);
+      final nonce = List.filled(24, 7);
+      final algo = XChaCha20(key, nonce).poly1305();
+      expect(algo.iv, equals(algo.cipher.iv));
+      expect(algo.iv, equals(nonce));
     });
     test('random nonce is used if nonce is null', () {
       var key = randomNumbers(32);
@@ -63,15 +70,15 @@ void main() {
       xchacha20poly1305(text, key);
     });
     test('subkey is same as internal key', () {
-      var x = XChaCha20Poly1305(Uint8List(32));
+      var x = XChaCha20(Uint8List(32)).poly1305();
       expect(x.cipher.subkey, equals(x.cipher.internal.key));
     });
     test('subnonce is same as internal iv', () {
-      var x = XChaCha20Poly1305(Uint8List(32));
+      var x = XChaCha20(Uint8List(32)).poly1305();
       expect(x.cipher.subnonce, equals(x.cipher.internal.iv));
     });
     test('reset iv', () {
-      var x = XChaCha20Poly1305(Uint8List(32));
+      var x = XChaCha20(Uint8List(32)).poly1305();
       var iv = [...x.cipher.iv];
       var key = [...x.cipher.key];
       var hkey = [...x.algo.keypair];

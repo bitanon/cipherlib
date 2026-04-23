@@ -25,7 +25,7 @@ class CipherlibBenchmark extends AsyncBenchmark {
 
   @override
   Future<void> run() async {
-    ChaCha20Poly1305(key, nonce: nonce).sign(input);
+    ChaCha20(key, nonce).poly1305().sign(input);
   }
 }
 

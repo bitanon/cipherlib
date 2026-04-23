@@ -5,9 +5,8 @@ import 'dart:typed_data';
 
 import 'package:cipherlib/codecs.dart';
 import 'package:cipherlib/src/xor.dart';
+import 'package:hashlib/random.dart';
 import 'package:test/test.dart';
-
-import 'utils.dart';
 
 void main() {
   group('validation', () {
