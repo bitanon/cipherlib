@@ -212,12 +212,16 @@ void emptyPayloads() {
 void badMacRejectedAllAead() {
   print('----- AEAD bad MAC (all one-shot helpers) -----');
 
-  void expectAssertion(void Function() run) {
+  void expectReject(void Function() run) {
     try {
       run();
-      throw StateError('expected AssertionError');
+      throw StateError('expected MAC verification failure');
     } on AssertionError {
-      // expected
+      // legacy failure mode
+    } on StateError catch (error) {
+      if (error.message != 'Message authenticity check failed') {
+        rethrow;
+      }
     }
   }
 
@@ -225,25 +229,25 @@ void badMacRejectedAllAead() {
   final n12 = randomBytes(12);
   final g1 = chacha20poly1305([7], k1, nonce: n12);
   final b1 = Uint8List.fromList(g1.mac.bytes)..[0] ^= 0xff;
-  expectAssertion(() => chacha20poly1305(g1.data, k1, nonce: n12, mac: b1));
+  expectReject(() => chacha20poly1305(g1.data, k1, nonce: n12, mac: b1));
 
   final k2 = randomBytes(32);
   final n24 = randomBytes(24);
   final g2 = xchacha20poly1305([8], k2, nonce: n24);
   final b2 = Uint8List.fromList(g2.mac.bytes)..[0] ^= 0xff;
-  expectAssertion(() => xchacha20poly1305(g2.data, k2, nonce: n24, mac: b2));
+  expectReject(() => xchacha20poly1305(g2.data, k2, nonce: n24, mac: b2));
 
   final k3 = randomBytes(32);
   final n8 = randomBytes(8);
   final g3 = salsa20poly1305([9], k3, nonce: n8);
   final b3 = Uint8List.fromList(g3.mac.bytes)..[0] ^= 0xff;
-  expectAssertion(() => salsa20poly1305(g3.data, k3, nonce: n8, mac: b3));
+  expectReject(() => salsa20poly1305(g3.data, k3, nonce: n8, mac: b3));
 
   final k4 = randomBytes(32);
   final n24b = randomBytes(24);
   final g4 = xsalsa20poly1305([10], k4, nonce: n24b);
   final b4 = Uint8List.fromList(g4.mac.bytes)..[0] ^= 0xff;
-  expectAssertion(() => xsalsa20poly1305(g4.data, k4, nonce: n24b, mac: b4));
+  expectReject(() => xsalsa20poly1305(g4.data, k4, nonce: n24b, mac: b4));
 
   print('  ChaCha / XChaCha / Salsa / XSalsa Poly1305: ok');
   print('');
