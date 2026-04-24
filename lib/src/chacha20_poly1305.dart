@@ -25,7 +25,7 @@ import 'utils/nonce.dart';
 /// This implementation is based on the [RFC-8439][rfc]
 ///
 /// [rfc]: https://www.rfc-editor.org/rfc/rfc8439.html
-class ChaCha20Poly1305 extends AEADCipher<ChaCha20, Poly1305>
+class ChaCha20Poly1305 extends AEADStreamCipher<ChaCha20, Poly1305>
     with SaltedCipher {
   const ChaCha20Poly1305._(super.cipher, super.algo);
 
@@ -45,6 +45,12 @@ class ChaCha20Poly1305 extends AEADCipher<ChaCha20, Poly1305>
   @pragma('dart2js:tryInline')
   AEADResultWithIV sign(List<int> message, [List<int>? aad]) =>
       super.sign(message, aad).withIV(cipher.iv);
+
+  @override
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  AEADStreamResult signStream(Stream<List<int>> stream, [List<int>? aad]) =>
+      super.signStream(stream, aad).withIV(cipher.iv);
 }
 
 /// Adds [poly1305] to [ChaCha20] to create an instance of [ChaCha20Poly1305]

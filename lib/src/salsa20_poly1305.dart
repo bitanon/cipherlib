@@ -18,7 +18,8 @@ import 'utils/nonce.dart';
 /// ```dart
 /// final algo = Salsa20(key, nonce, counter).poly1305(aad);
 /// ```
-class Salsa20Poly1305 extends AEADCipher<Salsa20, Poly1305> with SaltedCipher {
+class Salsa20Poly1305 extends AEADStreamCipher<Salsa20, Poly1305>
+    with SaltedCipher {
   const Salsa20Poly1305._(super.cipher, super.algo);
 
   @override
@@ -37,6 +38,12 @@ class Salsa20Poly1305 extends AEADCipher<Salsa20, Poly1305> with SaltedCipher {
   @pragma('dart2js:tryInline')
   AEADResultWithIV sign(List<int> message, [List<int>? aad]) =>
       super.sign(message, aad).withIV(cipher.iv);
+
+  @override
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  AEADStreamResult signStream(Stream<List<int>> stream, [List<int>? aad]) =>
+      super.signStream(stream, aad).withIV(cipher.iv);
 }
 
 /// Adds [poly1305] to [Salsa20] to create an instance of [Salsa20Poly1305]

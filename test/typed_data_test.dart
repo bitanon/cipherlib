@@ -26,6 +26,8 @@ void main() {
       final out = toUint8List(fullView);
 
       expect(out, equals(backing));
+      backing[0] = 77;
+      expect(out[0], equals(77));
     });
 
     test('toUint8List handles plain List<int>', () {
@@ -47,6 +49,12 @@ void main() {
     test('toUint8List handles non-list iterables', () {
       final out = toUint8List({1, 2, 3, 4});
       expect(out, equals(Uint8List.fromList([1, 2, 3, 4])));
+    });
+
+    test('toUint8List returns same instance for full Uint8List buffer', () {
+      final full = Uint8List.fromList(List.generate(8, (i) => i));
+      final out = toUint8List(full);
+      expect(identical(out, full), isTrue);
     });
 
     test('AES/GCM accepts non-Uint8 typed slices correctly', () {
@@ -73,6 +81,39 @@ void main() {
       final actual = AES(keyView).gcm(ivView, aad: aadView).encrypt(msg);
 
       expect(actual, equals(expected));
+    });
+  });
+
+  group('validateLength', () {
+    test('returns Uint8List when length is allowed', () {
+      final out = validateLength('key', [1, 2, 3, 4], {4});
+      expect(out, equals(Uint8List.fromList([1, 2, 3, 4])));
+    });
+
+    test('throws with single-size error message', () {
+      expect(
+        () => validateLength('nonce', [1, 2, 3], {12}),
+        throwsA(
+          isA<ArgumentError>().having(
+            (e) => e.message.toString(),
+            'message',
+            contains('length must be 12 bytes'),
+          ),
+        ),
+      );
+    });
+
+    test('throws with sorted multi-size error message', () {
+      expect(
+        () => validateLength('key', [1, 2, 3], {32, 16, 24}),
+        throwsA(
+          isA<ArgumentError>().having(
+            (e) => e.message.toString(),
+            'message',
+            contains('length must be one of [16, 24, 32] bytes'),
+          ),
+        ),
+      );
     });
   });
 }

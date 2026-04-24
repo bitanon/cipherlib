@@ -10,7 +10,7 @@ export 'core/aes.dart';
 export 'core/cipher.dart';
 export 'salsa20.dart';
 export 'salsa20_poly1305.dart';
-export 'stream_cipher_extensions.dart';
+export 'stream_extensions.dart';
 export 'utils/nonce.dart';
 export 'xchacha20.dart';
 export 'xchacha20_poly1305.dart';
