@@ -64,7 +64,7 @@ void aeadWithAssociatedData() {
 
   final key = randomBytes(32);
   final nonce12 = randomBytes(12);
-  final sealed = ChaCha20(key, nonce12).poly1305(aad).sign(msg);
+  final sealed = ChaCha20(key, nonce12).poly1305().sign(msg, aad);
   final opened = chacha20poly1305(
     sealed.data,
     key,
@@ -78,7 +78,7 @@ void aeadWithAssociatedData() {
 
   final keyX = randomBytes(32);
   final nonce24 = randomBytes(24);
-  final sx = XChaCha20(keyX, nonce24).poly1305(aad).sign(msg);
+  final sx = XChaCha20(keyX, nonce24).poly1305().sign(msg, aad);
   final ox = xchacha20poly1305(
     sx.data,
     keyX,
@@ -92,7 +92,7 @@ void aeadWithAssociatedData() {
 
   final ks = randomBytes(32);
   final ns = randomBytes(8);
-  final ss = Salsa20(ks, ns).poly1305(aad).sign(msg);
+  final ss = Salsa20(ks, ns).poly1305().sign(msg, aad);
   final os = salsa20poly1305(
     ss.data,
     ks,
@@ -106,7 +106,7 @@ void aeadWithAssociatedData() {
 
   final kxs = randomBytes(32);
   final nxs = randomBytes(24);
-  final sxs = XSalsa20(kxs, nxs).poly1305(aad).sign(msg);
+  final sxs = XSalsa20(kxs, nxs).poly1305().sign(msg, aad);
   final oxs = xsalsa20poly1305(
     sxs.data,
     kxs,

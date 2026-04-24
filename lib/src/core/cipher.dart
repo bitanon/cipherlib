@@ -7,8 +7,6 @@ import 'dart:typed_data' show Uint8List;
 
 import 'package:hashlib/random.dart' show fillRandom;
 
-import '../utils/chunk_stream.dart';
-
 // ------------------------------------------------------------
 // CipherBase
 // ------------------------------------------------------------
@@ -67,16 +65,6 @@ abstract class StreamCipher
   @override
   StreamTransformer<RS, RT> cast<RS, RT>() {
     throw UnsupportedError('StreamCipher does not allow casting');
-  }
-
-  /// Transforms the [stream] of message bytes using the algorithm.
-  Stream<int> stream(Stream<int> stream, [int chunkSize = 1024]) async* {
-    final chunk = asChunkedStream(chunkSize, stream);
-    await for (var data in bind(chunk)) {
-      for (var byte in data) {
-        yield byte;
-      }
-    }
   }
 }
 

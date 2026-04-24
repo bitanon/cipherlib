@@ -24,20 +24,10 @@ import 'utils/nonce.dart';
 /// [rfc]: https://www.rfc-editor.org/rfc/rfc8439.html
 class XChaCha20Poly1305 extends AEADCipher<XChaCha20, Poly1305>
     with SaltedCipher {
-  const XChaCha20Poly1305._(
-    super.cipher,
-    super.algo,
-    super.aad,
-  );
+  const XChaCha20Poly1305._(super.cipher, super.algo);
 
   @override
   Uint8List get iv => cipher.iv;
-
-  @override
-  @pragma('vm:prefer-inline')
-  @pragma('dart2js:tryInline')
-  AEADResultWithIV sign(List<int> message) =>
-      super.sign(message).withIV(cipher.iv);
 
   @override
   @pragma('vm:prefer-inline')
@@ -46,6 +36,12 @@ class XChaCha20Poly1305 extends AEADCipher<XChaCha20, Poly1305>
     cipher.resetIV();
     algo.keypair.setAll(0, cipher.$otk());
   }
+
+  @override
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  AEADResultWithIV sign(List<int> message, [List<int>? aad]) =>
+      super.sign(message, aad).withIV(cipher.iv);
 }
 
 /// Adds [poly1305] to [XChaCha20] to create an instance of [XChaCha20Poly1305]
@@ -57,8 +53,7 @@ extension XChaCha20ExtentionForPoly1305 on XChaCha20 {
   /// The [Poly1305] hash instance is initialized by a 32-byte long OTK.
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
-  XChaCha20Poly1305 poly1305([List<int>? aad]) =>
-      XChaCha20Poly1305._(this, Poly1305($otk()), aad);
+  XChaCha20Poly1305 poly1305() => XChaCha20Poly1305._(this, Poly1305($otk()));
 }
 
 /// Encrypts or Decrypts the [message] using XChaCha20 cipher and generates an
@@ -83,9 +78,9 @@ AEADResultWithIV xchacha20poly1305(
   List<int>? aad,
   Nonce64? counter,
 }) {
-  final algo = XChaCha20(key, nonce, counter).poly1305(aad);
-  if (mac != null && !algo.verify(message, mac)) {
+  final algo = XChaCha20(key, nonce, counter).poly1305();
+  if (mac != null && !algo.verify(message, mac, aad)) {
     throw StateError('Message authenticity check failed');
   }
-  return algo.sign(message);
+  return algo.sign(message, aad);
 }

@@ -71,31 +71,25 @@ void main() {
   // Salsa20-Poly1305
   // ------------------------------------------------------------
   for (final k in [16, 32]) {
-    for (final A in [null, ...aadsList]) {
-      var al = 'aad=${A?.length}';
-      ciphers.addAll({
-        P([k, null, null, al]): Salsa20(R(k)).poly1305(A),
-        P([k, 8, null, al]): Salsa20(R(k), R(8)).poly1305(A),
-        P([k, 16, null, al]): Salsa20(R(k), R(16)).poly1305(A),
-        P([k, 8, rand, al]): Salsa20(R(k), R(8), C).poly1305(A),
-        P([k, null, rand, al]): Salsa20(R(k), null, C).poly1305(A),
-      });
-    }
+    ciphers.addAll({
+      P([k, null, null]): Salsa20(R(k)).poly1305(),
+      P([k, 8, null]): Salsa20(R(k), R(8)).poly1305(),
+      P([k, 16, null]): Salsa20(R(k), R(16)).poly1305(),
+      P([k, 8, rand]): Salsa20(R(k), R(8), C).poly1305(),
+      P([k, null, rand]): Salsa20(R(k), null, C).poly1305(),
+    });
   }
   // ------------------------------------------------------------
   // XSalsa20-Poly1305
   // ------------------------------------------------------------
   for (final k in [16, 32]) {
-    for (final A in [null, ...aadsList]) {
-      var al = 'aad=${A?.length}';
-      ciphers.addAll({
-        P([k, null, null, al]): XSalsa20(R(k)).poly1305(A),
-        P([k, 24, null, al]): XSalsa20(R(k), R(24)).poly1305(A),
-        P([k, 32, null, al]): XSalsa20(R(k), R(32)).poly1305(A),
-        P([k, 24, rand, al]): XSalsa20(R(k), R(24), C).poly1305(A),
-        P([k, null, rand, al]): XSalsa20(R(k), null, C).poly1305(A),
-      });
-    }
+    ciphers.addAll({
+      P([k, null, null]): XSalsa20(R(k)).poly1305(),
+      P([k, 24, null]): XSalsa20(R(k), R(24)).poly1305(),
+      P([k, 32, null]): XSalsa20(R(k), R(32)).poly1305(),
+      P([k, 24, rand]): XSalsa20(R(k), R(24), C).poly1305(),
+      P([k, null, rand]): XSalsa20(R(k), null, C).poly1305(),
+    });
   }
   // ------------------------------------------------------------
   // ChaCha20
@@ -129,35 +123,29 @@ void main() {
   // ChaCha20-Poly1305
   // ------------------------------------------------------------
   for (final k in [16, 32]) {
-    for (final A in [null, ...aadsList]) {
-      var al = 'aad=${A?.length}';
-      ciphers.addAll({
-        P([k, null, null, al]): ChaCha20(R(k)).poly1305(A),
-        P([k, 8, null, al]): ChaCha20(R(k), R(8)).poly1305(A),
-        P([k, 12, null, al]): ChaCha20(R(k), R(12)).poly1305(A),
-        P([k, 16, null, al]): ChaCha20(R(k), R(16)).poly1305(A),
-        P([k, 8, rand, al]): ChaCha20(R(k), R(8), C).poly1305(A),
-        P([k, 12, rand, al]): ChaCha20(R(k), R(12), C).poly1305(A),
-        P([k, null, rand, al]): ChaCha20(R(k), null, C).poly1305(A),
-      });
-    }
+    ciphers.addAll({
+      P([k, null, null]): ChaCha20(R(k)).poly1305(),
+      P([k, 8, null]): ChaCha20(R(k), R(8)).poly1305(),
+      P([k, 12, null]): ChaCha20(R(k), R(12)).poly1305(),
+      P([k, 16, null]): ChaCha20(R(k), R(16)).poly1305(),
+      P([k, 8, rand]): ChaCha20(R(k), R(8), C).poly1305(),
+      P([k, 12, rand]): ChaCha20(R(k), R(12), C).poly1305(),
+      P([k, null, rand]): ChaCha20(R(k), null, C).poly1305(),
+    });
   }
   // ------------------------------------------------------------
   // XChaCha20-Poly1305
   // ------------------------------------------------------------
   for (final k in [16, 32]) {
-    for (final A in [null, ...aadsList]) {
-      var al = 'aad=${A?.length}';
-      ciphers.addAll({
-        P([k, null, null, al]): XChaCha20(R(k)).poly1305(A),
-        P([k, 24, null, al]): XChaCha20(R(k), R(24)).poly1305(A),
-        P([k, 28, null, al]): XChaCha20(R(k), R(28)).poly1305(A),
-        P([k, 32, null, al]): XChaCha20(R(k), R(32)).poly1305(A),
-        P([k, 24, rand, al]): XChaCha20(R(k), R(24), C).poly1305(A),
-        P([k, 28, rand, al]): XChaCha20(R(k), R(28), C).poly1305(A),
-        P([k, null, rand, al]): XChaCha20(R(k), null, C).poly1305(A),
-      });
-    }
+    ciphers.addAll({
+      P([k, null, null]): XChaCha20(R(k)).poly1305(),
+      P([k, 24, null]): XChaCha20(R(k), R(24)).poly1305(),
+      P([k, 28, null]): XChaCha20(R(k), R(28)).poly1305(),
+      P([k, 32, null]): XChaCha20(R(k), R(32)).poly1305(),
+      P([k, 24, rand]): XChaCha20(R(k), R(24), C).poly1305(),
+      P([k, 28, rand]): XChaCha20(R(k), R(28), C).poly1305(),
+      P([k, null, rand]): XChaCha20(R(k), null, C).poly1305(),
+    });
   }
   // ------------------------------------------------------------
   // AES-CBC
@@ -260,21 +248,38 @@ void main() {
   // ------------------------------------------------------------
   for (final entry in ciphers.entries) {
     final cipher = entry.value;
-    Uint8List encrypted, decrypted;
-    test('${cipher.name}: ${entry.key}', () {
-      for (final message in messages) {
-        if (cipher is AESInXTSMode && message.length < 16) {
-          continue;
+    if (cipher is AEADCipher) {
+      test('sign and verify: ${cipher.name}: ${entry.key} with AAD', () {
+        for (final message in messages) {
+          for (final aad in [null, ...aadsList]) {
+            final sealed = cipher.sign(message, aad);
+            final verified = cipher.verify(sealed.data, sealed.mac.bytes, aad);
+            expect(
+              verified,
+              isTrue,
+              reason: '[size: ${message.length}, aad: ${aad?.length}]',
+            );
+          }
         }
-        if (cipher is CollateCipher) {
-          encrypted = cipher.encrypt(message);
-          decrypted = cipher.decrypt(encrypted);
-        } else {
-          encrypted = cipher.convert(message);
-          decrypted = cipher.convert(encrypted);
+      });
+    } else {
+      Uint8List encrypted, decrypted;
+      test('encrypt <-> decrypt: ${cipher.name}: ${entry.key}', () {
+        for (final message in messages) {
+          if (cipher is AESInXTSMode && message.length < 16) {
+            continue;
+          }
+          if (cipher is CollateCipher) {
+            encrypted = cipher.encrypt(message);
+            decrypted = cipher.decrypt(encrypted);
+          } else {
+            encrypted = cipher.convert(message);
+            decrypted = cipher.convert(encrypted);
+          }
+          expect(decrypted, equals(message),
+              reason: '[size: ${message.length}]');
         }
-        expect(decrypted, equals(message), reason: '[size: ${message.length}]');
-      }
-    });
+      });
+    }
   }
 }

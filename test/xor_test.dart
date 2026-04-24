@@ -3,8 +3,8 @@
 
 import 'dart:typed_data';
 
+import 'package:cipherlib/cipherlib.dart';
 import 'package:cipherlib/codecs.dart';
-import 'package:cipherlib/src/xor.dart';
 import 'package:test/test.dart';
 
 void main() {

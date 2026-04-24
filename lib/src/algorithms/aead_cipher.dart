@@ -46,60 +46,52 @@ class AEADCipher<C extends Cipher, M extends MACHashBase> implements Cipher {
   /// The cipher used by this AEAD construction
   final C cipher;
 
-  /// Additional authenticated data (optional)
-  final List<int>? aad;
-
   @override
   String get name => '${cipher.name}/${algo.name}';
 
-  const AEADCipher(
-    this.cipher,
-    this.algo, [
-    this.aad,
-  ]);
+  /// Creates a new instance of [AEADCipher] with the given [cipher] and [algo].
+  ///
+  /// Parameters:
+  /// - [cipher] : The cipher used by this AEAD construction.
+  /// - [algo] : The MAC generator used by this AEAD construction.
+  const AEADCipher(this.cipher, this.algo);
 
-  /// Signs the [message] with an authentication tag.
-  AEADResult sign(List<int> message) {
-    final output = cipher.convert(message);
-    return AEADResult._(output, $mac(output));
-  }
-
-  /// Returns true if input [message] can be verified by the given message
-  /// authentication code [mac].
-  @pragma('vm:prefer-inline')
-  bool verify(List<int> message, List<int> mac) {
-    return $mac(message).isEqual(mac);
-  }
-
+  /// Transforms the [message] of bytes using the [cipher] algorithm without
+  /// generating a message authentication code.
   @override
   @pragma('vm:prefer-inline')
   Uint8List convert(List<int> message) => cipher.convert(message);
 
-  // TODO: Disable StreamTransformer for now
-  // @override
-  // @pragma('vm:prefer-inline')
-  // Stream<Uint8List> bind(Stream<List<int>> stream) =>
-  //     stream.map(cipher.convert);
-
-  // @override
-  // @pragma('vm:prefer-inline')
-  // Stream<int> stream(Stream<int> stream, [int chunkSize = 1024]) =>
-  //     cipher.stream(stream, chunkSize);
-
-  // @override
-  // StreamTransformer<RS, RT> cast<RS, RT>() {
-  //   throw UnsupportedError('AEADCipher does not allow casting');
-  // }
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  static Uint8List _build128(int high, int low) => Uint8List.fromList([
+        low,
+        low >>> 8,
+        low >>> 16,
+        low >>> 24,
+        low >>> 32,
+        low >>> 40,
+        low >>> 48,
+        low >>> 56,
+        high,
+        high >>> 8,
+        high >>> 16,
+        high >>> 24,
+        high >>> 32,
+        high >>> 40,
+        high >>> 48,
+        high >>> 56,
+      ]);
 
   /// Generates a message authentication code for the [data].
-  HashDigest $mac(List<int> data) {
+  HashDigest $mac(List<int> data, [List<int>? aad]) {
     int aadLength = 0;
     int dataLength = data.length;
     final sink = algo.createSink();
 
     if (aad != null) {
-      aadLength = aad!.length;
-      sink.add(aad!);
+      aadLength = aad.length;
+      sink.add(aad);
       if (aadLength & 15 != 0) {
         sink.add(Uint8List(16 - (aadLength & 15))); // pad with zero
       }
@@ -110,26 +102,26 @@ class AEADCipher<C extends Cipher, M extends MACHashBase> implements Cipher {
       sink.add(Uint8List(16 - (dataLength & 15))); // pad with zero
     }
 
-    sink.add([
-      aadLength,
-      aadLength >>> 8,
-      aadLength >>> 16,
-      aadLength >>> 24,
-      aadLength >>> 32,
-      aadLength >>> 40,
-      aadLength >>> 48,
-      aadLength >>> 56,
-      dataLength,
-      dataLength >>> 8,
-      dataLength >>> 16,
-      dataLength >>> 24,
-      dataLength >>> 32,
-      dataLength >>> 40,
-      dataLength >>> 48,
-      dataLength >>> 56,
-    ]);
+    sink.add(_build128(dataLength, aadLength));
 
     sink.close();
     return sink.digest();
+  }
+
+  /// Signs the [message] with an authentication tag.
+  ///
+  /// Parameters:
+  /// - [message] : The message to sign.
+  /// - [aad] : Additional authenticated data (optional).
+  AEADResult sign(List<int> message, [List<int>? aad]) {
+    final output = cipher.convert(message);
+    return AEADResult._(output, $mac(output, aad));
+  }
+
+  /// Returns true if input [message] can be verified by the given message
+  /// authentication code [mac].
+  @pragma('vm:prefer-inline')
+  bool verify(List<int> message, List<int> mac, [List<int>? aad]) {
+    return $mac(message, aad).isEqual(mac);
   }
 }

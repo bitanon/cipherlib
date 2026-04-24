@@ -68,9 +68,9 @@ void main() {
         final iv = randomBytes(16);
         final aad = randomBytes(key[0]);
         final message = randomBytes(i);
-        final instance = ChaCha20(key, iv).poly1305(aad);
-        final res = instance.sign(message);
-        expect(instance.verify(res.data, res.mac.bytes), isTrue);
+        final instance = ChaCha20(key, iv).poly1305();
+        final res = instance.sign(message, aad);
+        expect(instance.verify(res.data, res.mac.bytes, aad), isTrue);
       }
     });
 
