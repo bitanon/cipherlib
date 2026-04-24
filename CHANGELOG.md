@@ -9,6 +9,14 @@
 
 ## 0.2.0
 
+- ⚙️ Refactored AES (all modes), ChaCha20, Salsa20, and AEAD internals for improved clarity and maintainability.
+- 🚀 Improved performance across core cipher paths and benchmark implementations.
+- ✅ Expanded and reorganized test coverage across AES, stream ciphers, nonce/padding behavior, and cross-library integration tests.
+- 📊 Revamped benchmarking infrastructure and documentation, including native/compiled benchmark support and updated benchmark reports.
+- 🛠️ Updated CI/release workflows, refreshed docs/examples, and bumped `hashlib` dependency.
+
+## 0.1.0
+
 - **AES** in ECB, CBC, CTR, CFB, OFB, GCM, XTS, IGE, and PCBC modes.
 - **ChaCha20** and **XChaCha20** stream ciphers with **Poly1305** AEAD (`ChaCha20Poly1305`, `XChaCha20Poly1305`).
 - **Salsa20** and **XSalsa20** stream ciphers with **Poly1305** AEAD (`Salsa20Poly1305`, `XSalsa20Poly1305`).
