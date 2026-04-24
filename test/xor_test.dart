@@ -80,4 +80,43 @@ void main() {
       expect(buf, equals([0x00, 0xff]));
     });
   });
+
+  group('stream support', () {
+    test('bind preserves key position across chunks', () async {
+      final cipher = XOR([1, 2, 3]);
+      final stream = Stream<List<int>>.fromIterable([
+        [10, 11],
+        [12, 13, 14],
+      ]);
+
+      final chunks = await cipher.bind(stream).toList();
+
+      expect(chunks, hasLength(2));
+      expect(chunks[0], equals([11, 9]));
+      expect(chunks[1], equals([15, 12, 12]));
+    });
+
+    test('stream transforms byte stream with custom chunk size', () async {
+      final cipher = XOR([1, 2, 3]);
+      final input = Stream<int>.fromIterable([10, 11, 12, 13, 14]);
+
+      final output = await cipher.stream(input, 2).toList();
+
+      expect(output, equals([11, 9, 15, 12, 12]));
+    });
+
+    test('cast is unsupported for StreamCipher', () {
+      final cipher = XOR([1]);
+      expect(
+        () => cipher.cast<List<int>, Uint8List>(),
+        throwsA(
+          isA<UnsupportedError>().having(
+            (e) => e.message,
+            'message',
+            'StreamCipher does not allow casting',
+          ),
+        ),
+      );
+    });
+  });
 }

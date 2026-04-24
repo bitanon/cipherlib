@@ -14,7 +14,7 @@ import '../utils/typed_data.dart';
 /// This implementation is based on [XOR cipher][wiki] from Wikipedia.
 ///
 /// [wiki]: https://en.wikipedia.org/wiki/XOR_cipher
-class XOR extends Cipher {
+class XOR extends StreamCipher {
   @override
   final String name = "XOR";
 
@@ -44,5 +44,22 @@ class XOR extends Cipher {
       output[i] = message[i] ^ key[k];
     }
     return output;
+  }
+
+  @override
+  Stream<Uint8List> bind(Stream<List<int>> stream) async* {
+    int k = 0;
+    int kLen = key.length;
+    await for (final chunk in stream) {
+      int mLen = chunk.length;
+      final output = Uint8List(mLen);
+      for (int i = 0; i < mLen; ++i, ++k) {
+        if (k == kLen) {
+          k = 0;
+        }
+        output[i] = chunk[i] ^ key[k];
+      }
+      yield output;
+    }
   }
 }

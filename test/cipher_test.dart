@@ -25,6 +25,19 @@ class TestCipher extends Cipher {
       Uint8List.fromList(message.map((e) => e + 1).toList());
 }
 
+// Concrete implementation of StreamCipher for testing
+class TestStreamCipher extends StreamCipher {
+  @override
+  String get name => 'TestStreamCipher';
+
+  @override
+  Uint8List convert(List<int> message) =>
+      Uint8List.fromList(message.map((e) => e + 1).toList());
+
+  @override
+  Stream<Uint8List> bind(Stream<List<int>> stream) => stream.map(convert);
+}
+
 // Concrete implementation of SaltedCipher for testing
 class TestSaltedCipher extends Cipher with SaltedCipher {
   @override
@@ -69,95 +82,130 @@ void main() {
     });
   });
 
-  group('Cipher Tests', () {
-    test('convert transforms message correctly', () {
-      final cipher = TestCipher();
-      expect(cipher.name, 'TestCipher');
-      final message = [1, 2, 3, 4, 5, 6];
-      final result = cipher.convert(message);
-      expect(result, Uint8List.fromList([2, 3, 4, 5, 6, 7]));
+  test('convert transforms message correctly', () {
+    final cipher = TestCipher();
+    expect(cipher.name, 'TestCipher');
+    final message = [1, 2, 3, 4, 5, 6];
+    final result = cipher.convert(message);
+    expect(result, Uint8List.fromList([2, 3, 4, 5, 6, 7]));
+  });
+
+  group('SaltedCipher Tests', () {
+    test('resetIV replaces the IV with a new one', () {
+      var iv = Uint8List(16);
+      final cipher = TestSaltedCipher(iv);
+      expect(cipher.name, 'TestSaltedCipher');
+      expect(cipher.iv, iv);
+      cipher.resetIV();
+      expect(cipher.iv, iv);
+      expect(cipher.iv, isNot(Uint8List(16)));
     });
 
-    group('SaltedCipher Tests', () {
-      test('resetIV replaces the IV with a new one', () {
-        var iv = Uint8List(16);
-        final cipher = TestSaltedCipher(iv);
-        expect(cipher.name, 'TestSaltedCipher');
-        expect(cipher.iv, iv);
-        cipher.resetIV();
-        expect(cipher.iv, iv);
-        expect(cipher.iv, isNot(Uint8List(16)));
-      });
+    test('resetIV only mutates the IV view range', () {
+      final backing = Uint8List.fromList(List.generate(32, (i) => i));
+      final ivView = Uint8List.view(backing.buffer, 8, 16);
+      final before = Uint8List.fromList(backing);
+      final cipher = TestSaltedCipher(ivView);
 
-      test('resetIV only mutates the IV view range', () {
-        final backing = Uint8List.fromList(List.generate(32, (i) => i));
-        final ivView = Uint8List.view(backing.buffer, 8, 16);
-        final before = Uint8List.fromList(backing);
-        final cipher = TestSaltedCipher(ivView);
+      cipher.resetIV();
 
-        cipher.resetIV();
+      for (int i = 0; i < 8; i++) {
+        expect(
+          backing[i],
+          equals(before[i]),
+          reason: 'prefix byte $i should remain unchanged',
+        );
+      }
+      for (int i = 24; i < backing.length; i++) {
+        expect(
+          backing[i],
+          equals(before[i]),
+          reason: 'suffix byte $i should remain unchanged',
+        );
+      }
+    });
+  });
 
-        for (int i = 0; i < 8; i++) {
-          expect(
-            backing[i],
-            equals(before[i]),
-            reason: 'prefix byte $i should remain unchanged',
-          );
-        }
-        for (int i = 24; i < backing.length; i++) {
-          expect(
-            backing[i],
-            equals(before[i]),
-            reason: 'suffix byte $i should remain unchanged',
-          );
-        }
-      });
+  group('StreamCipher Tests', () {
+    test('bind transforms chunked input', () async {
+      final cipher = TestStreamCipher();
+      final stream = Stream<List<int>>.fromIterable([
+        [1, 2],
+        [3],
+      ]);
+
+      final chunks = await cipher.bind(stream).toList();
+      expect(chunks, hasLength(2));
+      expect(chunks[0], equals([2, 3]));
+      expect(chunks[1], equals([4]));
     });
 
-    group('CollateCipher Tests', () {
-      final cipher = TestCollateCipher();
+    test('stream flattens transformed chunks', () async {
+      final cipher = TestStreamCipher();
+      final stream = Stream<int>.fromIterable([1, 2, 3, 4]);
 
-      test('name is correct', () {
-        expect(cipher.name, 'TestCollateCipher');
-      });
+      final output = await cipher.stream(stream, 2).toList();
+      expect(output, equals([2, 3, 4, 5]));
+    });
 
-      test('encrypt method should encrypt data correctly', () {
-        final message = [1, 2, 3];
-        final encrypted = cipher.encrypt(message);
-        expect(encrypted, [2, 3, 4]);
-      });
+    test('cast throws unsupported error', () {
+      final cipher = TestStreamCipher();
+      expect(
+        () => cipher.cast<List<int>, Uint8List>(),
+        throwsA(
+          isA<UnsupportedError>().having(
+            (e) => e.message,
+            'message',
+            'StreamCipher does not allow casting',
+          ),
+        ),
+      );
+    });
+  });
 
-      test('decrypt method should decrypt data correctly', () {
-        final message = [2, 3, 4];
-        final decrypted = cipher.decrypt(message);
-        expect(decrypted, [3, 4, 5]);
-      });
+  group('CollateCipher Tests', () {
+    final cipher = TestCollateCipher();
 
-      test('encryptString method should encrypt string correctly', () {
-        final message = 'abc';
-        final encrypted = cipher.encryptString(message);
-        expect(encrypted, [98, 99, 100]); // 'bcd'
-      });
+    test('name is correct', () {
+      expect(cipher.name, 'TestCollateCipher');
+    });
 
-      test('decryptString method should decrypt string correctly', () {
-        final message = 'abc';
-        final decrypted = cipher.decryptString(message);
-        expect(decrypted, [98, 99, 100]); // 'bcd'
-      });
+    test('encrypt method should encrypt data correctly', () {
+      final message = [1, 2, 3];
+      final encrypted = cipher.encrypt(message);
+      expect(encrypted, [2, 3, 4]);
+    });
 
-      test('encryptString method with encoding should encrypt string correctly',
-          () {
-        final message = 'abc';
-        final encrypted = cipher.encryptString(message, utf8);
-        expect(encrypted, [98, 99, 100]); // 'bcd'
-      });
+    test('decrypt method should decrypt data correctly', () {
+      final message = [2, 3, 4];
+      final decrypted = cipher.decrypt(message);
+      expect(decrypted, [3, 4, 5]);
+    });
 
-      test('decryptString method with encoding should decrypt string correctly',
-          () {
-        final message = 'abc';
-        final decrypted = cipher.decryptString(message, utf8);
-        expect(decrypted, [98, 99, 100]); // 'bcd'
-      });
+    test('encryptString method should encrypt string correctly', () {
+      final message = 'abc';
+      final encrypted = cipher.encryptString(message);
+      expect(encrypted, [98, 99, 100]); // 'bcd'
+    });
+
+    test('decryptString method should decrypt string correctly', () {
+      final message = 'abc';
+      final decrypted = cipher.decryptString(message);
+      expect(decrypted, [98, 99, 100]); // 'bcd'
+    });
+
+    test('encryptString method with encoding should encrypt string correctly',
+        () {
+      final message = 'abc';
+      final encrypted = cipher.encryptString(message, utf8);
+      expect(encrypted, [98, 99, 100]); // 'bcd'
+    });
+
+    test('decryptString method with encoding should decrypt string correctly',
+        () {
+      final message = 'abc';
+      final decrypted = cipher.decryptString(message, utf8);
+      expect(decrypted, [98, 99, 100]); // 'bcd'
     });
   });
 }

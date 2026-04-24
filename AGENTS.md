@@ -46,16 +46,19 @@ Run everything from the repo root.
 | Install deps                  | `dart pub get`                          |
 | Static analysis               | `dart analyze`                          |
 | Format check (must pass)      | `dart format --set-exit-if-changed .`   |
-| Run all tests                 | `dart test`                             |
-| Run tests on VM only          | `dart test -p vm`                       |
-| Run a single test file        | `dart test test/aes_cbc_test.dart`      |
-| Run tests matching a name     | `dart test -N "pattern"`                |
+| Run all tests (VM, default)   | `dart test -p vm`                       |
+| Run a single test file        | `dart test -p vm test/aes_cbc_test.dart` |
+| Run tests matching a name     | `dart test -p vm -N "pattern"`          |
+| Run on all platforms (rare)   | `dart test`                             |
 | Coverage (LCOV + Cobertura)   | `sh scripts/coverage.sh`                |
 | Benchmarks (regenerates md)   | `sh scripts/benchmark.sh`               |
 | Run the example               | `dart run example/cipherlib_example.dart` |
 
-Tests run on both `vm` and `node` platforms (see `dart_test.yaml`). Tag a test
-with `@Tags(['vm-only'])` when it uses `dart:io` or other non-web APIs.
+**Run tests and coverage on the VM by default** (`dart test -p vm`, which is
+also what `scripts/coverage.sh` uses). `dart_test.yaml` declares `vm` and
+`node` platforms, but only invoke `node` (or `dart test` without `-p`) when
+the change specifically targets web/JS compatibility or a bug reported there.
+Tag tests that use `dart:io` or other non-web APIs with `@Tags(['vm-only'])`.
 
 ## Coding Conventions
 
@@ -86,9 +89,11 @@ with `@Tags(['vm-only'])` when it uses `dart:io` or other non-web APIs.
   spec / libsodium / NIST vector. Put the raw vectors under `test/fixtures/`.
 - Mirror the existing structure: a `validation` group for argument checks and
   additional groups for KATs and round-trip tests.
-- When touching an existing algorithm, run the full `dart test` suite — many
-  cross-cutting tests (`cipher_test.dart`, `compare_test.dart`,
-  `nonce_test.dart`, `padding_test.dart`) exercise shared code paths.
+- When touching an existing algorithm, run the full VM suite
+  (`dart test -p vm`) — many cross-cutting tests (`cipher_test.dart`,
+  `compare_test.dart`, `nonce_test.dart`, `padding_test.dart`) exercise
+  shared code paths. Only add a `node`/multi-platform run when the change
+  could affect JS/web behavior.
 - `test_integration/` compares our output against `pointycastle` and
   `cryptography`. Do not remove coverage there; add new comparisons when
   introducing algorithms those libraries support.

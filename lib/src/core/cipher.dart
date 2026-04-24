@@ -1,11 +1,17 @@
 // Copyright (c) 2024, Sudipto Chandra
 // All rights reserved. Check LICENSE file for details.
 
+import 'dart:async' show StreamTransformer;
 import 'dart:convert' show Encoding;
 import 'dart:typed_data' show Uint8List;
 
 import 'package:hashlib/random.dart' show fillRandom;
 
+import '../utils/chunk_stream.dart';
+
+// ------------------------------------------------------------
+// CipherBase
+// ------------------------------------------------------------
 /// Template for all Cipher algorithms in this package
 abstract class CipherBase {
   const CipherBase();
@@ -14,37 +20,12 @@ abstract class CipherBase {
   String get name;
 }
 
-/// Template for Cipher algorithm that uses the same logic for
-/// both encryption and decryption.
-abstract class Cipher implements CipherBase {
-  // TODO: StreamTransformer<List<int>, Uint8List>
-  const Cipher();
-
-  /// Transforms the [message].
-  Uint8List convert(List<int> message);
-
-  // TODO: Disable StreamTransformer support for now
-  // @override
-  // Stream<Uint8List> bind(Stream<List<int>> stream) => stream.map(convert);
-
-  // @override
-  // StreamTransformer<RS, RT> cast<RS, RT>() {
-  //   throw UnsupportedError('StreamCipherBase does not allow casting');
-  // }
-
-  // /// Transforms the [stream]
-  // Stream<int> stream(Stream<int> stream, [int chunkSize = 1024]) async* {
-  //   final chunk = asChunkedStream(chunkSize, stream);
-  //   await for (var data in bind(chunk)) {
-  //     for (var byte in data) {
-  //       yield byte;
-  //     }
-  //   }
-  // }
-}
+// ------------------------------------------------------------
+// SaltedCipher
+// ------------------------------------------------------------
 
 /// Mixin to use a random initialization vector or salt with the Cipher
-abstract class SaltedCipher implements CipherBase {
+mixin SaltedCipher on CipherBase {
   /// The salt or initialization vector
   Uint8List get iv;
 
@@ -57,8 +38,54 @@ abstract class SaltedCipher implements CipherBase {
       );
 }
 
-/// Template for Cipher algorithm which does not use the same logic for
-/// encryption and decryption.
+// ------------------------------------------------------------
+// Cipher
+// ------------------------------------------------------------
+/// Template for symmetric cipher algorithms that uses the same logic for
+/// both encryption and decryption.
+abstract class Cipher implements CipherBase {
+  const Cipher();
+
+  /// Transforms the [message] of bytes using the algorithm.
+  Uint8List convert(List<int> message);
+}
+
+// ------------------------------------------------------------
+// StreamCipher
+// ------------------------------------------------------------
+
+/// Template for Cipher algorithm that uses the same logic for
+/// both encryption and decryption.
+abstract class StreamCipher
+    implements Cipher, StreamTransformer<List<int>, Uint8List> {
+  const StreamCipher();
+
+  /// Transform the [stream] of chunks of message bytes using the algorithm.
+  @override
+  Stream<Uint8List> bind(Stream<List<int>> stream);
+
+  @override
+  StreamTransformer<RS, RT> cast<RS, RT>() {
+    throw UnsupportedError('StreamCipher does not allow casting');
+  }
+
+  /// Transforms the [stream] of message bytes using the algorithm.
+  Stream<int> stream(Stream<int> stream, [int chunkSize = 1024]) async* {
+    final chunk = asChunkedStream(chunkSize, stream);
+    await for (var data in bind(chunk)) {
+      for (var byte in data) {
+        yield byte;
+      }
+    }
+  }
+}
+
+// ------------------------------------------------------------
+// CollateCipher
+// ------------------------------------------------------------
+
+/// Template for symmetric cipher algorithms which does not use the same logic
+/// for both encryption and decryption.
 abstract class CollateCipher<E extends Cipher, D extends Cipher>
     implements CipherBase {
   const CollateCipher();
