@@ -20,7 +20,7 @@ const int _mask32 = 0xFFFFFFFF;
 ///
 /// See also:
 /// - [XSalsa20] for better security with 192-bit nonce
-class Salsa20 extends Cipher with SaltedCipher {
+class Salsa20 extends StreamCipher with SaltedCipher {
   @override
   String get name => "Salsa20";
 
@@ -30,10 +30,7 @@ class Salsa20 extends Cipher with SaltedCipher {
   /// Key for the cipher
   final Uint8List key;
 
-  const Salsa20._(
-    this.key,
-    this.iv,
-  );
+  const Salsa20._(this.key, this.iv);
 
   /// Creates an instance with a [key], [nonce], and [counter] containing a
   /// list of bytes.
@@ -47,32 +44,39 @@ class Salsa20 extends Cipher with SaltedCipher {
     List<int>? nonce,
     Nonce64? counter,
   ]) {
-    // validate key
-    if (key.length != 16 && key.length != 32) {
-      throw ArgumentError('The key should be either 16 or 32 bytes');
-    }
-    final key8 = toUint8List(key);
+    final key8 = validateLength('key', key, {16, 32});
 
-    // validate nonce
-    Uint8List nonce8;
     nonce ??= randomBytes(counter == null ? 16 : 8);
-    if (nonce.length == 8) {
+    var nonce8 = toUint8List(nonce);
+
+    if (nonce8.length == 16) {
+      if (counter != null) {
+        throw ArgumentError.value(
+            counter, 'counter', 'not expected with a 16-byte nonce');
+      }
+    } else if (nonce8.length == 8) {
       nonce8 = Uint8List(16);
-      for (int i = 0; i < 8; ++i) {
-        nonce8[i] = nonce[i];
-      }
+      nonce8[0] = nonce[0];
+      nonce8[1] = nonce[1];
+      nonce8[2] = nonce[2];
+      nonce8[3] = nonce[3];
+      nonce8[4] = nonce[4];
+      nonce8[5] = nonce[5];
+      nonce8[6] = nonce[6];
+      nonce8[7] = nonce[7];
       if (counter != null) {
-        for (int i = 0; i < 8; ++i) {
-          nonce8[8 + i] = counter.bytes[i];
-        }
+        nonce8[8] = counter.bytes[0];
+        nonce8[9] = counter.bytes[1];
+        nonce8[10] = counter.bytes[2];
+        nonce8[11] = counter.bytes[3];
+        nonce8[12] = counter.bytes[4];
+        nonce8[13] = counter.bytes[5];
+        nonce8[14] = counter.bytes[6];
+        nonce8[15] = counter.bytes[7];
       }
-    } else if (nonce.length == 16) {
-      if (counter != null) {
-        throw ArgumentError('Counter is not expected with a 16-byte nonce');
-      }
-      nonce8 = toUint8List(nonce);
     } else {
-      throw ArgumentError('The nonce should be either 8 or 16 bytes');
+      throw ArgumentError.value(
+          nonce, 'nonce', 'length must be one of [8, 16] bytes');
     }
 
     return Salsa20._(key8, nonce8);
@@ -106,10 +110,7 @@ class Salsa20 extends Cipher with SaltedCipher {
 
     for (i = 0; i < n;) {
       _process(state32, key32, iv32);
-      ++iv32[2];
-      if (iv32[2] == 0) {
-        ++iv32[3];
-      }
+      _increment(iv32);
       for (p = 0; p < 64 && i < n; ++p, ++i) {
         result[i] = message[i] ^ state[p];
       }
@@ -117,9 +118,57 @@ class Salsa20 extends Cipher with SaltedCipher {
     return result;
   }
 
+  @override
+  Stream<Uint8List> bind(Stream<List<int>> stream) async* {
+    int i, p, n;
+
+    final iv32 = Uint32List(4);
+    final result = Uint8List(64);
+    final state32 = Uint32List(16);
+    final key32 = Uint32List.view(key.buffer);
+    final state = Uint8List.view(state32.buffer);
+    final nonce32 = Uint32List.view(iv.buffer);
+
+    iv32[0] = nonce32[0];
+    iv32[1] = nonce32[1];
+    iv32[2] = nonce32[2];
+    iv32[3] = nonce32[3];
+
+    p = 0;
+    _process(state32, key32, iv32);
+    _increment(iv32);
+    await for (final chunk in stream) {
+      n = chunk.length;
+      for (i = 0; i < n;) {
+        for (; p < 64 && i < n; p++, i++) {
+          result[p] = chunk[i] ^ state[p];
+        }
+        if (p == 64) {
+          _process(state32, key32, iv32);
+          _increment(iv32);
+          yield result.sublist(0);
+          p = 0;
+        }
+      }
+    }
+    if (p > 0) {
+      yield result.sublist(0, p);
+    }
+  }
+
   @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   static int _rotl32(int x, int n) =>
       (((x << n) & _mask32) ^ ((x & _mask32) >>> (32 - n)));
+
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  static void _increment(Uint32List iv32) {
+    iv32[2]++;
+    if (iv32[2] == 0) {
+      iv32[3]++;
+    }
+  }
 
   static void _process(
     Uint32List input,
@@ -261,7 +310,7 @@ class Salsa20 extends Cipher with SaltedCipher {
 ///
 /// See also:
 /// - [Salsa20]
-class XSalsa20 extends Cipher with SaltedCipher {
+class XSalsa20 extends StreamCipher with SaltedCipher {
   @override
   String get name => "XSalsa20";
 
@@ -336,6 +385,11 @@ class XSalsa20 extends Cipher with SaltedCipher {
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   Uint8List convert(List<int> message) => internal.convert(message);
+
+  @override
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  Stream<Uint8List> bind(Stream<List<int>> stream) => internal.bind(stream);
 
   @override
   @pragma('vm:prefer-inline')

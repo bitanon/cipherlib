@@ -20,7 +20,7 @@ const int _mask32 = 0xFFFFFFFF;
 ///
 /// See also:
 /// - [XChaCha20] for better security with 192-bit nonce
-class ChaCha20 extends Cipher with SaltedCipher {
+class ChaCha20 extends StreamCipher with SaltedCipher {
   @override
   String get name => "ChaCha20";
 
@@ -51,48 +51,64 @@ class ChaCha20 extends Cipher with SaltedCipher {
     List<int>? nonce,
     Nonce64? counter,
   ]) {
-    // validate ley
-    if (key.length != 16 && key.length != 32) {
-      throw ArgumentError('The key should be either 16 or 32 bytes');
-    }
-    final key8 = toUint8List(key);
+    final key8 = validateLength('key', key, {16, 32});
 
-    // validate nonce
-    Uint8List nonce8;
-    int counterSize = 8;
-    nonce ??= randomBytes(8);
-    if (nonce.length == 8) {
-      nonce8 = Uint8List(16);
-      if (counter == null) {
-        nonce8[0] = 1;
-      } else {
-        for (int i = 0; i < counter.length; i++) {
-          nonce8[i] = counter.bytes[i];
-        }
-      }
-      for (int i = 0; i < nonce.length; i++) {
-        nonce8[i + 8] = nonce[i];
-      }
-    } else if (nonce.length == 12) {
-      counterSize = 4;
-      nonce8 = Uint8List(16);
-      if (counter == null) {
-        nonce8[0] = 1;
-      } else {
-        for (int i = 0; i < counter.length; i++) {
-          nonce8[i] = counter.bytes[i];
-        }
-      }
-      for (int i = 0; i < nonce.length; i++) {
-        nonce8[i + 4] = nonce[i];
-      }
-    } else if (nonce.length == 16) {
+    nonce ??= randomBytes(counter == null ? 16 : 8);
+    var nonce8 = toUint8List(nonce);
+    int counterSize = nonce8.length == 12 ? 4 : 8;
+
+    if (nonce8.length == 16) {
       if (counter != null) {
-        throw ArgumentError('Counter is not expected with 16-byte nonce');
+        throw ArgumentError.value(
+            counter, 'counter', 'not expected with a 16-byte nonce');
       }
-      nonce8 = nonce is Uint8List ? nonce : Uint8List.fromList(nonce);
+    } else if (nonce8.length == 8) {
+      nonce8 = Uint8List(16);
+      if (counter == null) {
+        nonce8[0] = 1;
+      } else {
+        nonce8[0] = counter.bytes[0];
+        nonce8[1] = counter.bytes[1];
+        nonce8[2] = counter.bytes[2];
+        nonce8[3] = counter.bytes[3];
+        nonce8[4] = counter.bytes[4];
+        nonce8[5] = counter.bytes[5];
+        nonce8[6] = counter.bytes[6];
+        nonce8[7] = counter.bytes[7];
+      }
+      nonce8[8] = nonce[0];
+      nonce8[9] = nonce[1];
+      nonce8[10] = nonce[2];
+      nonce8[11] = nonce[3];
+      nonce8[12] = nonce[4];
+      nonce8[13] = nonce[5];
+      nonce8[14] = nonce[6];
+      nonce8[15] = nonce[7];
+    } else if (nonce8.length == 12) {
+      nonce8 = Uint8List(16);
+      if (counter == null) {
+        nonce8[0] = 1;
+      } else {
+        nonce8[0] = counter.bytes[0];
+        nonce8[1] = counter.bytes[1];
+        nonce8[2] = counter.bytes[2];
+        nonce8[3] = counter.bytes[3];
+      }
+      nonce8[4] = nonce[0];
+      nonce8[5] = nonce[1];
+      nonce8[6] = nonce[2];
+      nonce8[7] = nonce[3];
+      nonce8[8] = nonce[4];
+      nonce8[9] = nonce[5];
+      nonce8[10] = nonce[6];
+      nonce8[11] = nonce[7];
+      nonce8[12] = nonce[8];
+      nonce8[13] = nonce[9];
+      nonce8[14] = nonce[10];
+      nonce8[15] = nonce[11];
     } else {
-      throw ArgumentError('The nonce should be either 8, 12 or 16 bytes');
+      throw ArgumentError.value(
+          nonce, 'nonce', 'length must be one of [8, 12, 16] bytes');
     }
 
     return ChaCha20._(key8, nonce8, counterSize);
@@ -132,10 +148,7 @@ class ChaCha20 extends Cipher with SaltedCipher {
 
     for (i = 0; i < message.length;) {
       _process(state32, key32, iv32);
-      ++iv32[0];
-      if (iv32[0] == 0 && counterBytes == 8) {
-        ++iv32[1];
-      }
+      _increment(iv32, counterBytes);
       for (p = 0; p < 64 && i < message.length; ++p, ++i) {
         result[i] = message[i] ^ state[p];
       }
@@ -144,9 +157,57 @@ class ChaCha20 extends Cipher with SaltedCipher {
     return result;
   }
 
+  @override
+  Stream<Uint8List> bind(Stream<List<int>> stream) async* {
+    int i, p, n;
+
+    final iv32 = Uint32List(4);
+    final result = Uint8List(64);
+    final state32 = Uint32List(16);
+    final key32 = Uint32List.view(key.buffer);
+    final state = Uint8List.view(state32.buffer);
+    final nonce32 = Uint32List.view(iv.buffer);
+
+    iv32[0] = nonce32[0];
+    iv32[1] = nonce32[1];
+    iv32[2] = nonce32[2];
+    iv32[3] = nonce32[3];
+
+    p = 0;
+    _process(state32, key32, iv32);
+    _increment(iv32, counterBytes);
+    await for (final chunk in stream) {
+      n = chunk.length;
+      for (i = 0; i < n;) {
+        for (; p < 64 && i < n; p++, i++) {
+          result[p] = chunk[i] ^ state[p];
+        }
+        if (p == 64) {
+          _process(state32, key32, iv32);
+          _increment(iv32, counterBytes);
+          yield result.sublist(0);
+          p = 0;
+        }
+      }
+    }
+    if (p > 0) {
+      yield result.sublist(0, p);
+    }
+  }
+
   @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
   static int _rotl32(int x, int n) =>
       (((x << n) & _mask32) ^ ((x & _mask32) >>> (32 - n)));
+
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  static void _increment(Uint32List iv32, int counterBytes) {
+    iv32[0]++;
+    if (iv32[0] == 0 && counterBytes == 8) {
+      iv32[1]++;
+    }
+  }
 
   static void _process(
     Uint32List input,
@@ -320,7 +381,7 @@ class ChaCha20 extends Cipher with SaltedCipher {
 ///
 /// See also:
 /// - [ChaCha20]
-class XChaCha20 extends Cipher with SaltedCipher {
+class XChaCha20 extends StreamCipher with SaltedCipher {
   @override
   String get name => "XChaCha20";
 
@@ -396,6 +457,11 @@ class XChaCha20 extends Cipher with SaltedCipher {
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   Uint8List convert(List<int> message) => internal.convert(message);
+
+  @override
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  Stream<Uint8List> bind(Stream<List<int>> stream) => internal.bind(stream);
 
   @override
   @pragma('vm:prefer-inline')

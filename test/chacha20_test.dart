@@ -216,4 +216,84 @@ void main() {
       });
     });
   });
+
+  group('stream support', () {
+    test('bind output matches convert output across uneven chunks', () async {
+      final key = fromHex(
+        '808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9f',
+      );
+      final nonce = fromHex('070000004041424344454647');
+      final message = Uint8List.fromList(List<int>.generate(200, (i) => i));
+
+      final streamChunks = <List<int>>[
+        message.sublist(0, 2),
+        message.sublist(2, 65),
+        message.sublist(65, 70),
+        message.sublist(70, 150),
+        message.sublist(150),
+      ];
+
+      final chacha = ChaCha20(key, nonce);
+      final outputChunks = await chacha
+          .bind(Stream<List<int>>.fromIterable(streamChunks))
+          .toList();
+      final streamOutput = Uint8List.fromList(
+        outputChunks.expand((chunk) => chunk).toList(),
+      );
+
+      expect(streamOutput, equals(chacha20(message, key, nonce: nonce)));
+    });
+
+    test('bind emits independent full chunks', () async {
+      final key = fromHex(
+        '808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9f',
+      );
+      final nonce = fromHex('070000004041424344454647');
+      final message = Uint8List.fromList(List<int>.generate(128, (i) => i));
+
+      final chacha = ChaCha20(key, nonce);
+      final chunks = await chacha
+          .bind(
+            Stream<List<int>>.fromIterable(
+              [message.sublist(0, 64), message.sublist(64, 128)],
+            ),
+          )
+          .toList();
+
+      expect(chunks, hasLength(2));
+      expect(identical(chunks[0], chunks[1]), isFalse);
+
+      final firstBefore = chunks[0][0];
+      chunks[1][0] ^= 0xFF;
+      expect(chunks[0][0], equals(firstBefore));
+    });
+
+    test('stream transforms byte stream with custom chunk size', () async {
+      final key = fromHex(
+        '808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9f',
+      );
+      final nonce = fromHex('070000004041424344454647');
+      final message = Uint8List.fromList(List<int>.generate(129, (i) => i));
+      final chacha = ChaCha20(key, nonce);
+
+      final output =
+          await chacha.stream(Stream<int>.fromIterable(message), 7).toList();
+
+      expect(output, equals(chacha20(message, key, nonce: nonce)));
+    });
+
+    test('cast is unsupported for StreamCipher', () {
+      final chacha = ChaCha20(Uint8List(32), Uint8List(12));
+      expect(
+        () => chacha.cast<List<int>, Uint8List>(),
+        throwsA(
+          isA<UnsupportedError>().having(
+            (e) => e.message,
+            'message',
+            'StreamCipher does not allow casting',
+          ),
+        ),
+      );
+    });
+  });
 }

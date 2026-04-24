@@ -48,18 +48,19 @@ class XOR extends StreamCipher {
 
   @override
   Stream<Uint8List> bind(Stream<List<int>> stream) async* {
-    int k = 0;
-    int kLen = key.length;
+    int i, k, mLen, kLen;
+    k = 0;
+    kLen = key.length;
     await for (final chunk in stream) {
-      int mLen = chunk.length;
-      final output = Uint8List(mLen);
-      for (int i = 0; i < mLen; ++i, ++k) {
+      mLen = chunk.length;
+      final result = Uint8List(mLen);
+      for (i = 0; i < mLen; ++i, ++k) {
         if (k == kLen) {
           k = 0;
         }
-        output[i] = chunk[i] ^ key[k];
+        result[i] = chunk[i] ^ key[k];
       }
-      yield output;
+      yield result;
     }
   }
 }

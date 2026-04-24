@@ -235,4 +235,83 @@ void main() {
       expect(out1.skip(128), equals(out2.take(128)));
     });
   });
+
+  group('stream support', () {
+    test('bind output matches convert output across uneven chunks', () async {
+      final key = fromHex(
+        '0053A6F94C9FF24598EB3E91E4378ADD3083D6297CCF2275C81B6EC11467BA0D',
+      );
+      final nonce = fromHex('0D74DB42A91077DE');
+      final message = Uint8List.fromList(List<int>.generate(200, (i) => i));
+
+      final streamChunks = <List<int>>[
+        message.sublist(0, 3),
+        message.sublist(3, 70),
+        message.sublist(70, 75),
+        message.sublist(75, 150),
+        message.sublist(150),
+      ];
+
+      final salsa = Salsa20(key, nonce);
+      final outputChunks = await salsa
+          .bind(Stream<List<int>>.fromIterable(streamChunks))
+          .toList();
+      final streamOutput = Uint8List.fromList(
+        outputChunks.expand((chunk) => chunk).toList(),
+      );
+
+      expect(streamOutput, equals(salsa20(message, key, nonce: nonce)));
+    });
+
+    test('bind emits independent full chunks', () async {
+      final key = fromHex(
+        '0053A6F94C9FF24598EB3E91E4378ADD3083D6297CCF2275C81B6EC11467BA0D',
+      );
+      final nonce = fromHex('0D74DB42A91077DE');
+      final message = Uint8List.fromList(List<int>.generate(128, (i) => i));
+
+      final salsa = Salsa20(key, nonce);
+      final chunks = await salsa
+          .bind(
+            Stream<List<int>>.fromIterable(
+                [message.sublist(0, 64), message.sublist(64, 128)]),
+          )
+          .toList();
+
+      expect(chunks, hasLength(2));
+      expect(identical(chunks[0], chunks[1]), isFalse);
+
+      final firstBefore = chunks[0][0];
+      chunks[1][0] ^= 0xFF;
+      expect(chunks[0][0], equals(firstBefore));
+    });
+
+    test('stream transforms byte stream with custom chunk size', () async {
+      final key = fromHex(
+        '0A5DB00356A9FC4FA2F5489BEE4194E73A8DE03386D92C7FD22578CB1E71C417',
+      );
+      final nonce = fromHex('1F86ED54BB2289F0');
+      final message = Uint8List.fromList(List<int>.generate(129, (i) => i));
+      final salsa = Salsa20(key, nonce);
+
+      final output =
+          await salsa.stream(Stream<int>.fromIterable(message), 11).toList();
+
+      expect(output, equals(salsa20(message, key, nonce: nonce)));
+    });
+
+    test('cast is unsupported for StreamCipher', () {
+      final salsa = Salsa20(Uint8List(32), Uint8List(8));
+      expect(
+        () => salsa.cast<List<int>, Uint8List>(),
+        throwsA(
+          isA<UnsupportedError>().having(
+            (e) => e.message,
+            'message',
+            'StreamCipher does not allow casting',
+          ),
+        ),
+      );
+    });
+  });
 }

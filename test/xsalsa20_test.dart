@@ -172,4 +172,84 @@ void main() {
       });
     });
   });
+
+  group('stream support', () {
+    test('bind output matches convert output across uneven chunks', () async {
+      final key = fromHex(
+        '808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9f',
+      );
+      final nonce = '@ABCDEFGHIJKLMNOPQRSTUVW'.codeUnits;
+      final message = Uint8List.fromList(List<int>.generate(200, (i) => i));
+
+      final streamChunks = <List<int>>[
+        message.sublist(0, 1),
+        message.sublist(1, 70),
+        message.sublist(70, 73),
+        message.sublist(73, 160),
+        message.sublist(160),
+      ];
+
+      final xsalsa = XSalsa20(key, nonce);
+      final outputChunks = await xsalsa
+          .bind(Stream<List<int>>.fromIterable(streamChunks))
+          .toList();
+      final streamOutput = Uint8List.fromList(
+        outputChunks.expand((chunk) => chunk).toList(),
+      );
+
+      expect(streamOutput, equals(xsalsa20(message, key, nonce: nonce)));
+    });
+
+    test('bind emits independent full chunks', () async {
+      final key = fromHex(
+        '808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9f',
+      );
+      final nonce = '@ABCDEFGHIJKLMNOPQRSTUVW'.codeUnits;
+      final message = Uint8List.fromList(List<int>.generate(128, (i) => i));
+
+      final xsalsa = XSalsa20(key, nonce);
+      final chunks = await xsalsa
+          .bind(
+            Stream<List<int>>.fromIterable(
+              [message.sublist(0, 64), message.sublist(64, 128)],
+            ),
+          )
+          .toList();
+
+      expect(chunks, hasLength(2));
+      expect(identical(chunks[0], chunks[1]), isFalse);
+
+      final firstBefore = chunks[0][0];
+      chunks[1][0] ^= 0xFF;
+      expect(chunks[0][0], equals(firstBefore));
+    });
+
+    test('stream transforms byte stream with custom chunk size', () async {
+      final key = fromHex(
+        '808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9f',
+      );
+      final nonce = '@ABCDEFGHIJKLMNOPQRSTUVW'.codeUnits;
+      final message = Uint8List.fromList(List<int>.generate(129, (i) => i));
+      final xsalsa = XSalsa20(key, nonce);
+
+      final output =
+          await xsalsa.stream(Stream<int>.fromIterable(message), 9).toList();
+
+      expect(output, equals(xsalsa20(message, key, nonce: nonce)));
+    });
+
+    test('cast is unsupported for StreamCipher', () {
+      final xsalsa = XSalsa20(Uint8List(32), Uint8List(24));
+      expect(
+        () => xsalsa.cast<List<int>, Uint8List>(),
+        throwsA(
+          isA<UnsupportedError>().having(
+            (e) => e.message,
+            'message',
+            'StreamCipher does not allow casting',
+          ),
+        ),
+      );
+    });
+  });
 }

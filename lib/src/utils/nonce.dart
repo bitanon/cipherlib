@@ -60,30 +60,48 @@ class Nonce extends _NonceBase {
   final Uint8List bytes;
 
   /// Get the size of this nonce in bits
+  @pragma('vm:prefer-inline')
   int get lengthInBits => bytes.length << 3;
 
   @override
+  @pragma('vm:prefer-inline')
   Nonce reverse() => Nonce._(_reverseBytes(bytes));
 
   /// Adds [padLength] bytes at the start filled with zeros.
+  @pragma('vm:prefer-inline')
   Nonce padLeft(int padLength) {
-    final result = Uint8List(length + padLength);
-    result.setRange(padLength, length + padLength, bytes);
-    return Nonce._(result);
+    return Nonce._(copyInto(Uint8List(length + padLength), padLength));
   }
 
   /// Adds [padLength] bytes at the end filled with zeros.
+  @pragma('vm:prefer-inline')
   Nonce padRight(int padLength) {
-    final result = Uint8List(length + padLength);
-    result.setRange(0, length, bytes);
-    return Nonce._(result);
+    return Nonce._(copyInto(Uint8List(length + padLength)));
   }
 
   /// Adds [padLength] bytes at the start and end filled with zeros.
+  @pragma('vm:prefer-inline')
   Nonce pad(int padLength) {
-    final result = Uint8List(length + padLength + padLength);
-    result.setRange(padLength, length + padLength, bytes);
-    return Nonce._(result);
+    return Nonce._(copyInto(Uint8List(length + (padLength << 1)), padLength));
+  }
+
+  /// Copies the bytes of this nonce into the [buffer] starting at the [offset].
+  ///
+  /// Parameters:
+  /// - [buffer] : The buffer to copy the bytes into.
+  /// - [offset] : The offset at which to start copying the bytes. (Default: 0)
+  /// - [length] : The length of the bytes to copy. (Default: entire nonce)
+  ///
+  /// Returns: The [buffer] with the bytes copied into it.
+  /// Throws: [RangeError] if the [offset] is negative or the [length]
+  /// is greater than the length of the [buffer] minus the [offset].
+  @pragma('vm:prefer-inline')
+  Uint8List copyInto(Uint8List buffer, [int offset = 0, int? length]) {
+    length ??= bytes.length;
+    for (int i = 0; i < length; i++) {
+      buffer[offset + i] = bytes[i];
+    }
+    return buffer;
   }
 }
 

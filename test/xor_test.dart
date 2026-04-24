@@ -96,6 +96,18 @@ void main() {
       expect(chunks[1], equals([15, 12, 12]));
     });
 
+    test('bind wraps key correctly within a large single chunk', () async {
+      final cipher = XOR([1, 2, 3]);
+      final stream = Stream<List<int>>.fromIterable([
+        [10, 11, 12, 13, 14],
+      ]);
+
+      final chunks = await cipher.bind(stream).toList();
+
+      expect(chunks, hasLength(1));
+      expect(chunks[0], equals([11, 9, 15, 12, 12]));
+    });
+
     test('stream transforms byte stream with custom chunk size', () async {
       final cipher = XOR([1, 2, 3]);
       final input = Stream<int>.fromIterable([10, 11, 12, 13, 14]);
