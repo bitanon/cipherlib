@@ -86,7 +86,7 @@ class AEADCipher<C extends Cipher, M extends MACHashBase> implements Cipher {
       sink.add(Uint8List(16 - (dataLength & 15))); // pad with zero
     }
 
-    sink.add(_build128(dataLength, aadLength));
+    sink.add(_build128(aadLength, dataLength));
 
     sink.close();
     return sink.digest();
