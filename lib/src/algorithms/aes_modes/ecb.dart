@@ -1,6 +1,7 @@
 // Copyright (c) 2024, Sudipto Chandra
 // All rights reserved. Check LICENSE file for details.
 
+import 'dart:async' show Stream;
 import 'dart:typed_data';
 
 import '../../core/aes.dart';
@@ -9,7 +10,7 @@ import '../../utils/typed_data.dart';
 import '../padding.dart';
 
 /// Provides encryption for AES cipher in ECB mode.
-class AESInECBModeEncrypt extends Cipher {
+class AESInECBModeEncrypt extends StreamCipher {
   @override
   String get name => "AES#encrypt/ECB/${padding.name}";
 
@@ -92,10 +93,51 @@ class AESInECBModeEncrypt extends Cipher {
       return output.sublist(0, i);
     }
   }
+
+  @override
+  Stream<Uint8List> bind(Stream<List<int>> stream) async* {
+    int i, j;
+    int pos = 0;
+
+    final pending = Uint8List(16);
+    final block32 = Uint32List(4); // 128-bit
+    final key32 = Uint32List.view(key.buffer);
+    final block = Uint8List.view(block32.buffer);
+    final pending32 = Uint32List.view(pending.buffer);
+    final xkey32 = AESCore.$expandEncryptionKey(key32);
+
+    await for (final chunk in stream) {
+      for (i = 0; i < chunk.length; ++i) {
+        pending[pos++] = chunk[i];
+        if (pos == 16) {
+          block32[0] = pending32[0];
+          block32[1] = pending32[1];
+          block32[2] = pending32[2];
+          block32[3] = pending32[3];
+          AESCore.$encryptLE(block32, xkey32);
+          yield block.sublist(0);
+          pos = 0;
+        }
+      }
+    }
+
+    for (j = 0; j < pos; ++j) {
+      block[j] = pending[j];
+    }
+    if (padding.pad(block, pos)) {
+      AESCore.$encryptLE(block32, xkey32);
+      yield block.sublist(0);
+      pos = 0;
+    }
+
+    if (pos != 0) {
+      throw StateError('Invalid input size');
+    }
+  }
 }
 
 /// Provides decryption for AES cipher in ECB mode.
-class AESInECBModeDecrypt extends Cipher {
+class AESInECBModeDecrypt extends StreamCipher {
   @override
   String get name => "AES#decrypt/ECB/${padding.name}";
 
@@ -155,10 +197,49 @@ class AESInECBModeDecrypt extends Cipher {
 
     return padding.unpad(output);
   }
+
+  @override
+  Stream<Uint8List> bind(Stream<List<int>> stream) async* {
+    int i;
+    int pos = 0;
+    Uint8List? lastBlock;
+
+    final pending = Uint8List(16);
+    final block32 = Uint32List(4); // 128-bit
+    final key32 = Uint32List.view(key.buffer);
+    final xkey32 = AESCore.$expandDecryptionKey(key32);
+    final pending32 = Uint32List.view(pending.buffer);
+
+    await for (final chunk in stream) {
+      for (i = 0; i < chunk.length; ++i) {
+        pending[pos++] = chunk[i];
+        if (pos == 16) {
+          if (lastBlock != null) {
+            yield lastBlock;
+          }
+          block32[0] = pending32[0];
+          block32[1] = pending32[1];
+          block32[2] = pending32[2];
+          block32[3] = pending32[3];
+          AESCore.$decryptLE(block32, xkey32);
+          lastBlock = Uint8List.view(block32.buffer).sublist(0);
+          pos = 0;
+        }
+      }
+    }
+
+    if (pos != 0) {
+      throw StateError('Invalid input size');
+    }
+
+    if (lastBlock != null) {
+      yield padding.unpad(lastBlock);
+    }
+  }
 }
 
 /// Provides encryption and decryption for AES cipher in ECB mode.
-class AESInECBMode extends CipherPair {
+class AESInECBMode extends StreamCipherPair {
   @override
   String get name => "AES/ECB/${padding.name}";
 

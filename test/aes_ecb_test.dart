@@ -235,4 +235,77 @@ void main() {
       });
     });
   });
+
+  group('stream cipher', () {
+    test('encryptor bind matches convert with chunked input', () async {
+      final key = fromHex('2b7e151628aed2a6abf7158809cf4f3c');
+      final plain = fromHex(
+        '6bc1bee22e409f96e93d7e117393172a'
+        'ae2d8a571e03ac9c9eb76fac45af8e51'
+        '30c81c46a35ce411e5fbc1191a0a52ef',
+      );
+      final aes = AES.pkcs7(key).ecb();
+      final chunked = <List<int>>[
+        plain.sublist(0, 5),
+        plain.sublist(5, 23),
+        plain.sublist(23, 39),
+        plain.sublist(39),
+      ];
+
+      final actual = await aes.encryptor
+          .bind(Stream<List<int>>.fromIterable(chunked))
+          .expand((x) => x)
+          .toList();
+
+      expect(actual, equals(aes.encrypt(plain)));
+    });
+
+    test('decryptor bind matches convert with chunked input', () async {
+      final key = fromHex('2b7e151628aed2a6abf7158809cf4f3c');
+      final plain = fromHex(
+        '6bc1bee22e409f96e93d7e117393172a'
+        'ae2d8a571e03ac9c9eb76fac45af8e51'
+        '30c81c46a35ce411e5fbc1191a0a52ef',
+      );
+      final aes = AES.pkcs7(key).ecb();
+      final cipher = aes.encrypt(plain);
+      final chunked = <List<int>>[
+        cipher.sublist(0, 3),
+        cipher.sublist(3, 21),
+        cipher.sublist(21, 47),
+        cipher.sublist(47),
+      ];
+
+      final actual = await aes.decryptor
+          .bind(Stream<List<int>>.fromIterable(chunked))
+          .expand((x) => x)
+          .toList();
+
+      expect(actual, equals(aes.decrypt(cipher)));
+      expect(actual, equals(plain));
+    });
+
+    test('encryptor bind throws on incomplete final block with no padding',
+        () async {
+      final aes = AES.noPadding(Uint8List(16)).ecb();
+      expect(
+        aes.encryptor.bind(Stream<List<int>>.fromIterable([
+          [1, 2, 3],
+          [4, 5],
+        ])).drain<void>(),
+        throwsStateError,
+      );
+    });
+
+    test('decryptor bind throws on incomplete ciphertext block', () async {
+      final aes = AES.pkcs7(Uint8List(16)).ecb();
+      expect(
+        aes.decryptor.bind(Stream<List<int>>.fromIterable([
+          [1, 2, 3],
+          [4, 5],
+        ])).drain<void>(),
+        throwsStateError,
+      );
+    });
+  });
 }

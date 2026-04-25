@@ -1,6 +1,7 @@
 // Copyright (c) 2024, Sudipto Chandra
 // All rights reserved. Check LICENSE file for details.
 
+import 'dart:async' show Stream;
 import 'dart:typed_data';
 
 import 'package:hashlib/random.dart' show randomBytes;
@@ -40,7 +41,7 @@ void _multiplyAlpha(Uint32List T) {
 /// Cryptographic Protection of Data on Block-Oriented Storage Devices][spec].
 ///
 /// [spec]: https://ieeexplore.ieee.org/document/8637988
-class AESInXTSModeEncrypt extends Cipher with SaltedCipher {
+class AESInXTSModeEncrypt extends StreamCipher with SaltedCipher {
   @override
   String get name => "AES#encrypt/XTS/${Padding.none.name}";
 
@@ -59,6 +60,24 @@ class AESInXTSModeEncrypt extends Cipher with SaltedCipher {
     this.key2,
     this.iv,
   );
+
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  static void _encryptBlock(
+    Uint32List key32,
+    Uint32List block32,
+    Uint32List tweak32,
+  ) {
+    block32[0] ^= tweak32[0];
+    block32[1] ^= tweak32[1];
+    block32[2] ^= tweak32[2];
+    block32[3] ^= tweak32[3];
+    AESCore.$encryptLE(block32, key32);
+    block32[0] ^= tweak32[0];
+    block32[1] ^= tweak32[1];
+    block32[2] ^= tweak32[2];
+    block32[3] ^= tweak32[3];
+  }
 
   @override
   Uint8List convert(List<int> message) {
@@ -86,7 +105,7 @@ class AESInXTSModeEncrypt extends Cipher with SaltedCipher {
     tweak32[3] = iv32[3];
     AESCore.$encryptLE(tweak32, xtkey32);
 
-    // full blocks except last block when it is partial
+    // process 16-byte blocks
     for (i = 0; i + 16 <= n; i += 16) {
       block32[0] = (message[i + 0] ^
           (message[i + 1] << 8) ^
@@ -105,15 +124,7 @@ class AESInXTSModeEncrypt extends Cipher with SaltedCipher {
           (message[i + 14] << 16) ^
           (message[i + 15] << 24));
 
-      block32[0] ^= tweak32[0];
-      block32[1] ^= tweak32[1];
-      block32[2] ^= tweak32[2];
-      block32[3] ^= tweak32[3];
-      AESCore.$encryptLE(block32, xekey32);
-      block32[0] ^= tweak32[0];
-      block32[1] ^= tweak32[1];
-      block32[2] ^= tweak32[2];
-      block32[3] ^= tweak32[3];
+      _encryptBlock(xekey32, block32, tweak32);
 
       j = i >>> 2;
       output32[j + 0] = block32[0];
@@ -124,22 +135,14 @@ class AESInXTSModeEncrypt extends Cipher with SaltedCipher {
       _multiplyAlpha(tweak32);
     }
 
-    // last block when it is partial
+    // ciphertext stealing for partial final block
     if (i < n) {
       for (pos = 0; i + pos < n; pos++) {
         output[i + pos] = block[pos];
         block[pos] = message[i + pos];
       }
 
-      block32[0] ^= tweak32[0];
-      block32[1] ^= tweak32[1];
-      block32[2] ^= tweak32[2];
-      block32[3] ^= tweak32[3];
-      AESCore.$encryptLE(block32, xekey32);
-      block32[0] ^= tweak32[0];
-      block32[1] ^= tweak32[1];
-      block32[2] ^= tweak32[2];
-      block32[3] ^= tweak32[3];
+      _encryptBlock(xekey32, block32, tweak32);
 
       j = (i >>> 2) - 4;
       output32[j + 0] = block32[0];
@@ -150,6 +153,78 @@ class AESInXTSModeEncrypt extends Cipher with SaltedCipher {
 
     return output;
   }
+
+  @override
+  Stream<Uint8List> bind(Stream<List<int>> stream) async* {
+    int i;
+    int pos = 0;
+
+    final pending = Uint8List(32);
+    final tweak32 = Uint32List(4);
+    final block32 = Uint32List(4); // 128-bit
+    final iv32 = Uint32List.view(iv.buffer);
+    final ekey32 = Uint32List.view(key1.buffer);
+    final tkey32 = Uint32List.view(key2.buffer);
+    final block = Uint8List.view(block32.buffer);
+    final pending32 = Uint32List.view(pending.buffer);
+    final xtkey32 = AESCore.$expandEncryptionKey(tkey32);
+    final xekey32 = AESCore.$expandEncryptionKey(ekey32);
+
+    // encrypt tweak
+    tweak32[0] = iv32[0];
+    tweak32[1] = iv32[1];
+    tweak32[2] = iv32[2];
+    tweak32[3] = iv32[3];
+    AESCore.$encryptLE(tweak32, xtkey32);
+
+    await for (final chunk in stream) {
+      for (i = 0; i < chunk.length; ++i) {
+        pending[pos++] = chunk[i];
+        if (pos == 32) {
+          block32[0] = pending32[0];
+          block32[1] = pending32[1];
+          block32[2] = pending32[2];
+          block32[3] = pending32[3];
+          pending32[0] = pending32[4];
+          pending32[1] = pending32[5];
+          pending32[2] = pending32[6];
+          pending32[3] = pending32[7];
+
+          _encryptBlock(xekey32, block32, tweak32);
+          _multiplyAlpha(tweak32);
+          yield block.sublist(0);
+          pos = 16;
+        }
+      }
+    }
+
+    if (pos < 16) {
+      throw StateError('The message must be at least 16 bytes');
+    }
+
+    // last 2 blocks
+    block32[0] = pending32[0];
+    block32[1] = pending32[1];
+    block32[2] = pending32[2];
+    block32[3] = pending32[3];
+    _encryptBlock(xekey32, block32, tweak32);
+
+    if (pos == 16) {
+      yield block; // full final block
+      return;
+    }
+
+    pos -= 16;
+    final last = block.sublist(0, pos);
+    for (i = 0; i < pos; i++) {
+      block[i] = pending[16 + i];
+    }
+    _multiplyAlpha(tweak32);
+    _encryptBlock(xekey32, block32, tweak32);
+
+    yield block;
+    yield last;
+  }
 }
 
 /// Provides decryption for AES cipher in XTS mode.
@@ -158,7 +233,7 @@ class AESInXTSModeEncrypt extends Cipher with SaltedCipher {
 /// Cryptographic Protection of Data on Block-Oriented Storage Devices][spec].
 ///
 /// [spec]: https://ieeexplore.ieee.org/document/8637988
-class AESInXTSModeDecrypt extends Cipher with SaltedCipher {
+class AESInXTSModeDecrypt extends StreamCipher with SaltedCipher {
   @override
   String get name => "AES#decrypt/XTS/${Padding.none.name}";
 
@@ -177,6 +252,24 @@ class AESInXTSModeDecrypt extends Cipher with SaltedCipher {
     this.key2,
     this.iv,
   );
+
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  static void _decryptBlock(
+    Uint32List key32,
+    Uint32List block32,
+    Uint32List tweak32,
+  ) {
+    block32[0] ^= tweak32[0];
+    block32[1] ^= tweak32[1];
+    block32[2] ^= tweak32[2];
+    block32[3] ^= tweak32[3];
+    AESCore.$decryptLE(block32, key32);
+    block32[0] ^= tweak32[0];
+    block32[1] ^= tweak32[1];
+    block32[2] ^= tweak32[2];
+    block32[3] ^= tweak32[3];
+  }
 
   @override
   Uint8List convert(List<int> message) {
@@ -233,15 +326,7 @@ class AESInXTSModeDecrypt extends Cipher with SaltedCipher {
         _multiplyAlpha(tweak32);
       }
 
-      block32[0] ^= tweak32[0];
-      block32[1] ^= tweak32[1];
-      block32[2] ^= tweak32[2];
-      block32[3] ^= tweak32[3];
-      AESCore.$decryptLE(block32, xdkey32);
-      block32[0] ^= tweak32[0];
-      block32[1] ^= tweak32[1];
-      block32[2] ^= tweak32[2];
-      block32[3] ^= tweak32[3];
+      _decryptBlock(xdkey32, block32, tweak32);
 
       j = i >>> 2;
       output32[j + 0] = block32[0];
@@ -259,15 +344,7 @@ class AESInXTSModeDecrypt extends Cipher with SaltedCipher {
         block[pos] = message[i + pos];
       }
 
-      block32[0] ^= temp32[0];
-      block32[1] ^= temp32[1];
-      block32[2] ^= temp32[2];
-      block32[3] ^= temp32[3];
-      AESCore.$decryptLE(block32, xdkey32);
-      block32[0] ^= temp32[0];
-      block32[1] ^= temp32[1];
-      block32[2] ^= temp32[2];
-      block32[3] ^= temp32[3];
+      _decryptBlock(xdkey32, block32, temp32);
 
       j = (i >>> 2) - 4;
       output32[j + 0] = block32[0];
@@ -278,10 +355,88 @@ class AESInXTSModeDecrypt extends Cipher with SaltedCipher {
 
     return output;
   }
+
+  @override
+  Stream<Uint8List> bind(Stream<List<int>> stream) async* {
+    int i;
+    int pos = 0;
+
+    final pending = Uint8List(32);
+    final tweak32 = Uint32List(4);
+    final block32 = Uint32List(4); // 128-bit
+    final iv32 = Uint32List.view(iv.buffer);
+    final dkey32 = Uint32List.view(key1.buffer);
+    final tkey32 = Uint32List.view(key2.buffer);
+    final block = Uint8List.view(block32.buffer);
+    final pending32 = Uint32List.view(pending.buffer);
+    final xtkey32 = AESCore.$expandEncryptionKey(tkey32);
+    final xdkey32 = AESCore.$expandDecryptionKey(dkey32);
+
+    // encrypt tweak
+    tweak32[0] = iv32[0];
+    tweak32[1] = iv32[1];
+    tweak32[2] = iv32[2];
+    tweak32[3] = iv32[3];
+    AESCore.$encryptLE(tweak32, xtkey32);
+
+    await for (final chunk in stream) {
+      for (i = 0; i < chunk.length; ++i) {
+        pending[pos++] = chunk[i];
+        if (pos == 32) {
+          block32[0] = pending32[0];
+          block32[1] = pending32[1];
+          block32[2] = pending32[2];
+          block32[3] = pending32[3];
+          pending32[0] = pending32[4];
+          pending32[1] = pending32[5];
+          pending32[2] = pending32[6];
+          pending32[3] = pending32[7];
+
+          _decryptBlock(xdkey32, block32, tweak32);
+          _multiplyAlpha(tweak32);
+          yield block.sublist(0);
+          pos = 16;
+        }
+      }
+    }
+
+    if (pos < 16) {
+      throw StateError('The message must be at least 16 bytes');
+    }
+
+    // last 2 blocks
+    final temp32 = tweak32.sublist(0);
+    if (pos > 16) {
+      _multiplyAlpha(tweak32);
+    }
+
+    block32[0] = pending32[0];
+    block32[1] = pending32[1];
+    block32[2] = pending32[2];
+    block32[3] = pending32[3];
+    _decryptBlock(xdkey32, block32, tweak32);
+
+    // if there is full final block
+    if (pos == 16) {
+      yield block;
+      return;
+    }
+
+    pos -= 16;
+    final last = block.sublist(0, pos);
+
+    for (i = 0; i < pos; ++i) {
+      block[i] = pending[16 + i];
+    }
+    _decryptBlock(xdkey32, block32, temp32);
+
+    yield block;
+    yield last;
+  }
 }
 
 /// Provides encryption and decryption for AES cipher in XTS mode.
-class AESInXTSMode extends CipherPair with SaltedCipher {
+class AESInXTSMode extends StreamCipherPair with SaltedCipher {
   @override
   String get name => "AES/XTS/${Padding.none.name}";
 

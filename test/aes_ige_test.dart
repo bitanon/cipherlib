@@ -86,4 +86,71 @@ void main() {
       expect(toHex(reverse), equals(toHex([])));
     });
   });
+
+  group('stream cipher', () {
+    test('encryptor bind matches convert with chunked input', () async {
+      final key = randomBytes(32);
+      final iv = randomBytes(32);
+      final plain = randomBytes(47);
+      final aes = AES.pkcs7(key).ige(iv);
+      final chunked = <List<int>>[
+        plain.sublist(0, 5),
+        plain.sublist(5, 22),
+        plain.sublist(22, 39),
+        plain.sublist(39),
+      ];
+
+      final actual = await aes.encryptor
+          .bind(Stream<List<int>>.fromIterable(chunked))
+          .expand((x) => x)
+          .toList();
+
+      expect(actual, equals(aes.encrypt(plain)));
+    });
+
+    test('decryptor bind matches convert with chunked input', () async {
+      final key = randomBytes(32);
+      final iv = randomBytes(32);
+      final plain = randomBytes(47);
+      final aes = AES.pkcs7(key).ige(iv);
+      final cipher = aes.encrypt(plain);
+      final chunked = <List<int>>[
+        cipher.sublist(0, 3),
+        cipher.sublist(3, 21),
+        cipher.sublist(21, 41),
+        cipher.sublist(41),
+      ];
+
+      final actual = await aes.decryptor
+          .bind(Stream<List<int>>.fromIterable(chunked))
+          .expand((x) => x)
+          .toList();
+
+      expect(actual, equals(aes.decrypt(cipher)));
+      expect(actual, equals(plain));
+    });
+
+    test('encryptor bind throws on incomplete final block with no padding',
+        () async {
+      final aes = AES.noPadding(Uint8List(32)).ige(Uint8List(32));
+      expect(
+        aes.encryptor.bind(Stream<List<int>>.fromIterable([
+          [1, 2, 3],
+          [4, 5],
+        ])).drain<void>(),
+        throwsStateError,
+      );
+    });
+
+    test('decryptor bind throws on incomplete ciphertext block', () async {
+      final aes = AES.pkcs7(Uint8List(32)).ige(Uint8List(32));
+      expect(
+        aes.decryptor.bind(Stream<List<int>>.fromIterable([
+          [1, 2, 3],
+          [4, 5],
+        ])).drain<void>(),
+        throwsStateError,
+      );
+    });
+  });
 }

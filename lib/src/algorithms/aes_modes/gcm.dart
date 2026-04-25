@@ -26,10 +26,7 @@ class AESInGCMModeCipherCore {
     this.tagSize = 16,
   ]);
 
-  int pos = 0;
-  int rpos = 0;
   int aadLength = 0;
-  int msgLength = 0;
 
   final tag32 = Uint32List(4);
   final block32 = Uint32List(4); // 128-bit
@@ -185,6 +182,17 @@ class AESInGCMModeCipherCore {
     }
   }
 
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  void _nextBlock() {
+    _increment32(counter);
+    block32[0] = counter32[0];
+    block32[1] = counter32[1];
+    block32[2] = counter32[2];
+    block32[3] = counter32[3];
+    AESCore.$encryptLE(block32, xkey32);
+  }
+
   Uint8List encrypt(List<int> message) {
     int i, j, n;
     int x0, x1, x2, x3;
@@ -194,12 +202,7 @@ class AESInGCMModeCipherCore {
     final output32 = Uint32List.view(output.buffer);
 
     for (i = 0; i + 16 <= n; i += 16) {
-      _increment32(counter);
-      block32[0] = counter32[0];
-      block32[1] = counter32[1];
-      block32[2] = counter32[2];
-      block32[3] = counter32[3];
-      AESCore.$encryptLE(block32, xkey32);
+      _nextBlock();
 
       x0 = block32[0] ^
           (message[i + 0]) ^
@@ -236,16 +239,10 @@ class AESInGCMModeCipherCore {
     }
 
     if (i < n) {
-      _increment32(counter);
-      block32[0] = counter32[0];
-      block32[1] = counter32[1];
-      block32[2] = counter32[2];
-      block32[3] = counter32[3];
-      AESCore.$encryptLE(block32, xkey32);
-
-      for (pos = 0; i + pos < n; ++pos) {
-        output[i + pos] = block[pos] ^ message[i + pos];
-        tag[pos] ^= output[i + pos];
+      _nextBlock();
+      for (j = 0; i + j < n; ++j) {
+        output[i + j] = block[j] ^ message[i + j];
+        tag[j] ^= output[i + j];
       }
       _multiply128(tag32, hcache32);
     }
@@ -260,6 +257,52 @@ class AESInGCMModeCipherCore {
     return output;
   }
 
+  Stream<Uint8List> encryptStream(Stream<List<int>> stream) async* {
+    int i, j;
+    int pos = 0;
+    int msgLength = 0;
+    final output32 = Uint32List(4);
+    final output = Uint8List.view(output32.buffer);
+
+    await for (final chunk in stream) {
+      if (chunk.isEmpty) {
+        continue;
+      }
+      msgLength += chunk.length;
+      for (i = 0; i < chunk.length; ++i) {
+        if (pos == 0) {
+          _nextBlock();
+        }
+        output[pos] = block[pos] ^ chunk[i];
+        pos++;
+        if (pos == 16) {
+          tag32[0] ^= output32[0];
+          tag32[1] ^= output32[1];
+          tag32[2] ^= output32[2];
+          tag32[3] ^= output32[3];
+          _multiply128(tag32, hcache32);
+          yield output.sublist(0);
+          pos = 0;
+        }
+      }
+    }
+
+    if (pos > 0) {
+      for (j = 0; j < pos; ++j) {
+        tag[j] ^= output[j];
+      }
+      _multiply128(tag32, hcache32);
+      yield output.sublist(0, pos);
+    }
+
+    _xor128(tag32, aadLength, msgLength);
+    _multiply128(tag32, hcache32);
+    for (i = 0; i < tagSize; ++i) {
+      tag[i] ^= first[i];
+    }
+    yield tag.sublist(0, tagSize);
+  }
+
   Uint8List decrypt(List<int> message) {
     int i, j, n;
     int m0, m1, m2, m3;
@@ -272,12 +315,7 @@ class AESInGCMModeCipherCore {
     final output32 = Uint32List.view(output.buffer);
 
     for (i = 0; i + 16 <= n; i += 16) {
-      _increment32(counter);
-      block32[0] = counter32[0];
-      block32[1] = counter32[1];
-      block32[2] = counter32[2];
-      block32[3] = counter32[3];
-      AESCore.$encryptLE(block32, xkey32);
+      _nextBlock();
 
       m0 = (message[i + 0]) ^
           (message[i + 1] << 8) ^
@@ -309,27 +347,24 @@ class AESInGCMModeCipherCore {
       output32[j + 3] = block32[3] ^ m3;
     }
 
+    // process final partial block
     if (i < n) {
-      _increment32(counter);
-      block32[0] = counter32[0];
-      block32[1] = counter32[1];
-      block32[2] = counter32[2];
-      block32[3] = counter32[3];
-      AESCore.$encryptLE(block32, xkey32);
-
-      for (pos = 0; i + pos < n; ++pos) {
-        output[i + pos] = block[pos] ^ message[i + pos];
-        tag[pos] ^= message[i + pos];
+      _nextBlock();
+      for (j = 0; i + j < n; ++j) {
+        output[i + j] = block[j] ^ message[i + j];
+        tag[j] ^= message[i + j];
       }
       _multiply128(tag32, hcache32);
     }
 
+    // finalize tag
     _xor128(tag32, aadLength, n);
     _multiply128(tag32, hcache32);
     for (j = 0; j < tagSize; ++j) {
       tag[j] ^= first[j];
     }
 
+    // verify tag
     bool valid = true;
     for (j = 0; j < tagSize; ++j) {
       if (tag[j] != message[n + j]) {
@@ -342,10 +377,77 @@ class AESInGCMModeCipherCore {
 
     return output;
   }
+
+  Stream<Uint8List> decryptStream(Stream<List<int>> stream) async* {
+    int i;
+    int r = 0;
+    int pos = 0;
+    int rpos = 0;
+    int msgLength = 0;
+
+    final ring = Uint8List(tagSize);
+    final output32 = Uint32List(4);
+    final output = Uint8List.view(output32.buffer);
+
+    _nextBlock();
+    await for (final chunk in stream) {
+      msgLength += chunk.length;
+      for (i = 0; i < chunk.length; ++i) {
+        if (rpos < tagSize) {
+          ring[rpos++] = chunk[i];
+          continue;
+        }
+        output[pos] = block[pos] ^ ring[r];
+        tag[pos] ^= ring[r];
+        ring[r] = chunk[i];
+        pos++;
+        r++;
+        if (r == tagSize) {
+          r = 0;
+        }
+        if (pos == 16) {
+          _multiply128(tag32, hcache32);
+          yield output.sublist(0);
+          _nextBlock();
+          pos = 0;
+        }
+      }
+    }
+
+    if (msgLength < tagSize) {
+      throw StateError('Invalid message size');
+    }
+    msgLength -= tagSize;
+
+    // finalize tag
+    if (pos > 0) {
+      _multiply128(tag32, hcache32);
+      yield output.sublist(0, pos);
+    }
+    _xor128(tag32, aadLength, msgLength);
+    _multiply128(tag32, hcache32);
+    for (i = 0; i < tagSize; ++i) {
+      tag[i] ^= first[i];
+    }
+
+    // verify tag
+    bool valid = true;
+    for (i = 0; i < tagSize; ++i, ++r) {
+      if (r == tagSize) {
+        r = 0;
+      }
+      if (tag[i] != ring[r]) {
+        valid = false;
+      }
+    }
+    if (!valid) {
+      throw StateError('Message authentication check failed');
+    }
+  }
 }
 
 /// Provides AES cipher in GCM mode for encryption.
-class AESInGCMModeEncrypt extends Cipher with SaltedCipher {
+class AESInGCMModeEncrypt extends StreamCipher with SaltedCipher {
   @override
   String get name => "AES#encrypt/GCM/${Padding.none.name}";
 
@@ -370,14 +472,19 @@ class AESInGCMModeEncrypt extends Cipher with SaltedCipher {
 
   @override
   Uint8List convert(List<int> message) {
-    final core = AESInGCMModeCipherCore(key, iv, aad, tagSize);
-    core.initialize();
+    final core = AESInGCMModeCipherCore(key, iv, aad, tagSize)..initialize();
     return core.encrypt(message);
+  }
+
+  @override
+  Stream<Uint8List> bind(Stream<List<int>> stream) async* {
+    final core = AESInGCMModeCipherCore(key, iv, aad, tagSize)..initialize();
+    yield* core.encryptStream(stream);
   }
 }
 
 /// Provides AES cipher in GCM mode for decryption.
-class AESInGCMModeDecrypt extends Cipher with SaltedCipher {
+class AESInGCMModeDecrypt extends StreamCipher with SaltedCipher {
   @override
   String get name => "AES#decrypt/GCM/${Padding.none.name}";
 
@@ -402,14 +509,19 @@ class AESInGCMModeDecrypt extends Cipher with SaltedCipher {
 
   @override
   Uint8List convert(List<int> message) {
-    final core = AESInGCMModeCipherCore(key, iv, aad, tagSize);
-    core.initialize();
+    final core = AESInGCMModeCipherCore(key, iv, aad, tagSize)..initialize();
     return core.decrypt(message);
+  }
+
+  @override
+  Stream<Uint8List> bind(Stream<List<int>> stream) async* {
+    final core = AESInGCMModeCipherCore(key, iv, aad, tagSize)..initialize();
+    yield* core.decryptStream(stream);
   }
 }
 
 /// Provides encryption and decryption for AES cipher in GCM mode.
-class AESInGCMMode extends CipherPair with SaltedCipher {
+class AESInGCMMode extends StreamCipherPair with SaltedCipher {
   @override
   String get name => "AES/GCM/${Padding.none.name}";
 

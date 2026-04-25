@@ -315,4 +315,54 @@ void main() {
       });
     });
   });
+
+  group('stream cipher', () {
+    test('encryptor bind matches convert for chunked input', () async {
+      final key = fromHex('2b7e151628aed2a6abf7158809cf4f3c');
+      final iv = fromHex('000102030405060708090a0b0c0d0e0f');
+      final plain = fromHex(
+        '6bc1bee22e409f96e93d7e117393172a'
+        'ae2d8a571e03ac9c9eb76fac45af8e51',
+      );
+      final aes = AES(key).cfb8(iv);
+      final chunked = <List<int>>[
+        plain.sublist(0, 4),
+        plain.sublist(4, 17),
+        plain.sublist(17, 29),
+        plain.sublist(29),
+      ];
+
+      final actual = await aes.encryptor
+          .bind(Stream<List<int>>.fromIterable(chunked))
+          .expand((x) => x)
+          .toList();
+
+      expect(actual, equals(aes.encrypt(plain)));
+    });
+
+    test('decryptor bind matches convert for chunked input', () async {
+      final key = fromHex('2b7e151628aed2a6abf7158809cf4f3c');
+      final iv = fromHex('000102030405060708090a0b0c0d0e0f');
+      final plain = fromHex(
+        '6bc1bee22e409f96e93d7e117393172a'
+        'ae2d8a571e03ac9c9eb76fac45af8e51',
+      );
+      final aes = AES(key).cfb8(iv);
+      final cipher = aes.encrypt(plain);
+      final chunked = <List<int>>[
+        cipher.sublist(0, 1),
+        cipher.sublist(1, 14),
+        cipher.sublist(14, 31),
+        cipher.sublist(31),
+      ];
+
+      final actual = await aes.decryptor
+          .bind(Stream<List<int>>.fromIterable(chunked))
+          .expand((x) => x)
+          .toList();
+
+      expect(actual, equals(aes.decrypt(cipher)));
+      expect(actual, equals(plain));
+    });
+  });
 }

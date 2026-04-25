@@ -101,6 +101,9 @@ void main() {
       expect(() => cipher.decrypt(wrapped), throwsStateError);
       expect(wrapped.tagReads, equals(16));
     });
+  });
+
+  group('AESInGCMModeCipherCore', () {
     test('core counter increment propagates carry to highest byte', () {
       final core =
           AESInGCMModeCipherCore(Uint8List(16), Uint8List(12), null, 16);
@@ -108,6 +111,73 @@ void main() {
       core.counter.setRange(12, 16, const [0xFF, 0xFF, 0xFF, 0xFF]);
       final out = core.encrypt(Uint8List(16));
       expect(out.length, equals(32));
+    });
+    test('core encryptStream matches encrypt', () async {
+      final key = randomBytes(32);
+      final iv = randomBytes(12);
+      final aad = randomBytes(9);
+      final plain = randomBytes(73);
+
+      final oneShot = AESInGCMModeCipherCore(key, iv, aad, 16)..initialize();
+      final expected = oneShot.encrypt(plain);
+
+      final streaming = AESInGCMModeCipherCore(key, iv, aad, 16)..initialize();
+      final actual = await streaming
+          .encryptStream(Stream<List<int>>.fromIterable([
+            plain.sublist(0, 5),
+            plain.sublist(5, 18),
+            plain.sublist(18, 44),
+            plain.sublist(44),
+          ]))
+          .expand((x) => x)
+          .toList();
+
+      expect(actual, equals(expected));
+    });
+    test('core decryptStream matches decrypt', () async {
+      final key = randomBytes(32);
+      final iv = randomBytes(12);
+      final aad = randomBytes(11);
+      final plain = randomBytes(77);
+
+      final encCore = AESInGCMModeCipherCore(key, iv, aad, 16)..initialize();
+      final cipher = encCore.encrypt(plain);
+
+      final oneShot = AESInGCMModeCipherCore(key, iv, aad, 16)..initialize();
+      final expected = oneShot.decrypt(cipher);
+
+      final streaming = AESInGCMModeCipherCore(key, iv, aad, 16)..initialize();
+      final actual = await streaming
+          .decryptStream(Stream<List<int>>.fromIterable([
+            cipher.sublist(0, 3),
+            cipher.sublist(3, 19),
+            cipher.sublist(19, 52),
+            cipher.sublist(52),
+          ]))
+          .expand((x) => x)
+          .toList();
+
+      expect(actual, equals(expected));
+    });
+    test('core decryptStream fails on invalid tag', () async {
+      final key = randomBytes(16);
+      final iv = randomBytes(12);
+      final plain = randomBytes(33);
+
+      final encCore = AESInGCMModeCipherCore(key, iv, null, 16)..initialize();
+      final cipher = encCore.encrypt(plain);
+      cipher[cipher.length - 1] ^= 1;
+
+      final streaming = AESInGCMModeCipherCore(key, iv, null, 16)..initialize();
+      expect(
+        streaming
+            .decryptStream(Stream<List<int>>.fromIterable([
+              cipher.sublist(0, 7),
+              cipher.sublist(7),
+            ]))
+            .drain<void>(),
+        throwsStateError,
+      );
     });
   });
 
@@ -921,6 +991,91 @@ void main() {
         var reverse = aes.decrypt(cipher);
         expect(toHex(reverse), equals(toHex(plain)));
       });
+    });
+  });
+
+  group('stream cipher', () {
+    test('encryptor bind matches convert with chunked input', () async {
+      final key = fromHex('2b7e151628aed2a6abf7158809cf4f3c');
+      final iv = fromHex('000102030405060708090a0b0c0d0e0f');
+      final aad = fromHex('feedfacedeadbeeffeedfacedeadbeefabaddad2');
+      final plain = fromHex(
+        '6bc1bee22e409f96e93d7e117393172a'
+        'ae2d8a571e03ac9c9eb76fac45af8e51'
+        '30c81c46a35ce411e5fbc1191a0a52ef',
+      );
+      final aes = AES(key).gcm(iv, aad: aad);
+      final chunked = <List<int>>[
+        plain.sublist(0, 7),
+        plain.sublist(7, 23),
+        plain.sublist(23, 44),
+        plain.sublist(44),
+      ];
+
+      final actual = await aes.encryptor
+          .bind(Stream<List<int>>.fromIterable(chunked))
+          .expand((x) => x)
+          .toList();
+
+      expect(actual, equals(aes.encrypt(plain)));
+    });
+
+    test('decryptor bind matches convert with chunked input', () async {
+      final key = fromHex('2b7e151628aed2a6abf7158809cf4f3c');
+      final iv = fromHex('000102030405060708090a0b0c0d0e0f');
+      final aad = fromHex('feedfacedeadbeeffeedfacedeadbeefabaddad2');
+      final plain = fromHex(
+        '6bc1bee22e409f96e93d7e117393172a'
+        'ae2d8a571e03ac9c9eb76fac45af8e51'
+        '30c81c46a35ce411e5fbc1191a0a52ef',
+      );
+      final aes = AES(key).gcm(iv, aad: aad);
+      final cipher = aes.encrypt(plain);
+      final chunked = <List<int>>[
+        cipher.sublist(0, 5),
+        cipher.sublist(5, 19),
+        cipher.sublist(19, 41),
+        cipher.sublist(41),
+      ];
+
+      final actual = await aes.decryptor
+          .bind(Stream<List<int>>.fromIterable(chunked))
+          .expand((x) => x)
+          .toList();
+
+      expect(actual, equals(aes.decrypt(cipher)));
+      expect(actual, equals(plain));
+    });
+
+    test('decryptor bind throws on invalid authentication tag', () async {
+      final key = randomBytes(16);
+      final iv = randomBytes(12);
+      final aes = AES(key).gcm(iv);
+      final sealed = aes.encrypt(randomBytes(37));
+      sealed[sealed.length - 1] ^= 0x01;
+
+      expect(
+        aes.decryptor
+            .bind(Stream<List<int>>.fromIterable([
+              sealed.sublist(0, 8),
+              sealed.sublist(8, 26),
+              sealed.sublist(26),
+            ]))
+            .drain<void>(),
+        throwsStateError,
+      );
+    });
+
+    test('decryptor bind throws when input shorter than tag', () async {
+      final aes = AES(Uint8List(16)).gcm(Uint8List(12));
+      expect(
+        aes.decryptor
+            .bind(Stream<List<int>>.fromIterable([
+              [1, 2, 3, 4, 5],
+            ]))
+            .drain<void>(),
+        throwsStateError,
+      );
     });
   });
 }

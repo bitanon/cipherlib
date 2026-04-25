@@ -1,6 +1,7 @@
 // Copyright (c) 2024, Sudipto Chandra
 // All rights reserved. Check LICENSE file for details.
 
+import 'dart:async' show Stream;
 import 'dart:typed_data';
 
 import 'package:hashlib/random.dart' show randomBytes;
@@ -13,7 +14,7 @@ import '../padding.dart';
 int _mask32 = 0xFFFFFFFF;
 
 /// Provides AES cipher in CTR mode.
-class AESInCTRModeCipher extends Cipher with SaltedCipher {
+class AESInCTRModeCipher extends StreamCipher with SaltedCipher {
   @override
   String get name => "AES#cipher/CTR/${Padding.none.name}";
 
@@ -38,40 +39,87 @@ class AESInCTRModeCipher extends Cipher with SaltedCipher {
     return ((a >>> s) << s) | (b & ((1 << s) - 1));
   }
 
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  static void _increment(Uint32List counter32, int bits) {
+    int s0, s1, s2, s3;
+    int t0, t1, t2, t3;
+
+    t0 = s0 = counter32[0];
+    t1 = s1 = counter32[1];
+    t2 = s2 = counter32[2];
+    t3 = s3 = counter32[3];
+
+    s3 = (s3 + 1) & _mask32;
+    if (s3 == 0 && bits > 32) {
+      s2 = (s2 + 1) & _mask32;
+      if (s2 == 0 && bits > 64) {
+        s1 = (s1 + 1) & _mask32;
+        if (s1 == 0 && bits > 96) {
+          s0 = (s0 + 1) & _mask32;
+        }
+      }
+    }
+
+    if (bits > 96) {
+      s0 = _splitMerge32(t0, s0, bits - 96);
+    } else if (bits > 64) {
+      s1 = _splitMerge32(t1, s1, bits - 64);
+    } else if (bits > 32) {
+      s2 = _splitMerge32(t2, s2, bits - 32);
+    } else {
+      s3 = _splitMerge32(t3, s3, bits);
+    }
+
+    counter32[0] = s0;
+    counter32[1] = s1;
+    counter32[2] = s2;
+    counter32[3] = s3;
+  }
+
+  @pragma('vm:prefer-inline')
+  @pragma('dart2js:tryInline')
+  static void _encryptBlock(
+    Uint32List key32,
+    Uint32List block32,
+    Uint32List counter32,
+  ) {
+    block32[0] = counter32[0];
+    block32[1] = counter32[1];
+    block32[2] = counter32[2];
+    block32[3] = counter32[3];
+    AESCore.$encrypt(block32, key32);
+    block32[0] = AESCore.$swap32(block32[0]);
+    block32[1] = AESCore.$swap32(block32[1]);
+    block32[2] = AESCore.$swap32(block32[2]);
+    block32[3] = AESCore.$swap32(block32[3]);
+  }
+
   @override
   Uint8List convert(List<int> message) {
     int i, j, n;
     int b0, b1, b2, b3;
-    int s0, s1, s2, s3;
-    int t0, t1, t2, t3;
     n = message.length;
 
     final output = Uint8List(n);
     final block32 = Uint32List(4); // 128-bit
+    final counter32 = Uint32List(4);
     final key32 = Uint32List.view(key.buffer);
     final block = Uint8List.view(block32.buffer);
     final output32 = Uint32List.view(output.buffer);
     final xkey32 = AESCore.$expandEncryptionKey(key32);
 
     // initialize salt (nonce + counter) in little-endian order
-    s0 = (iv[0] << 24) | (iv[1] << 16) | (iv[2] << 8) | iv[3];
-    s1 = (iv[4] << 24) | (iv[5] << 16) | (iv[6] << 8) | iv[7];
-    s2 = (iv[8] << 24) | (iv[9] << 16) | (iv[10] << 8) | iv[11];
-    s3 = (iv[12] << 24) | (iv[13] << 16) | (iv[14] << 8) | iv[15];
-
-    // encrypt block
-    block32[0] = s0;
-    block32[1] = s1;
-    block32[2] = s2;
-    block32[3] = s3;
-    AESCore.$encrypt(block32, xkey32);
-    block32[0] = AESCore.$swap32(block32[0]);
-    block32[1] = AESCore.$swap32(block32[1]);
-    block32[2] = AESCore.$swap32(block32[2]);
-    block32[3] = AESCore.$swap32(block32[3]);
+    counter32[0] = (iv[0] << 24) | (iv[1] << 16) | (iv[2] << 8) | iv[3];
+    counter32[1] = (iv[4] << 24) | (iv[5] << 16) | (iv[6] << 8) | iv[7];
+    counter32[2] = (iv[8] << 24) | (iv[9] << 16) | (iv[10] << 8) | iv[11];
+    counter32[3] = (iv[12] << 24) | (iv[13] << 16) | (iv[14] << 8) | iv[15];
 
     // process every 16-byte block
     for (i = 0; i + 16 <= n; i += 16) {
+      _encryptBlock(xkey32, block32, counter32);
+      _increment(counter32, counterBits);
+
       b0 = (message[i + 0] |
           (message[i + 1] << 8) |
           (message[i + 2] << 16) |
@@ -94,50 +142,11 @@ class AESInCTRModeCipher extends Cipher with SaltedCipher {
       output32[j + 1] = block32[1] ^ b1;
       output32[j + 2] = block32[2] ^ b2;
       output32[j + 3] = block32[3] ^ b3;
-
-      if (i == n) {
-        break;
-      }
-
-      // increment counter
-      t0 = s0;
-      t1 = s1;
-      t2 = s2;
-      t3 = s3;
-      s3 = (s3 + 1) & _mask32;
-      if (s3 == 0 && counterBits > 32) {
-        s2 = (s2 + 1) & _mask32;
-        if (s2 == 0 && counterBits > 64) {
-          s1 = (s1 + 1) & _mask32;
-          if (s1 == 0 && counterBits > 96) {
-            s0 = (s0 + 1) & _mask32;
-          }
-        }
-      }
-      if (counterBits > 96) {
-        s0 = _splitMerge32(t0, s0, counterBits - 96);
-      } else if (counterBits > 64) {
-        s1 = _splitMerge32(t1, s1, counterBits - 64);
-      } else if (counterBits > 32) {
-        s2 = _splitMerge32(t2, s2, counterBits - 32);
-      } else {
-        s3 = _splitMerge32(t3, s3, counterBits);
-      }
-
-      // encrypt block
-      block32[0] = s0;
-      block32[1] = s1;
-      block32[2] = s2;
-      block32[3] = s3;
-      AESCore.$encrypt(block32, xkey32);
-      block32[0] = AESCore.$swap32(block32[0]);
-      block32[1] = AESCore.$swap32(block32[1]);
-      block32[2] = AESCore.$swap32(block32[2]);
-      block32[3] = AESCore.$swap32(block32[3]);
     }
 
     // process remaining bytes
     if (i < n) {
+      _encryptBlock(xkey32, block32, counter32);
       for (j = 0; i < n; ++i, ++j) {
         output[i] = block[j] ^ message[i];
       }
@@ -145,10 +154,44 @@ class AESInCTRModeCipher extends Cipher with SaltedCipher {
 
     return output;
   }
+
+  @override
+  Stream<Uint8List> bind(Stream<List<int>> stream) async* {
+    int i;
+    int pos = 16;
+
+    final block32 = Uint32List(4); // 128-bit
+    final counter32 = Uint32List(4);
+    final key32 = Uint32List.view(key.buffer);
+    final block = Uint8List.view(block32.buffer);
+    final xkey32 = AESCore.$expandEncryptionKey(key32);
+
+    // initialize salt (nonce + counter) in little-endian order
+    counter32[0] = (iv[0] << 24) | (iv[1] << 16) | (iv[2] << 8) | iv[3];
+    counter32[1] = (iv[4] << 24) | (iv[5] << 16) | (iv[6] << 8) | iv[7];
+    counter32[2] = (iv[8] << 24) | (iv[9] << 16) | (iv[10] << 8) | iv[11];
+    counter32[3] = (iv[12] << 24) | (iv[13] << 16) | (iv[14] << 8) | iv[15];
+
+    await for (final chunk in stream) {
+      if (chunk.isEmpty) {
+        continue;
+      }
+      final output = Uint8List(chunk.length);
+      for (i = 0; i < chunk.length; ++i, ++pos) {
+        if (pos == 16) {
+          _encryptBlock(xkey32, block32, counter32);
+          _increment(counter32, counterBits);
+          pos = 0;
+        }
+        output[i] = block[pos] ^ chunk[i];
+      }
+      yield output;
+    }
+  }
 }
 
 /// Provides encryption and decryption for AES cipher in CTR mode.
-class AESInCTRMode extends CipherPair with SaltedCipher {
+class AESInCTRMode extends StreamCipherPair with SaltedCipher {
   @override
   String get name => "AES/CTR/${Padding.none.name}";
 

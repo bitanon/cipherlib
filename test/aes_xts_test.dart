@@ -1412,4 +1412,80 @@ void main() {
       });
     });
   });
+
+  group('stream cipher', () {
+    test('bind matches convert for chunked aligned input', () async {
+      final key = randomBytes(32);
+      final tweak = randomBytes(16);
+      final plain = randomBytes(64);
+      final aes = AES(key).xts(tweak);
+      final chunked = <List<int>>[
+        plain.sublist(0, 7),
+        plain.sublist(7, 23),
+        plain.sublist(23, 45),
+        plain.sublist(45),
+      ];
+
+      final encrypted = await aes.encryptor
+          .bind(Stream<List<int>>.fromIterable(chunked))
+          .expand((x) => x)
+          .toList();
+      final decrypted = await aes.decryptor
+          .bind(Stream<List<int>>.fromIterable([
+            encrypted.sublist(0, 3),
+            encrypted.sublist(3, 29),
+            encrypted.sublist(29),
+          ]))
+          .expand((x) => x)
+          .toList();
+
+      expect(encrypted, equals(aes.encrypt(plain)));
+      expect(decrypted, equals(plain));
+    });
+
+    test('bind matches convert for chunked partial-tail input', () async {
+      final key = randomBytes(32);
+      final tweak = randomBytes(16);
+      final plain = randomBytes(49);
+      final aes = AES(key).xts(tweak);
+      final chunked = <List<int>>[
+        plain.sublist(0, 5),
+        plain.sublist(5, 18),
+        plain.sublist(18, 37),
+        plain.sublist(37),
+      ];
+
+      final encrypted = await aes.encryptor
+          .bind(Stream<List<int>>.fromIterable(chunked))
+          .expand((x) => x)
+          .toList();
+      final decrypted = await aes.decryptor
+          .bind(Stream<List<int>>.fromIterable([
+            encrypted.sublist(0, 4),
+            encrypted.sublist(4, 27),
+            encrypted.sublist(27),
+          ]))
+          .expand((x) => x)
+          .toList();
+
+      expect(encrypted, equals(aes.encrypt(plain)));
+      expect(decrypted, equals(plain));
+    });
+
+    test('bind throws for message smaller than 16 bytes', () async {
+      final aes = AES(randomBytes(32)).xts(randomBytes(16));
+      expect(
+        aes.encryptor.bind(Stream<List<int>>.fromIterable([
+          [1, 2, 3, 4, 5],
+        ])).drain<void>(),
+        throwsStateError,
+      );
+      expect(
+        aes.decryptor.bind(Stream<List<int>>.fromIterable([
+          [1, 2, 3, 4, 5],
+        ])).drain<void>(),
+        throwsStateError,
+      );
+    });
+  });
 }

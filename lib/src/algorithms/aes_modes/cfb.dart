@@ -1,6 +1,7 @@
 // Copyright (c) 2024, Sudipto Chandra
 // All rights reserved. Check LICENSE file for details.
 
+import 'dart:async' show Stream;
 import 'dart:typed_data';
 
 import 'package:hashlib/random.dart' show randomBytes;
@@ -12,7 +13,7 @@ import '../padding.dart';
 // TODO: can we use bits instead of blocks of bytes for (sbyte)?
 
 /// Provides encryption for AES cipher in CFB mode.
-class AESInCFBModeCipher extends Cipher with SaltedCipher {
+class AESInCFBModeCipher extends StreamCipher with SaltedCipher {
   @override
   String get name =>
       "AES#${forEncryption ? 'encrypt' : 'decrypt'}/CFB/${Padding.none.name}";
@@ -79,10 +80,57 @@ class AESInCFBModeCipher extends Cipher with SaltedCipher {
 
     return output;
   }
+
+  @override
+  Stream<Uint8List> bind(Stream<List<int>> stream) async* {
+    int i, j, pos;
+
+    final salt32 = Uint32List(4);
+    final block32 = Uint32List(4); // 128-bit
+    final iv32 = Uint32List.view(iv.buffer);
+    final key32 = Uint32List.view(key.buffer);
+    final salt = Uint8List.view(salt32.buffer);
+    final block = Uint8List.view(block32.buffer);
+    final xkey32 = AESCore.$expandEncryptionKey(key32);
+
+    salt32[0] = iv32[0];
+    salt32[1] = iv32[1];
+    salt32[2] = iv32[2];
+    salt32[3] = iv32[3];
+
+    pos = sbyte;
+    await for (final chunk in stream) {
+      if (chunk.isEmpty) {
+        continue;
+      }
+      final output = Uint8List(chunk.length);
+      for (i = 0; i < chunk.length; ++i, ++pos) {
+        if (pos == sbyte) {
+          block32[0] = salt32[0];
+          block32[1] = salt32[1];
+          block32[2] = salt32[2];
+          block32[3] = salt32[3];
+          AESCore.$encryptLE(block32, xkey32);
+          for (j = sbyte; j < 16; ++j) {
+            salt[j - sbyte] = salt[j];
+          }
+          pos = 0;
+        }
+        if (forEncryption) {
+          output[i] = block[pos] ^ chunk[i];
+          salt[16 - sbyte + pos] = output[i];
+        } else {
+          salt[16 - sbyte + pos] = chunk[i];
+          output[i] = block[pos] ^ chunk[i];
+        }
+      }
+      yield output;
+    }
+  }
 }
 
 /// Provides encryption and decryption for AES cipher in CFB mode.
-class AESInCFBMode extends CipherPair with SaltedCipher {
+class AESInCFBMode extends StreamCipherPair with SaltedCipher {
   @override
   String get name => "AES/CFB/${Padding.none.name}";
 

@@ -1,6 +1,7 @@
 // Copyright (c) 2024, Sudipto Chandra
 // All rights reserved. Check LICENSE file for details.
 
+import 'dart:async' show Stream;
 import 'dart:typed_data';
 
 import 'package:hashlib/random.dart' show randomBytes;
@@ -11,7 +12,7 @@ import '../../utils/typed_data.dart';
 import '../padding.dart';
 
 /// Provides encryption for AES cipher in IGE mode.
-class AESInIGEModeEncrypt extends Cipher with SaltedCipher {
+class AESInIGEModeEncrypt extends StreamCipher with SaltedCipher {
   @override
   String get name => "AES#encrypt/IGE/${padding.name}";
 
@@ -80,9 +81,7 @@ class AESInIGEModeEncrypt extends Cipher with SaltedCipher {
       block32[1] ^= salt32[5];
       block32[2] ^= salt32[6];
       block32[3] ^= salt32[7];
-
       AESCore.$encryptLE(block32, xkey32);
-
       block32[0] ^= salt32[0];
       block32[1] ^= salt32[1];
       block32[2] ^= salt32[2];
@@ -131,10 +130,90 @@ class AESInIGEModeEncrypt extends Cipher with SaltedCipher {
       return output.sublist(0, i);
     }
   }
+
+  @override
+  Stream<Uint8List> bind(Stream<List<int>> stream) async* {
+    int i, pos;
+
+    final pending = Uint8List(16);
+    final salt32 = Uint32List(8);
+    final block32 = Uint32List(4); // 128-bit
+    final iv32 = Uint32List.view(iv.buffer);
+    final key32 = Uint32List.view(key.buffer);
+    final salt = Uint8List.view(salt32.buffer);
+    final block = Uint8List.view(block32.buffer);
+    final pending32 = Uint32List.view(pending.buffer);
+    final xkey32 = AESCore.$expandEncryptionKey(key32);
+
+    block32[0] = iv32[0];
+    block32[1] = iv32[1];
+    block32[2] = iv32[2];
+    block32[3] = iv32[3];
+    if (iv.length == 32) {
+      salt32[0] = iv32[4];
+      salt32[1] = iv32[5];
+      salt32[2] = iv32[6];
+      salt32[3] = iv32[7];
+    }
+
+    pos = 0;
+    await for (final chunk in stream) {
+      for (i = 0; i < chunk.length; ++i) {
+        pending[pos++] = chunk[i];
+        if (pos == 16) {
+          salt32[4] = pending32[0];
+          salt32[5] = pending32[1];
+          salt32[6] = pending32[2];
+          salt32[7] = pending32[3];
+
+          block32[0] ^= salt32[4];
+          block32[1] ^= salt32[5];
+          block32[2] ^= salt32[6];
+          block32[3] ^= salt32[7];
+
+          AESCore.$encryptLE(block32, xkey32);
+
+          block32[0] ^= salt32[0];
+          block32[1] ^= salt32[1];
+          block32[2] ^= salt32[2];
+          block32[3] ^= salt32[3];
+
+          salt32[0] = salt32[4];
+          salt32[1] = salt32[5];
+          salt32[2] = salt32[6];
+          salt32[3] = salt32[7];
+
+          yield block.sublist(0);
+          pos = 0;
+        }
+      }
+    }
+
+    for (i = 0; i < pos; ++i) {
+      salt[i + 16] = pending[i];
+      block[i] ^= pending[i];
+    }
+    if (padding.pad(salt, pos + 16)) {
+      for (; pos < 16; pos++) {
+        block[pos] ^= salt[pos + 16];
+      }
+      AESCore.$encryptLE(block32, xkey32);
+      block32[0] ^= salt32[0];
+      block32[1] ^= salt32[1];
+      block32[2] ^= salt32[2];
+      block32[3] ^= salt32[3];
+      yield block.sublist(0);
+      pos = 0;
+    }
+
+    if (pos != 0) {
+      throw StateError('Invalid input size');
+    }
+  }
 }
 
 /// Provides decryption for AES cipher in IGE mode.
-class AESInIGEModeDecrypt extends Cipher with SaltedCipher {
+class AESInIGEModeDecrypt extends StreamCipher with SaltedCipher {
   @override
   String get name => "AES#decrypt/IGE/${padding.name}";
 
@@ -226,10 +305,78 @@ class AESInIGEModeDecrypt extends Cipher with SaltedCipher {
 
     return padding.unpad(output);
   }
+
+  @override
+  Stream<Uint8List> bind(Stream<List<int>> stream) async* {
+    int i, pos;
+
+    final pending = Uint8List(16);
+    final salt32 = Uint32List(8);
+    final block32 = Uint32List(4); // 128-bit
+    final iv32 = Uint32List.view(iv.buffer);
+    final key32 = Uint32List.view(key.buffer);
+    final xkey32 = AESCore.$expandDecryptionKey(key32);
+    final pending32 = Uint32List.view(pending.buffer);
+    Uint8List? lastBlock;
+
+    salt32[0] = iv32[0];
+    salt32[1] = iv32[1];
+    salt32[2] = iv32[2];
+    salt32[3] = iv32[3];
+    if (iv.length == 32) {
+      block32[0] = iv32[4];
+      block32[1] = iv32[5];
+      block32[2] = iv32[6];
+      block32[3] = iv32[7];
+    }
+
+    pos = 0;
+    await for (final chunk in stream) {
+      for (i = 0; i < chunk.length; ++i) {
+        pending[pos++] = chunk[i];
+        if (pos == 16) {
+          if (lastBlock != null) {
+            yield lastBlock;
+          }
+
+          salt32[4] = pending32[0];
+          salt32[5] = pending32[1];
+          salt32[6] = pending32[2];
+          salt32[7] = pending32[3];
+
+          block32[0] ^= salt32[4];
+          block32[1] ^= salt32[5];
+          block32[2] ^= salt32[6];
+          block32[3] ^= salt32[7];
+          AESCore.$decryptLE(block32, xkey32);
+          block32[0] ^= salt32[0];
+          block32[1] ^= salt32[1];
+          block32[2] ^= salt32[2];
+          block32[3] ^= salt32[3];
+
+          salt32[0] = salt32[4];
+          salt32[1] = salt32[5];
+          salt32[2] = salt32[6];
+          salt32[3] = salt32[7];
+
+          lastBlock = Uint8List.view(block32.buffer).sublist(0);
+          pos = 0;
+        }
+      }
+    }
+
+    if (pos != 0) {
+      throw StateError('Invalid input size');
+    }
+
+    if (lastBlock != null) {
+      yield padding.unpad(lastBlock);
+    }
+  }
 }
 
 /// Provides encryption and decryption for AES cipher in IGE mode.
-class AESInIGEMode extends CipherPair with SaltedCipher {
+class AESInIGEMode extends StreamCipherPair with SaltedCipher {
   @override
   String get name => "AES/IGE/${padding.name}";
 
