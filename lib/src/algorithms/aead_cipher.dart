@@ -155,7 +155,7 @@ class AEADStreamCipher<C extends StreamCipher, M extends MACHashBase>
 
   @override
   StreamTransformer<RS, RT> cast<RS, RT>() {
-    throw UnsupportedError('AEADCipher does not allow casting');
+    throw UnsupportedError('AEADStreamCipher does not allow casting');
   }
 
   /// Generates a message authentication tag for a [stream] of data.
