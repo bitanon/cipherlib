@@ -25,7 +25,7 @@ void wordTable() {
         (_mul(t, 0x1) << 16) ^
         (_mul(t, 0x1) << 8) ^
         (_mul(t, 0x3));
-    if (x & 3 == 0) {
+    if ((x & 3) == 0) {
       if (x == 4) stdout.write('//');
       stdout.write('\n  ');
     }
@@ -41,7 +41,7 @@ void wordTable() {
         (_mul(t, 0x2) << 16) ^
         (_mul(t, 0x1) << 8) ^
         (_mul(t, 0x1));
-    if (x & 3 == 0) {
+    if ((x & 3) == 0) {
       if (x == 4) stdout.write('//');
       stdout.write('\n  ');
     }
@@ -57,7 +57,7 @@ void wordTable() {
         (_mul(t, 0x3) << 16) ^
         (_mul(t, 0x2) << 8) ^
         (_mul(t, 0x1));
-    if (x & 3 == 0) {
+    if ((x & 3) == 0) {
       if (x == 4) stdout.write('//');
       stdout.write('\n  ');
     }
@@ -73,7 +73,7 @@ void wordTable() {
         (_mul(t, 0x1) << 16) ^
         (_mul(t, 0x3) << 8) ^
         (_mul(t, 0x2));
-    if (x & 3 == 0) {
+    if ((x & 3) == 0) {
       if (x == 4) stdout.write('//');
       stdout.write('\n  ');
     }
