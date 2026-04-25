@@ -13,7 +13,7 @@ int _mul(int x, int t) {
   if (t == 2) {
     return ((x & 0x80) == 0 ? (x << 1) : ((x << 1) ^ 0x1b)) & 0xFF;
   }
-  return _mul(_mul(x, t >>> 1), 2) ^ (t & 1 == 0 ? 0 : x);
+  return _mul(_mul(x, t >>> 1), 2) ^ ((t & 1) == 0 ? 0 : x);
 }
 
 void wordTable() {
