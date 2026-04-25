@@ -68,7 +68,7 @@ void main() {
       expect(algo.subnonce,
           equals([1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2]));
     });
-    test('random nonce is used if nonce is null, ', () {
+    test('random nonce is used if nonce is null', () {
       var key = randomNumbers(32);
       var text = randomBytes(100);
       xsalsa20(text, key);
