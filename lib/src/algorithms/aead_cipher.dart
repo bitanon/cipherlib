@@ -271,8 +271,7 @@ class AEADStreamResult extends Stream<Uint8List> {
 
 /// The result from AEAD stream ciphers having an IV or nonce
 class AEADStreamResultWithIV extends AEADStreamResult {
-  AEADStreamResultWithIV._(super._stream, super._mac, this.iv)
-      : super._();
+  AEADStreamResultWithIV._(super._stream, super._mac, this.iv) : super._();
 
   /// The nonce or initialization vector
   final Uint8List iv;
