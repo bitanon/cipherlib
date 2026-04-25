@@ -69,14 +69,14 @@ abstract class StreamCipher
 }
 
 // ------------------------------------------------------------
-// CollateCipher
+// CipherPair
 // ------------------------------------------------------------
 
 /// Template for symmetric cipher algorithms which does not use the same logic
 /// for both encryption and decryption.
-abstract class CollateCipher<E extends Cipher, D extends Cipher>
+abstract class CipherPair<E extends Cipher, D extends Cipher>
     implements CipherBase {
-  const CollateCipher();
+  const CipherPair();
 
   /// The cipher algorithm for encryption.
   E get encryptor;
@@ -101,4 +101,11 @@ abstract class CollateCipher<E extends Cipher, D extends Cipher>
   @pragma('vm:prefer-inline')
   Uint8List decryptString(String message, [Encoding? encoding]) =>
       decrypt(encoding == null ? message.codeUnits : encoding.encode(message));
+}
+
+/// Template for symmetric cipher algorithms which does not use the same logic
+/// for both encryption and decryption.
+abstract class StreamCipherPair<E extends StreamCipher, D extends StreamCipher>
+    extends CipherPair<E, D> {
+  const StreamCipherPair();
 }

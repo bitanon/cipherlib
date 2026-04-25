@@ -214,7 +214,7 @@ class AESInPCBCModeDecrypt extends Cipher with SaltedCipher {
 }
 
 /// Provides encryption and decryption for AES cipher in PCBC mode.
-class AESInPCBCMode extends CollateCipher with SaltedCipher {
+class AESInPCBCMode extends CipherPair with SaltedCipher {
   @override
   String get name => "AES/PCBC/${padding.name}";
 

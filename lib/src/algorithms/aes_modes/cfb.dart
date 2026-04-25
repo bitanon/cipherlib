@@ -82,7 +82,7 @@ class AESInCFBModeCipher extends Cipher with SaltedCipher {
 }
 
 /// Provides encryption and decryption for AES cipher in CFB mode.
-class AESInCFBMode extends CollateCipher with SaltedCipher {
+class AESInCFBMode extends CipherPair with SaltedCipher {
   @override
   String get name => "AES/CFB/${Padding.none.name}";
 

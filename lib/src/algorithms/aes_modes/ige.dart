@@ -229,7 +229,7 @@ class AESInIGEModeDecrypt extends Cipher with SaltedCipher {
 }
 
 /// Provides encryption and decryption for AES cipher in IGE mode.
-class AESInIGEMode extends CollateCipher with SaltedCipher {
+class AESInIGEMode extends CipherPair with SaltedCipher {
   @override
   String get name => "AES/IGE/${padding.name}";
 

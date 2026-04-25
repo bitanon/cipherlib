@@ -158,7 +158,7 @@ class AESInECBModeDecrypt extends Cipher {
 }
 
 /// Provides encryption and decryption for AES cipher in ECB mode.
-class AESInECBMode extends CollateCipher {
+class AESInECBMode extends CipherPair {
   @override
   String get name => "AES/ECB/${padding.name}";
 

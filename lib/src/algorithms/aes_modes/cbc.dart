@@ -197,7 +197,7 @@ class AESInCBCModeDecrypt extends Cipher with SaltedCipher {
 }
 
 /// Provides encryption and decryption for AES cipher in CBC mode.
-class AESInCBCMode extends CollateCipher with SaltedCipher {
+class AESInCBCMode extends CipherPair with SaltedCipher {
   @override
   String get name => "AES/CBC/${padding.name}";
 

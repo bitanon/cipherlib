@@ -148,7 +148,7 @@ class AESInCTRModeCipher extends Cipher with SaltedCipher {
 }
 
 /// Provides encryption and decryption for AES cipher in CTR mode.
-class AESInCTRMode extends CollateCipher with SaltedCipher {
+class AESInCTRMode extends CipherPair with SaltedCipher {
   @override
   String get name => "AES/CTR/${Padding.none.name}";
 

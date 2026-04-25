@@ -269,7 +269,7 @@ void main() {
           if (cipher is AESInXTSMode && message.length < 16) {
             continue;
           }
-          if (cipher is CollateCipher) {
+          if (cipher is CipherPair) {
             encrypted = cipher.encrypt(message);
             decrypted = cipher.decrypt(encrypted);
           } else {

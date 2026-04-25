@@ -54,7 +54,7 @@ class TestSaltedCipher extends Cipher with SaltedCipher {
 }
 
 // Concrete implementation of SaltedCipher for testing
-class TestCollateCipher extends CollateCipher {
+class TestCipherPair extends CipherPair {
   @override
   final encryptor = TestCipher();
 
@@ -62,7 +62,7 @@ class TestCollateCipher extends CollateCipher {
   final decryptor = TestCipher();
 
   @override
-  String get name => 'TestCollateCipher';
+  String get name => 'TestCipherPair';
 }
 
 void main() {
@@ -163,11 +163,11 @@ void main() {
     });
   });
 
-  group('CollateCipher Tests', () {
-    final cipher = TestCollateCipher();
+  group('CipherPair Tests', () {
+    final cipher = TestCipherPair();
 
     test('name is correct', () {
-      expect(cipher.name, 'TestCollateCipher');
+      expect(cipher.name, 'TestCipherPair');
     });
 
     test('encrypt method should encrypt data correctly', () {

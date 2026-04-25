@@ -409,7 +409,7 @@ class AESInGCMModeDecrypt extends Cipher with SaltedCipher {
 }
 
 /// Provides encryption and decryption for AES cipher in GCM mode.
-class AESInGCMMode extends CollateCipher with SaltedCipher {
+class AESInGCMMode extends CipherPair with SaltedCipher {
   @override
   String get name => "AES/GCM/${Padding.none.name}";
 

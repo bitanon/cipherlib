@@ -281,7 +281,7 @@ class AESInXTSModeDecrypt extends Cipher with SaltedCipher {
 }
 
 /// Provides encryption and decryption for AES cipher in XTS mode.
-class AESInXTSMode extends CollateCipher with SaltedCipher {
+class AESInXTSMode extends CipherPair with SaltedCipher {
   @override
   String get name => "AES/XTS/${Padding.none.name}";
 

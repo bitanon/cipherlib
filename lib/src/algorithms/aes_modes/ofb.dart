@@ -81,7 +81,7 @@ class AESInOFBModeCipher extends Cipher with SaltedCipher {
 }
 
 /// Provides encryption and decryption for AES cipher in OFB mode.
-class AESInOFBMode extends CollateCipher with SaltedCipher {
+class AESInOFBMode extends CipherPair with SaltedCipher {
   @override
   String get name => "AES/OFB/${Padding.none.name}";
 
