@@ -1475,15 +1475,19 @@ void main() {
     test('bind throws for message smaller than 16 bytes', () async {
       final aes = AES(randomBytes(32)).xts(randomBytes(16));
       expect(
-        aes.encryptor.bind(Stream<List<int>>.fromIterable([
-          [1, 2, 3, 4, 5],
-        ])).drain<void>(),
+        aes.encryptor
+            .bind(Stream<List<int>>.fromIterable([
+              [1, 2, 3, 4, 5],
+            ]))
+            .drain<void>(),
         throwsStateError,
       );
       expect(
-        aes.decryptor.bind(Stream<List<int>>.fromIterable([
-          [1, 2, 3, 4, 5],
-        ])).drain<void>(),
+        aes.decryptor
+            .bind(Stream<List<int>>.fromIterable([
+              [1, 2, 3, 4, 5],
+            ]))
+            .drain<void>(),
         throwsStateError,
       );
     });

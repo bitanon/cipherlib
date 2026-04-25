@@ -127,10 +127,12 @@ void main() {
         () async {
       final aes = AES.noPadding(Uint8List(16)).pcbc(Uint8List(16));
       expect(
-        aes.encryptor.bind(Stream<List<int>>.fromIterable([
-          [1, 2, 3],
-          [4, 5],
-        ])).drain<void>(),
+        aes.encryptor
+            .bind(Stream<List<int>>.fromIterable([
+              [1, 2, 3],
+              [4, 5],
+            ]))
+            .drain<void>(),
         throwsStateError,
       );
     });
@@ -138,10 +140,12 @@ void main() {
     test('decryptor bind throws on incomplete ciphertext block', () async {
       final aes = AES.pkcs7(Uint8List(16)).pcbc(Uint8List(16));
       expect(
-        aes.decryptor.bind(Stream<List<int>>.fromIterable([
-          [1, 2, 3],
-          [4, 5],
-        ])).drain<void>(),
+        aes.decryptor
+            .bind(Stream<List<int>>.fromIterable([
+              [1, 2, 3],
+              [4, 5],
+            ]))
+            .drain<void>(),
         throwsStateError,
       );
     });
