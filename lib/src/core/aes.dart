@@ -493,6 +493,10 @@ const List<int> _dsbox = [
   0xe1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0c, 0x7d,
 ];
 
+// ---------------------------------------------------------------------
+// Output from `dart run tool/aes_cache_gen.dart`
+// ---------------------------------------------------------------------
+
 const List<int> _mix0 = [
   0xc66363a5, 0xf87c7c84, 0xee777799, 0xf67b7b8d, //
   0xfff2f20d, 0xd66b6bbd, 0xde6f6fb1, 0x91c5c554,

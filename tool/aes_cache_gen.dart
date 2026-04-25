@@ -3,8 +3,8 @@
 import 'dart:io';
 
 void main() {
-  wordTable();
-  invWordTable();
+  _writeWordTables();
+  _writeInvWordTables();
 }
 
 int _mul(int x, int t) {
@@ -16,135 +16,56 @@ int _mul(int x, int t) {
   return _mul(_mul(x, t >>> 1), 2) ^ ((t & 1) == 0 ? 0 : x);
 }
 
-void wordTable() {
-  // _mix0
-  stdout.write('const List<int> _mix0 = [');
-  for (int x = 0; x < 256; ++x) {
-    int t = _esub[x];
-    int y = (_mul(t, 0x2) << 24) ^
-        (_mul(t, 0x1) << 16) ^
-        (_mul(t, 0x1) << 8) ^
-        (_mul(t, 0x3));
-    if ((x & 3) == 0) {
-      if (x == 4) stdout.write('//');
-      stdout.write('\n  ');
-    }
-    var hex = y.toRadixString(16).padLeft(8, '0');
-    stdout.write('0x$hex, ');
-  }
-  stdout.write('\n];\n\n');
-  // _mix1
-  stdout.write('const List<int> _mix1 = [');
-  for (int x = 0; x < 256; ++x) {
-    int t = _esub[x];
-    int y = (_mul(t, 0x3) << 24) ^
-        (_mul(t, 0x2) << 16) ^
-        (_mul(t, 0x1) << 8) ^
-        (_mul(t, 0x1));
-    if ((x & 3) == 0) {
-      if (x == 4) stdout.write('//');
-      stdout.write('\n  ');
-    }
-    var hex = y.toRadixString(16).padLeft(8, '0');
-    stdout.write('0x$hex, ');
-  }
-  stdout.write('\n];\n\n');
-  // _mix2
-  stdout.write('const List<int> _mix2 = [');
-  for (int x = 0; x < 256; ++x) {
-    int t = _esub[x];
-    int y = (_mul(t, 0x1) << 24) ^
-        (_mul(t, 0x3) << 16) ^
-        (_mul(t, 0x2) << 8) ^
-        (_mul(t, 0x1));
-    if ((x & 3) == 0) {
-      if (x == 4) stdout.write('//');
-      stdout.write('\n  ');
-    }
-    var hex = y.toRadixString(16).padLeft(8, '0');
-    stdout.write('0x$hex, ');
-  }
-  stdout.write('\n];\n\n');
-  // _mix3
-  stdout.write('const List<int> _mix3 = [');
-  for (int x = 0; x < 256; ++x) {
-    int t = _esub[x];
-    int y = (_mul(t, 0x1) << 24) ^
-        (_mul(t, 0x1) << 16) ^
-        (_mul(t, 0x3) << 8) ^
-        (_mul(t, 0x2));
-    if ((x & 3) == 0) {
-      if (x == 4) stdout.write('//');
-      stdout.write('\n  ');
-    }
-    var hex = y.toRadixString(16).padLeft(8, '0');
-    stdout.write('0x$hex, ');
-  }
-  stdout.write('\n];\n\n');
+int _mixWord(int value, List<int> coefficients) {
+  return (_mul(value, coefficients[0]) << 24) ^
+      (_mul(value, coefficients[1]) << 16) ^
+      (_mul(value, coefficients[2]) << 8) ^
+      _mul(value, coefficients[3]);
 }
 
-void invWordTable() {
-  // _rmix0
-  stdout.write('const List<int> _rmix0 = [');
-  for (int x = 0; x < 256; ++x) {
-    int t = _dsub[x];
-    int y = (_mul(t, 0xe) << 24) ^
-        (_mul(t, 0x9) << 16) ^
-        (_mul(t, 0xd) << 8) ^
-        (_mul(t, 0xb));
-    if ((x & 3) == 0) {
-      if (x == 4) stdout.write('//');
-      stdout.write('\n  ');
-    }
-    var hex = y.toRadixString(16).padLeft(8, '0');
-    stdout.write('0x$hex, ');
+void _writeWordTables() {
+  // AES substitution tables: `_esub` is the forward S-box,
+  // used for the forward mix tables: `_mix0`, `_mix1`, `_mix2`, `_mix3`.
+  _writeTables(
+      _esub,
+      <List<int>>[
+        <int>[0x2, 0x1, 0x1, 0x3],
+        <int>[0x3, 0x2, 0x1, 0x1],
+        <int>[0x1, 0x3, 0x2, 0x1],
+        <int>[0x1, 0x1, 0x3, 0x2],
+      ],
+      '_mix');
+}
+
+void _writeInvWordTables() {
+  // AES substitution tables: `_dsub` is the inverse S-box,
+  // used for the inverse mix tables: `_dmix0`, `_dmix1`, `_dmix2`, `_dmix3`.
+  _writeTables(
+      _dsub,
+      <List<int>>[
+        <int>[0xe, 0x9, 0xd, 0xb],
+        <int>[0xb, 0xe, 0x9, 0xd],
+        <int>[0xd, 0xb, 0xe, 0x9],
+        <int>[0x9, 0xd, 0xb, 0xe],
+      ],
+      '_dmix');
+}
+
+void _writeTables(List<int> sbox, List<List<int>> coefficients, String name) {
+  for (int i = 0; i < coefficients.length; i++) {
+    _writeTable('$name$i', sbox, coefficients[i]);
   }
-  stdout.write('\n];\n\n');
-  // _rmix1
-  stdout.write('const List<int> _rmix1 = [');
+}
+
+void _writeTable(String name, List<int> sbox, List<int> coefficients) {
+  stdout.write('const List<int> $name = [');
   for (int x = 0; x < 256; ++x) {
-    int t = _dsub[x];
-    int y = (_mul(t, 0xb) << 24) ^
-        (_mul(t, 0xe) << 16) ^
-        (_mul(t, 0x9) << 8) ^
-        (_mul(t, 0xd));
+    final int y = _mixWord(sbox[x], coefficients);
     if ((x & 3) == 0) {
       if (x == 4) stdout.write('//');
       stdout.write('\n  ');
     }
-    var hex = y.toRadixString(16).padLeft(8, '0');
-    stdout.write('0x$hex, ');
-  }
-  stdout.write('\n];\n\n');
-  // _rmix2
-  stdout.write('const List<int> _rmix2 = [');
-  for (int x = 0; x < 256; ++x) {
-    int t = _dsub[x];
-    int y = (_mul(t, 0xd) << 24) ^
-        (_mul(t, 0xb) << 16) ^
-        (_mul(t, 0xe) << 8) ^
-        (_mul(t, 0x9));
-    if ((x & 3) == 0) {
-      if (x == 4) stdout.write('//');
-      stdout.write('\n  ');
-    }
-    var hex = y.toRadixString(16).padLeft(8, '0');
-    stdout.write('0x$hex, ');
-  }
-  stdout.write('\n];\n\n');
-  // _rmix3
-  stdout.write('const List<int> _rmix3 = [');
-  for (int x = 0; x < 256; ++x) {
-    int t = _dsub[x];
-    int y = (_mul(t, 0x9) << 24) ^
-        (_mul(t, 0xd) << 16) ^
-        (_mul(t, 0xb) << 8) ^
-        (_mul(t, 0xe));
-    if ((x & 3) == 0) {
-      if (x == 4) stdout.write('//');
-      stdout.write('\n  ');
-    }
-    var hex = y.toRadixString(16).padLeft(8, '0');
+    final String hex = y.toRadixString(16).padLeft(8, '0');
     stdout.write('0x$hex, ');
   }
   stdout.write('\n];\n\n');
