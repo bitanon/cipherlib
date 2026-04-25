@@ -64,7 +64,11 @@ void main() {
     test('random nonce is used if nonce is null, ', () {
       var key = randomNumbers(32);
       var text = randomBytes(100);
-      xsalsa20poly1305(text, key);
+      var out = xsalsa20poly1305(text, key);
+      expect(out.data, isNotEmpty);
+      expect(out.data, isNot(equals(text)));
+      var out2 = xsalsa20poly1305(text, key);
+      expect(out2, isNot(equals(out)));
     });
     test('subkey is same as internal key', () {
       var x = XSalsa20(Uint8List(32)).poly1305();

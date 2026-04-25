@@ -92,7 +92,7 @@ void invWordTable() {
         (_mul(t, 0x9) << 16) ^
         (_mul(t, 0xd) << 8) ^
         (_mul(t, 0xb));
-    if (x & 3 == 0) {
+    if ((x & 3) == 0) {
       if (x == 4) stdout.write('//');
       stdout.write('\n  ');
     }
@@ -108,7 +108,7 @@ void invWordTable() {
         (_mul(t, 0xe) << 16) ^
         (_mul(t, 0x9) << 8) ^
         (_mul(t, 0xd));
-    if (x & 3 == 0) {
+    if ((x & 3) == 0) {
       if (x == 4) stdout.write('//');
       stdout.write('\n  ');
     }
@@ -124,7 +124,7 @@ void invWordTable() {
         (_mul(t, 0xb) << 16) ^
         (_mul(t, 0xe) << 8) ^
         (_mul(t, 0x9));
-    if (x & 3 == 0) {
+    if ((x & 3) == 0) {
       if (x == 4) stdout.write('//');
       stdout.write('\n  ');
     }
@@ -140,7 +140,7 @@ void invWordTable() {
         (_mul(t, 0xd) << 16) ^
         (_mul(t, 0xb) << 8) ^
         (_mul(t, 0xe));
-    if (x & 3 == 0) {
+    if ((x & 3) == 0) {
       if (x == 4) stdout.write('//');
       stdout.write('\n  ');
     }

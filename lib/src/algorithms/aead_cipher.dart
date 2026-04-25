@@ -67,7 +67,7 @@ class AEADCipher<C extends Cipher, M extends MACHashBase> implements Cipher {
 
     if (aad != null) {
       sink.add(aad);
-      if (aad.length & 15 != 0) {
+      if ((aad.length & 15) != 0) {
         sink.add(Uint8List(16 - (aad.length & 15))); // pad with zero
       }
     }
@@ -82,7 +82,7 @@ class AEADCipher<C extends Cipher, M extends MACHashBase> implements Cipher {
     final sink = _createSink(aad);
 
     sink.add(data);
-    if (dataLength & 15 != 0) {
+    if ((dataLength & 15) != 0) {
       sink.add(Uint8List(16 - (dataLength & 15))); // pad with zero
     }
 
@@ -155,7 +155,7 @@ class AEADStreamCipher<C extends StreamCipher, M extends MACHashBase>
 
   @override
   StreamTransformer<RS, RT> cast<RS, RT>() {
-    throw UnsupportedError('AEADCipher does not allow casting');
+    throw UnsupportedError('AEADStreamCipher does not allow casting');
   }
 
   /// Generates a message authentication tag for a [stream] of data.
@@ -182,7 +182,7 @@ class AEADStreamCipher<C extends StreamCipher, M extends MACHashBase>
           output.add(data);
         },
         onDone: () {
-          if (dataLength & 15 != 0) {
+          if ((dataLength & 15) != 0) {
             sink.add(Uint8List(16 - (dataLength & 15))); // pad with zero
           }
           sink.add(AEADCipher._build128(dataLength, aadLength));
@@ -222,7 +222,7 @@ class AEADStreamCipher<C extends StreamCipher, M extends MACHashBase>
       dataLength += data.length;
       sink.add(data);
     }
-    if (dataLength & 15 != 0) {
+    if ((dataLength & 15) != 0) {
       sink.add(Uint8List(16 - (dataLength & 15))); // pad with zero
     }
 

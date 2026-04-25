@@ -73,7 +73,11 @@ void main() {
     test('random nonce is used if nonce is null, ', () {
       var key = randomNumbers(32);
       var text = randomBytes(100);
-      chacha20(text, key);
+      var out = chacha20(text, key);
+      expect(out, isNotEmpty);
+      expect(out, isNot(equals(text)));
+      var out2 = chacha20(out, key);
+      expect(out2, isNot(equals(out)));
     });
   });
 

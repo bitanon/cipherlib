@@ -60,7 +60,11 @@ void main() {
     test('random nonce is used if nonce is null, ', () {
       var key = randomNumbers(32);
       var text = randomBytes(100);
-      salsa20(text, key);
+      var out = salsa20(text, key);
+      expect(out, isNotEmpty);
+      expect(out, isNot(equals(text)));
+      var out2 = salsa20(text, key);
+      expect(out2, isNot(equals(out)));
     });
   });
 

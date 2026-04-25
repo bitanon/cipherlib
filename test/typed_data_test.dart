@@ -1,6 +1,7 @@
 // Copyright (c) 2024, Sudipto Chandra
 // All rights reserved. Check LICENSE file for details.
 
+import 'dart:collection';
 import 'dart:typed_data';
 
 import 'package:cipherlib/cipherlib.dart';
@@ -46,8 +47,13 @@ void main() {
       expect(out[0], equals(2));
     });
 
-    test('toUint8List handles non-list iterables', () {
+    test('toUint8List handles non-list iterables of type Set', () {
       final out = toUint8List({1, 2, 3, 4});
+      expect(out, equals(Uint8List.fromList([1, 2, 3, 4])));
+    });
+
+    test('toUint8List handles non-list iterables of type Queue', () {
+      final out = toUint8List(Queue<int>.from([1, 2, 3, 4]));
       expect(out, equals(Uint8List.fromList([1, 2, 3, 4])));
     });
 

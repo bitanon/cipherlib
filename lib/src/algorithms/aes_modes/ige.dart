@@ -166,7 +166,7 @@ class AESInIGEModeDecrypt extends Cipher with SaltedCipher {
     final output32 = Uint32List.view(output.buffer);
     final xkey32 = AESCore.$expandDecryptionKey(key32);
 
-    if (n & 15 != 0) {
+    if ((n & 15) != 0) {
       throw StateError('Invalid input size');
     }
 

@@ -71,7 +71,11 @@ void main() {
     test('random nonce is used if nonce is null', () {
       var key = randomNumbers(32);
       var text = randomBytes(100);
-      xsalsa20(text, key);
+      var out = xsalsa20(text, key);
+      expect(out, isNotEmpty);
+      expect(out, isNot(equals(text)));
+      var out2 = xsalsa20(out, key);
+      expect(out2, isNot(equals(out)));
     });
     test('reset iv', () {
       var x = XSalsa20(Uint8List(32));
