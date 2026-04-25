@@ -3,7 +3,7 @@ description: Pure-Dart cryptography package implementing symmetric ciphers (AES
   with multiple modes, ChaCha20, XChaCha20, Salsa20, XSalsa20, XOR) and their
   AEAD variants with Poly1305.
 repository: https://github.com/bitanon/cipherlib
-version: 0.3.0
+version: 0.4.0
 
 environment:
   sdk: ">=2.19.0 <4.0.0"

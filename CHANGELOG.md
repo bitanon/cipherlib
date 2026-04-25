@@ -1,3 +1,10 @@
+## 0.4.0
+
+- 🌊 Restored and redesigned stream processing support by refactoring cipher architecture around `StreamCipher`, `AEADStreamCipher`, and `CipherPair`.
+- 🔐 Refactored AES modes, ChaCha20, Salsa20, XOR, and AEAD implementations to align behavior across one-shot and stream APIs.
+- 🛠️ Updated nonce and typed-data internals plus AES cache generation logic for better correctness and maintainability.
+- ✅ Expanded and updated test coverage across AES modes, stream ciphers, AEAD flows, integration parity, and core cipher behaviors.
+
 ## 0.3.0
 
 - Removed Stream support (It will be available again in later versions).
