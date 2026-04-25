@@ -236,7 +236,7 @@ class AEADStreamCipher<C extends StreamCipher, M extends MACHashBase>
 /// The result from AEAD stream ciphers
 class AEADStreamResult extends Stream<Uint8List> {
   final Stream<Uint8List> _stream;
-  const AEADStreamResult._(this._stream, this.mac);
+  AEADStreamResult._(this._stream, this.mac);
 
   /// The message authentication code.
   ///
@@ -271,7 +271,7 @@ class AEADStreamResult extends Stream<Uint8List> {
 
 /// The result from AEAD stream ciphers having an IV or nonce
 class AEADStreamResultWithIV extends AEADStreamResult {
-  const AEADStreamResultWithIV._(super._stream, super._mac, this.iv)
+  AEADStreamResultWithIV._(super._stream, super._mac, this.iv)
       : super._();
 
   /// The nonce or initialization vector
