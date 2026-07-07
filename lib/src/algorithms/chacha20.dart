@@ -3,7 +3,7 @@
 
 import 'dart:typed_data';
 
-import 'package:cipherlib/random.dart' show randomBytes;
+import 'package:hashlib/random.dart' show randomBytes;
 
 import '../core/cipher.dart';
 import '../utils/nonce.dart';
