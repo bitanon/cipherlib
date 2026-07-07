@@ -7,7 +7,20 @@ import 'package:cipherlib/cipherlib.dart';
 import 'package:cipherlib/codecs.dart';
 import 'package:cipherlib/hashlib.dart' show HashDigest;
 import 'package:cipherlib/src/algorithms/mlkem/mlkem_core.dart'
-    show $rejUniform;
+    show
+        $polyCompress4,
+        $polyCompress5,
+        $polyDecompress4,
+        $polyDecompress5,
+        $polyFromBytes,
+        $polyFromMsg,
+        $polyToBytes,
+        $polyToMsg,
+        $rejUniform,
+        $vecCompress10,
+        $vecCompress11,
+        $vecDecompress10,
+        $vecDecompress11;
 import 'package:test/test.dart';
 
 import 'fixtures/mlkem_decaps_vectors.dart';
@@ -228,6 +241,94 @@ void main() {
         final tc = strcmpVectors[kem]!;
         final ss = kem.decaps(fromHex(tc['dk']!), fromHex(tc['c']!));
         expect(ss.hex(), equalsIgnoringCase(tc['k']!), reason: kem.name);
+      }
+    });
+  });
+
+  group('serialization', () {
+    // Circular (mod q) distance between two coefficients.
+    int cdist(int a, int b) {
+      final d = ((a - b) % 3329 + 3329) % 3329;
+      return d < 3329 - d ? d : 3329 - d;
+    }
+
+    // Sweeps every residue 0..q-1 through a 256-coefficient pack/unpack round
+    // trip and checks the FIPS 203 (Section 4.2.1) compression error bound:
+    // Decompress(Compress_d(x)) differs from x by at most ceil(q / 2^(d+1)).
+    // A [bound] of 0 means the transform must be lossless. Exercises the
+    // compress/decompress twins (arith_64bit / arith_32bit) directly, so it
+    // runs on both the VM and node.
+    void sweep(
+      int byteLength,
+      void Function(Int16List orig, Uint8List bytes) pack,
+      void Function(Uint8List bytes, Int16List out) unpack,
+      int bound,
+    ) {
+      final orig = Int16List(256);
+      final out = Int16List(256);
+      final bytes = Uint8List(byteLength);
+      var maxErr = 0;
+      for (var base = 0; base < 3329; base += 256) {
+        for (var i = 0; i < 256; ++i) {
+          orig[i] = (base + i) % 3329;
+        }
+        pack(orig, bytes);
+        unpack(bytes, out);
+        for (var i = 0; i < 256; ++i) {
+          final e = cdist(orig[i], out[i]);
+          if (e > maxErr) maxErr = e;
+          expect(e, lessThanOrEqualTo(bound),
+              reason: 'x=${orig[i]} -> ${out[i]}');
+        }
+      }
+      // Guard against a transform that is trivially lossless (a broken
+      // compressor acting as identity): a lossy variant must actually lose
+      // precision and reach its bound.
+      if (bound == 0) {
+        expect(maxErr, 0);
+      } else {
+        expect(maxErr, inInclusiveRange(1, bound));
+      }
+    }
+
+    test('ByteEncode12/ByteDecode12 is lossless over 0..q-1', () {
+      sweep(384, (o, b) => $polyToBytes(b, 0, o, 0),
+          (b, out) => $polyFromBytes(out, 0, b, 0), 0);
+    });
+    test('Compress/Decompress d=4 within the error bound', () {
+      // ceil(3329 / 2^5) = 105
+      sweep(128, (o, b) => $polyCompress4(b, 0, o, 0),
+          (b, out) => $polyDecompress4(out, 0, b, 0), 105);
+    });
+    test('Compress/Decompress d=5 within the error bound', () {
+      // ceil(3329 / 2^6) = 53
+      sweep(160, (o, b) => $polyCompress5(b, 0, o, 0),
+          (b, out) => $polyDecompress5(out, 0, b, 0), 53);
+    });
+    test('Compress/Decompress d=10 within the error bound', () {
+      // ceil(3329 / 2^11) = 2
+      sweep(320, (o, b) => $vecCompress10(b, 0, o, 1),
+          (b, out) => $vecDecompress10(out, b, 0, 1), 2);
+    });
+    test('Compress/Decompress d=11 within the error bound', () {
+      // ceil(3329 / 2^12) = 1
+      sweep(352, (o, b) => $vecCompress11(b, 0, o, 1),
+          (b, out) => $vecDecompress11(out, b, 0, 1), 1);
+    });
+    test('poly message encode/decode round trip', () {
+      // FIPS 203 Compress_1 / Decompress_1: a bit maps to 0 or 1665 and back.
+      final poly = Int16List(256);
+      final out = Uint8List(32);
+      for (final msg in <List<int>>[
+        List.filled(32, 0),
+        List.filled(32, 0xFF),
+        List.generate(32, (i) => (i * 37) & 0xFF),
+        List.generate(32, (i) => (i * i * 91 + 13) & 0xFF),
+      ]) {
+        final m = Uint8List.fromList(msg);
+        $polyFromMsg(poly, 0, m, 0);
+        $polyToMsg(out, 0, poly, 0);
+        expect(out, equals(m), reason: toHex(m));
       }
     });
   });
