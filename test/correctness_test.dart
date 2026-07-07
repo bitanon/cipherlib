@@ -158,6 +158,21 @@ void main() {
     }
   }
   // ------------------------------------------------------------
+  // AES-CCM
+  // ------------------------------------------------------------
+  for (final k in [16, 24, 32]) {
+    for (final t in [4, 8, 12, 16]) {
+      for (final A in [null, ...aadsList]) {
+        final ts = 'tag=$t';
+        final al = 'aad=${A?.length}';
+        ciphers.addAll({
+          P([k, 7, ts, al]): AES(R(k)).ccm(R(7), tagSize: t, aad: A),
+          P([k, 13, ts, al]): AES(R(k)).ccm(R(13), tagSize: t, aad: A),
+        });
+      }
+    }
+  }
+  // ------------------------------------------------------------
   // AES-CFB
   // ------------------------------------------------------------
   for (final k in [16, 24, 32]) {
@@ -267,6 +282,12 @@ void main() {
       test('encrypt <-> decrypt: ${cipher.name}: ${entry.key}', () {
         for (final message in messages) {
           if (cipher is AESInXTSMode && message.length < 16) {
+            continue;
+          }
+          // RFC 3610 limits the message size to 2^(8 * (15 - nonce length))
+          if (cipher is AESInCCMMode &&
+              BigInt.from(message.length) >=
+                  (BigInt.one << (8 * (15 - cipher.iv.length)))) {
             continue;
           }
           if (cipher is CipherPair) {

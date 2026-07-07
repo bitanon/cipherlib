@@ -13,6 +13,8 @@ import 'package:cipherlib/src/utils/nonce.dart';
 import 'package:cryptography/cryptography.dart' as crypto;
 import 'package:hashlib/random.dart';
 import 'package:pointycastle/pointycastle.dart' as pc;
+import 'package:pointycastle/block/aes.dart';
+import 'package:pointycastle/block/modes/ccm.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -123,6 +125,89 @@ void main() {
         );
         var out = instance.process(text);
         expect(toHex(out), equals(toHex(result)), reason: '[text: $j]');
+      }
+    });
+  });
+
+  group('AES/CCM', () {
+    test('pointycastle: encryption with 128-bit key', () {
+      final key = randomBytes(16);
+      for (int j = 0; j < 200; ++j) {
+        final nonce = randomBytes(13);
+        final aad = randomBytes((j * 3) % 40);
+        final text = randomBytes(j);
+        final result =
+            my.AES(key).ccm(nonce, aad: aad, tagSize: 8).encrypt(text);
+
+        final encrypter = CCMBlockCipher(AESEngine())
+          ..init(
+            true,
+            pc.AEADParameters(pc.KeyParameter(key), 64, nonce, aad),
+          );
+        final out = encrypter.process(Uint8List.fromList(text));
+        expect(out, equals(result), reason: '[size: $j]');
+
+        final decrypter = CCMBlockCipher(AESEngine())
+          ..init(
+            false,
+            pc.AEADParameters(pc.KeyParameter(key), 64, nonce, aad),
+          );
+        expect(decrypter.process(Uint8List.fromList(result)), equals(text),
+            reason: '[size: $j]');
+      }
+    });
+
+    test('pointycastle: encryption with 192-bit key', () {
+      final key = randomBytes(24);
+      for (int j = 0; j < 200; ++j) {
+        final nonce = randomBytes(13);
+        final aad = randomBytes((j * 5) % 40);
+        final text = randomBytes(j);
+        final result =
+            my.AES(key).ccm(nonce, aad: aad, tagSize: 10).encrypt(text);
+
+        final encrypter = CCMBlockCipher(AESEngine())
+          ..init(
+            true,
+            pc.AEADParameters(pc.KeyParameter(key), 80, nonce, aad),
+          );
+        final out = encrypter.process(Uint8List.fromList(text));
+        expect(out, equals(result), reason: '[size: $j]');
+
+        final decrypter = CCMBlockCipher(AESEngine())
+          ..init(
+            false,
+            pc.AEADParameters(pc.KeyParameter(key), 80, nonce, aad),
+          );
+        expect(decrypter.process(Uint8List.fromList(result)), equals(text),
+            reason: '[size: $j]');
+      }
+    });
+
+    test('pointycastle: encryption with 256-bit key', () {
+      final key = randomBytes(32);
+      for (int j = 0; j < 200; ++j) {
+        final nonce = randomBytes(13);
+        final aad = randomBytes((j * 7) % 40);
+        final text = randomBytes(j);
+        final result =
+            my.AES(key).ccm(nonce, aad: aad, tagSize: 16).encrypt(text);
+
+        final encrypter = CCMBlockCipher(AESEngine())
+          ..init(
+            true,
+            pc.AEADParameters(pc.KeyParameter(key), 128, nonce, aad),
+          );
+        final out = encrypter.process(Uint8List.fromList(text));
+        expect(out, equals(result), reason: '[size: $j]');
+
+        final decrypter = CCMBlockCipher(AESEngine())
+          ..init(
+            false,
+            pc.AEADParameters(pc.KeyParameter(key), 128, nonce, aad),
+          );
+        expect(decrypter.process(Uint8List.fromList(result)), equals(text),
+            reason: '[size: $j]');
       }
     });
   });

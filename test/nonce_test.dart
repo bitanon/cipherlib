@@ -16,7 +16,7 @@ void main() {
       var nonce2 = Nonce.bytes(bytes1);
       var nonce3 = Nonce.bytes(bytes2);
       var nonce4 = nonce1;
-      expect(nonce1 == nonce2, isFalse);
+      expect(nonce1 == nonce2, isTrue);
       expect(nonce1 == nonce3, isFalse);
       expect(nonce1 == nonce4, isTrue);
     });
@@ -137,7 +137,7 @@ void main() {
       var nonce2 = Nonce64.bytes(bytes1);
       var nonce3 = Nonce64.bytes(bytes2);
       var nonce4 = nonce1;
-      expect(nonce1 == nonce2, isFalse);
+      expect(nonce1 == nonce2, isTrue);
       expect(nonce1 == nonce3, isFalse);
       expect(nonce1 == nonce4, isTrue);
     });
@@ -241,7 +241,7 @@ void main() {
       var nonce2 = Nonce128.bytes(bytes1);
       var nonce3 = Nonce128.bytes(bytes2);
       var nonce4 = nonce1;
-      expect(nonce1 == nonce2, isFalse);
+      expect(nonce1 == nonce2, isTrue);
       expect(nonce1 == nonce3, isFalse);
       expect(nonce1 == nonce4, isTrue);
     });

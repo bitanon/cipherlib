@@ -2,6 +2,7 @@
 // All rights reserved. Check LICENSE file for details.
 
 import 'algorithms/aes_modes/cbc.dart';
+import 'algorithms/aes_modes/ccm.dart';
 import 'algorithms/aes_modes/cfb.dart';
 import 'algorithms/aes_modes/ctr.dart';
 import 'algorithms/aes_modes/ecb.dart';
@@ -13,6 +14,7 @@ import 'algorithms/aes_modes/xts.dart';
 import 'algorithms/padding.dart';
 
 export 'algorithms/aes_modes/cbc.dart';
+export 'algorithms/aes_modes/ccm.dart';
 export 'algorithms/aes_modes/cfb.dart';
 export 'algorithms/aes_modes/ctr.dart';
 export 'algorithms/aes_modes/ecb.dart';
@@ -289,6 +291,35 @@ class AES {
     int tagSize = 16,
   }) =>
       AESInGCMMode(
+        key,
+        iv: iv,
+        aad: aad,
+        tagSize: tagSize,
+      );
+
+  /// The Counter with CBC-MAC mode (CCM) combines counter mode encryption with
+  /// a CBC-MAC authentication tag. It provides confidentiality and integrity.
+  ///
+  /// This implementation follows the specification from
+  /// [RFC 3610 - Counter with CBC-MAC (CCM)][spec].
+  ///
+  /// Parameters:
+  /// - [iv] Nonce with a size between 7 and 13 bytes.
+  /// - [aad] Additional authenticated data for tag generation.
+  /// - [tagSize] Authentication tag length in bytes. It must be an even value
+  ///   between 4 and 16.
+  ///
+  /// The encryption output appends the authentication tag to ciphertext.
+  /// During decryption, the authentication tag is verified and [StateError] is
+  /// thrown when verification fails or the input is malformed.
+  ///
+  /// [spec]: https://datatracker.ietf.org/doc/html/rfc3610
+  AESInCCMMode ccm(
+    List<int> iv, {
+    List<int>? aad,
+    int tagSize = 16,
+  }) =>
+      AESInCCMMode(
         key,
         iv: iv,
         aad: aad,

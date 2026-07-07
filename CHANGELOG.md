@@ -1,5 +1,6 @@
 # 0.5.0
 
+- 🔐 Added **AES-CCM** (Counter with CBC-MAC, RFC-3610) support with `AES(key).ccm(nonce)`, accepting a 7 to 13 byte nonce, additional authenticated data, and a configurable tag size.
 - 🔤 Renamed AEAD extensions to fix a spelling error: `ChaCha20ExtentionForPoly1305`, `XChaCha20ExtentionForPoly1305`, `Salsa20ExtentionForPoly1305`, and `XSalsa20ExtentionForPoly1305` are now `...ExtensionForPoly1305` (breaking change).
 - 📝 Corrected the README features table by removing unavailable `*Stream` helper functions, and refreshed the embedded usage example.
 

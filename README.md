@@ -45,6 +45,7 @@ Available modes for AES:
 - `CBC` : Cipher Block Chaining
 - `CTR` : Counter
 - `GCM` : Galois/Counter Mode
+- `CCM` : Counter with CBC-MAC
 - `CFB` : Cipher Feedback
 - `OFB` : Output Feedback
 - `IGE` : Infinite Garble Extension

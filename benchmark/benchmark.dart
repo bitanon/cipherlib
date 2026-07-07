@@ -5,6 +5,7 @@ import "dart:io";
 
 import '_base.dart';
 import 'aes_cbc.dart' as aes_cbc;
+import 'aes_ccm.dart' as aes_ccm;
 import 'aes_cfb.dart' as aes_cfb;
 import 'aes_ctr.dart' as aes_ctr;
 import 'aes_ecb.dart' as aes_ecb;
@@ -104,6 +105,18 @@ Future<void> measureSymmetricCiphers() async {
         aes_cbc.CipherlibBenchmark(size, 32),
         aes_cbc.PointyCastleBenchmark(size, 32),
         aes_cbc.CryptographyBenchmark(size, 32),
+      ],
+      "AES-128/CCM": [
+        aes_ccm.CipherlibBenchmark(size, 16),
+        aes_ccm.PointyCastleBenchmark(size, 16),
+      ],
+      "AES-192/CCM": [
+        aes_ccm.CipherlibBenchmark(size, 24),
+        aes_ccm.PointyCastleBenchmark(size, 24),
+      ],
+      "AES-256/CCM": [
+        aes_ccm.CipherlibBenchmark(size, 32),
+        aes_ccm.PointyCastleBenchmark(size, 32),
       ],
       "AES-128/CFB": [
         aes_cfb.CipherlibBenchmark(size, 16),
