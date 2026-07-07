@@ -71,7 +71,7 @@ jobs:
         run: dart pub get
 
       - name: Run tests
-        run: dart test -p ${{ matrix.platform }}
+        run: dart test -p ${{ matrix.platform }} ${{ matrix.sdk != 'stable' && '-x stable-only' || '' }}
 
   integration:
     needs: lint

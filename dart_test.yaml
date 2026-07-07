@@ -11,3 +11,6 @@ tags:
     on_platform:
       vm:
         skip: false
+  # Tests that only run on the stable Dart SDK.
+  # CI excludes this tag with `-x stable-only` on Dart 2.19.
+  stable-only: {}
