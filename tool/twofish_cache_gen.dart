@@ -1,6 +1,6 @@
-// The Blowfish P-box and S-box initial values are the hexadecimal digits of
-// the fractional part of PI, per the specification:
-// https://www.schneier.com/academic/blowfish/
+// Generates cached lookup tables for Twofish (q permutations and MDS columns),
+// based on the Twofish specification.
+// https://www.schneier.com/academic/twofish/
 
 import 'dart:io';
 import 'dart:typed_data';
@@ -134,7 +134,7 @@ void main() {
   stdout.writeln('const _q0 = <int>[');
   final line = StringBuffer();
   for (int x in q0) {
-    final hex = x.toRadixString(16).padLeft(8, '0').toUpperCase();
+    final hex = x.toRadixString(16).padLeft(2, '0').toUpperCase();
     line.write(' 0x$hex,');
     if (line.length + 2 > 66) {
       stdout.writeln(' ${line.toString()}');
@@ -155,7 +155,7 @@ void main() {
   stdout.writeln('const _q1 = <int>[');
   line.clear();
   for (int x in q1) {
-    final hex = x.toRadixString(16).padLeft(8, '0').toUpperCase();
+    final hex = x.toRadixString(16).padLeft(2, '0').toUpperCase();
     line.write(' 0x$hex,');
     if (line.length + 2 > 66) {
       stdout.writeln(' ${line.toString()}');
@@ -166,6 +166,7 @@ void main() {
     stdout.writeln(' ${line.toString()}');
   }
   stdout.writeln('];');
+  stdout.writeln('');
 
   // -------------------------------------------------------------------
   // _mds0
@@ -186,6 +187,7 @@ void main() {
     stdout.writeln(' ${line.toString()}');
   }
   stdout.writeln('];');
+  stdout.writeln('');
 
   // -------------------------------------------------------------------
   // _mds1
@@ -206,6 +208,7 @@ void main() {
     stdout.writeln(' ${line.toString()}');
   }
   stdout.writeln('];');
+  stdout.writeln('');
 
   // -------------------------------------------------------------------
   // _mds2
@@ -247,4 +250,5 @@ void main() {
     stdout.writeln(' ${line.toString()}');
   }
   stdout.writeln('];');
+  stdout.writeln('');
 }

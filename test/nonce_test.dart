@@ -81,7 +81,7 @@ void main() {
       expect(n.reverse().reverse().bytes, equals(n.bytes));
     });
 
-    test('Nonce.bytes should fill extrabytes with zeros', () {
+    test('Nonce.bytes should fill extra bytes with zeros', () {
       var data = [1, 2, 3];
       var nonce = Nonce.bytes(data, 5);
       expect(nonce.bytes, equals(Uint8List.fromList([1, 2, 3, 0, 0])));
@@ -325,7 +325,7 @@ void main() {
       expect(nonce.bytes, equals(expectedBytes));
     }, tags: ['vm-only']);
 
-    test('Nonce128.int64 creates a nonce from one 64-bit integers', () {
+    test('Nonce128.int64 creates a nonce from a 64-bit integer', () {
       final nonce = Nonce128.int64(
         (0x090A0B0C << 32) ^ 0x0D0E0F10,
       );
@@ -379,7 +379,7 @@ void main() {
       expect(nonce.bytes, equals(expectedBytes));
     });
 
-    test('Nonce128.int32 creates a nonce from one 32-bit integers', () {
+    test('Nonce128.int32 creates a nonce from a 32-bit integer', () {
       final nonce = Nonce128.int32(
         0x0D0E0F10,
       );

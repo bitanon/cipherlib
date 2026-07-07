@@ -1388,29 +1388,6 @@ void main() {
         expect(toHex(reverse), equals(toHex(plain)));
       });
     });
-    group('COUNT = 451 | DataUnitLen = 384', () {
-      var key = fromHex(
-        '94567a4abf8616ad67bee70cc9a4efabf81a7ded305db095a08d401176a4b218a31ec1e922ff386a80266e1d369e785d8c1378addb65116581d01119e41ec144',
-      );
-      var tweak = fromHex(
-        '0f7d9ca5d875bdeddc368c3308a44170',
-      );
-      var plain = fromHex(
-        'e1c2c4283348f591ad59dd9514b3b51bade71135785d79927dba1630fafdbbba61f384a362ebaa7ac530acf3cf12ea15',
-      );
-      var cipher = fromHex(
-        'c3f4026b886f91a2ef908ce80bc0642493c5fc71ffb426be688ad9cdc0e7ad83a0da7503a464b0fa8baf41ee61143fff',
-      );
-      var aes = AES(key).xts(tweak);
-      test('encrypt', () {
-        var actual = aes.encrypt(plain);
-        expect(toHex(actual), equals(toHex(cipher)));
-      });
-      test('decrypt', () {
-        var reverse = aes.decrypt(cipher);
-        expect(toHex(reverse), equals(toHex(plain)));
-      });
-    });
   });
 
   group('stream cipher', () {

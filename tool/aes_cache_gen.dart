@@ -59,13 +59,13 @@ void _writeTables(List<int> sbox, List<List<int>> coefficients, String name) {
 
 void _writeTable(String name, List<int> sbox, List<int> coefficients) {
   stdout.write('const List<int> $name = [');
-  for (int x = 0; x < 256; ++x) {
-    final int y = _mixWord(sbox[x], coefficients);
-    if ((x & 3) == 0) {
-      if (x == 4) stdout.write('//');
+  for (int byteValue = 0; byteValue < 256; ++byteValue) {
+    final int mixedValue = _mixWord(sbox[byteValue], coefficients);
+    if ((byteValue & 3) == 0) {
+      if (byteValue == 4) stdout.write('//');
       stdout.write('\n  ');
     }
-    final String hex = y.toRadixString(16).padLeft(8, '0');
+    final String hex = mixedValue.toRadixString(16).padLeft(8, '0');
     stdout.write('0x$hex, ');
   }
   stdout.write('\n];\n\n');
