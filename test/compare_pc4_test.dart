@@ -14,7 +14,7 @@ import 'dart:typed_data' show Uint8List;
 
 import 'package:cipherlib/cipherlib.dart' as my;
 import 'package:cipherlib/codecs.dart';
-import 'package:hashlib/random.dart';
+import 'package:cipherlib/random.dart';
 import 'package:pointycastle/pointycastle.dart' as pc;
 import 'package:pointycastle/block/blowfish.dart';
 import 'package:pointycastle/block/modes/cbc.dart';

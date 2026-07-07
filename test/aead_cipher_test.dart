@@ -5,8 +5,8 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:cipherlib/cipherlib.dart';
-import 'package:hashlib/hashlib.dart';
-import 'package:hashlib/random.dart';
+import 'package:cipherlib/hashlib.dart';
+import 'package:cipherlib/random.dart';
 import 'package:test/test.dart';
 
 void main() {

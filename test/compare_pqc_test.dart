@@ -16,7 +16,7 @@ import 'dart:typed_data' show Uint8List;
 
 import 'package:cipherlib/cipherlib.dart';
 import 'package:cipherlib/codecs.dart';
-import 'package:hashlib/random.dart';
+import 'package:cipherlib/random.dart';
 import 'package:pqcrypto/pqcrypto.dart' as pqc;
 import 'package:test/test.dart';
 

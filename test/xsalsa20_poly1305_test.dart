@@ -4,7 +4,7 @@
 import 'dart:typed_data';
 
 import 'package:cipherlib/cipherlib.dart';
-import 'package:hashlib/random.dart';
+import 'package:cipherlib/random.dart';
 import 'package:test/test.dart';
 
 void main() {

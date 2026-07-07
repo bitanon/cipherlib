@@ -5,7 +5,7 @@ import 'dart:typed_data';
 
 import 'package:cipherlib/cipherlib.dart';
 import 'package:cipherlib/codecs.dart';
-import 'package:hashlib/random.dart';
+import 'package:cipherlib/random.dart';
 import 'package:test/test.dart';
 
 import 'fixtures/xchacha20_vectors.dart';
