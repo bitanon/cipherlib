@@ -1,3 +1,8 @@
+# 0.7.0
+
+- 🔑 Added **ML-KEM** (NIST FIPS 203) post-quantum key encapsulation with `MLKEM.kem512()`, `MLKEM.kem768()`, and `MLKEM.kem1024()`, supporting key generation, encapsulation, and decapsulation, with deterministic key generation from a 64-byte seed.
+- 🧩 Added `KEMBase`, `KEMKeyPair`, and `KEMSecret` core types for key encapsulation mechanisms.
+
 # 0.6.0
 
 - 🐡 Added **Blowfish** block cipher with `ECB`, `CBC`, and `CTR` modes, supporting variable key sizes from 1 to 56 bytes.

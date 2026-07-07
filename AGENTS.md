@@ -6,7 +6,8 @@ report the conflict (§6, Flag-1).
 
 ## 0. Prime directive
 
-`cipherlib` is a pure-Dart symmetric cryptography package. In this repo,
+`cipherlib` is a pure-Dart cryptography package providing symmetric ciphers
+and post-quantum key encapsulation (ML-KEM). In this repo,
 **correctness is proven by known-answer test vectors (KATs), not by reasoning
 and not by round-trip tests**. A stream cipher whose keystream is completely
 wrong still round-trips perfectly (encrypt and decrypt apply the same XOR), so
@@ -23,7 +24,8 @@ asymmetries between similar algorithms. Almost all of them are load-bearing.
 ## 1. Orientation
 
 **What**: symmetric ciphers (AES in 9 modes, ChaCha20, XChaCha20, Salsa20,
-XSalsa20, XOR) plus AEAD variants with Poly1305. Published to pub.dev as
+XSalsa20, XOR) plus AEAD variants with Poly1305, and the ML-KEM post-quantum
+key encapsulation mechanism (FIPS 203). Published to pub.dev as
 `cipherlib` (repo: `bitanon/cipherlib`, default branch `main`).
 
 **Dependency chain** (all hosted on pub.dev — never path deps, never
@@ -312,12 +314,15 @@ Do not change an existing error type or message — tests match them.
   looks like an obvious "add an early return" cleanup. It is deliberate, and
   `CountingTagReadList` in `test/aes_gcm_test.dart` asserts all 16 tag bytes
   are read on a tampered tag. Rule: never short-circuit a MAC comparison.
-- **D2. Known gap — `HashDigest.isEqual` is NOT constant-time.** The Poly1305
-  AEAD verify path delegates to hashlib_codecs' `ByteCollector.isEqual`, which
-  returns on the first mismatched byte. This contradicts D1's policy. Rule: do
-  NOT silently change either side (the fix belongs in hashlib_codecs, a
-  different repo); if your work touches tag verification, flag this to the
-  maintainer (§6, Stop-2).
+- **D2. `HashDigest.isEqual` IS constant-time for content, but not for
+  length.** hashlib_codecs' `ByteCollector.isEqual` (since 3.3.x) accumulates
+  a running diff over all bytes and exits early only on a length mismatch, so
+  the Poly1305 AEAD verify path and KEM shared-secret comparisons may rely on
+  it. The ML-KEM decapsulation path still uses its own fixed-length
+  `$verify`/`_cmov` mask routines (the re-encrypted ciphertext comparison and
+  key selection must be branch-free). Rule: never short-circuit a MAC or
+  secret comparison on content, and verify the shipped hashlib_codecs
+  behavior before relying on it after a dependency bump.
 - **D3. Never log, print, or embed in exception messages** any key, nonce,
   keystream, or intermediate state in `lib/` code. Debug output belongs in
   tests only.

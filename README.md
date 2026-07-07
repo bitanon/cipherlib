@@ -8,9 +8,9 @@
 [![Test](https://github.com/bitanon/cipherlib/actions/workflows/test.yml/badge.svg)](https://github.com/bitanon/cipherlib/actions/workflows/test.yml)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/bitanon/cipherlib)
 
-A pure-Dart symmetric cryptography library with modern stream ciphers, AEAD support, and a broad AES mode set.
+A pure-Dart cryptography library with modern stream ciphers, AEAD support, a broad AES mode set, and post-quantum key encapsulation.
 
-`cipherlib` provides AES (multiple modes), ChaCha20/XChaCha20, Salsa20/XSalsa20, XOR, and Poly1305-based AEAD variants. The only runtime dependency is [`hashlib`](https://pub.dev/packages/hashlib).
+`cipherlib` provides AES (multiple modes), ChaCha20/XChaCha20, Salsa20/XSalsa20, XOR, Poly1305-based AEAD variants, and ML-KEM (FIPS 203). The only runtime dependency is [`hashlib`](https://pub.dev/packages/hashlib).
 
 ## At a glance
 
@@ -18,6 +18,7 @@ A pure-Dart symmetric cryptography library with modern stream ciphers, AEAD supp
 - One-shot and stream APIs for common cipher workflows.
 - Broad AES mode coverage, including GCM and XTS.
 - Modern AEAD options: ChaCha20-Poly1305, XChaCha20-Poly1305, Salsa20-Poly1305, XSalsa20-Poly1305.
+- Post-quantum key encapsulation: ML-KEM-512/768/1024 (FIPS 203).
 - Cross-library comparisons and benchmark data included.
 
 ## Features
@@ -55,6 +56,21 @@ Available modes for AES:
 - `XTS` : XEX (XOR-Encrypt-XOR) Tweakable Block Cipher with Ciphertext Stealing
 
 Blowfish and Twofish support the `ECB`, `CBC`, and `CTR` modes.
+
+### Post-Quantum Key Encapsulation
+
+| Algorithms | Public class and methods |    Source     |
+| ---------- | ------------------------ | :-----------: |
+| ML-KEM     | `MLKEM`                  | NIST.FIPS.203 |
+
+`MLKEM.kem512()`, `MLKEM.kem768()`, and `MLKEM.kem1024()` provide key
+generation, encapsulation, and decapsulation, with optional deterministic
+key generation from a 64-byte seed.
+
+> The implementation follows the constant-time structure of the reference
+> implementation, but Dart runtimes (JIT, AOT, dart2js) cannot guarantee
+> constant-time execution. Consider the deployment environment before using
+> it in side-channel-sensitive settings.
 
 ## Getting started
 

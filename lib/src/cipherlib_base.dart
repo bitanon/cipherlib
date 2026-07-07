@@ -9,6 +9,8 @@ export 'chacha20.dart';
 export 'chacha20_poly1305.dart';
 export 'core/aes.dart';
 export 'core/cipher.dart';
+export 'core/kem.dart';
+export 'mlkem.dart';
 export 'salsa20.dart';
 export 'salsa20_poly1305.dart';
 export 'stream_extensions.dart';
