@@ -8,10 +8,10 @@ void main() {
   final alice = kem.keygen();
 
   // Bob encapsulates a shared secret with Alice's public key and
-  // transmits the cipher text back to Alice
+  // transmits the ciphertext back to Alice
   final bob = kem.encaps(alice.encapsulationKey);
 
-  // Alice recovers the same shared secret from the cipher text
+  // Alice recovers the same shared secret from the ciphertext
   final shared = kem.decaps(alice.decapsulationKey, bob.cipherText);
 
   print(kem.name);

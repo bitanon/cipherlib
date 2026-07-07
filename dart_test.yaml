@@ -14,3 +14,11 @@ tags:
   # Tests that only run on the stable Dart SDK.
   # CI excludes this tag with `-x stable-only` on Dart 2.19.
   stable-only: {}
+
+presets:
+  # Runs the web-safe suite through the dart2wasm compiler on Chrome. Chrome is
+  # not in the default `platforms` (it needs a browser), so invoke this platform
+  # explicitly with `dart test -P wasm`. CI's release matrix uses it too.
+  wasm:
+    platforms: [chrome]
+    compilers: [dart2wasm]
