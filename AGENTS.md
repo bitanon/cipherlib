@@ -170,9 +170,7 @@ House idioms (copy them, don't improvise):
 - AES mode naming: `AESIn<MODE>Mode` (the pair), `AESIn<MODE>ModeEncrypt` /
   `...Decrypt` (the sides), `...CipherCore` (bare engine). AEAD naming:
   `<Cipher>Poly1305`, attached via
-  `extension <Cipher>ExtentionForPoly1305 on <Cipher>` — the "Extention"
-  misspelling is consistent across the codebase; **keep it** for new
-  extensions (renaming is a breaking change).
+  `extension <Cipher>ExtensionForPoly1305 on <Cipher>`.
 - Top-level one-shot functions are lowercase-run-together: `chacha20`,
   `xchacha20poly1305`. AES has none — its API is the builder
   `AES(key).cbc(iv)`, `AES(key).gcm(iv)`, etc.
@@ -197,7 +195,7 @@ House idioms (copy them, don't improvise):
 - README "Features" table has a **Source** column (`RFC-8439`,
   `NIST.FIPS.197`, `libsodium`, `Snuffle-2005`, ...). Every new algorithm adds
   a row, and every symbol named in that table must actually exist in `lib/`
-  (grep before writing; see §4.A1 for the standing violation).
+  (grep before writing; see §4.A1 for how it once went wrong).
 
 ### 3.5 Error conventions (tests assert exact types)
 
@@ -240,12 +238,11 @@ Do not change an existing error type or message — tests match them.
 
 ### A. API illusions — the docs lie in places; the code doesn't
 
-- **A1. The phantom `*Stream` functions.** README's Features table advertises
-  `xorStream`, `chacha20Stream`, `xchacha20Stream`, `salsa20Stream`,
-  `xsalsa20Stream`. **They do not exist.** Streaming is
-  `ChaCha20(key, nonce).bind(stream)` (a `StreamTransformer`) or the
-  byte-level `StreamCipherExtension.stream()`. Rule: never call or document a
-  symbol without grepping it in `lib/` first.
+- **A1. Phantom `*Stream` functions.** There are no top-level `chacha20Stream`
+  / `xorStream`-style helpers — the README once advertised them without them
+  existing. Streaming is `ChaCha20(key, nonce).bind(stream)` (a
+  `StreamTransformer`) or the byte-level `StreamCipherExtension.stream()`.
+  Rule: never call or document a symbol without grepping it in `lib/` first.
 - **A2. There is no `.tag`.** AEAD results expose `mac` (a hashlib
   `HashDigest`): `result.mac.bytes`, `result.mac.hex()`.
 - **A3. AEAD one-shot functions verify via parameter, not a method.**
@@ -482,13 +479,3 @@ All of the above, plus:
 **Never** silently: commit or push (only on explicit request in the current
 message, §3.6), delete tests, loosen assertions, change error types/messages,
 reorder MAC input feeding, remove defensive copies, or edit generated blocks.
-
-## 7. Known issues (inherited; do not fix silently)
-
-- README advertises nonexistent `*Stream` top-level functions (§4.A1) — fix
-  requires a maintainer decision: correct the table vs actually add the
-  helpers.
-- Poly1305 AEAD verification is not constant-time via
-  `ByteCollector.isEqual` (§4.D2) — fix belongs in hashlib_codecs.
-- `origin/HEAD` may still point at `master` locally after the `main`
-  migration; the default branch is `main`.

@@ -47,7 +47,7 @@ class Salsa20Poly1305 extends AEADStreamCipher<Salsa20, Poly1305>
 }
 
 /// Adds [poly1305] to [Salsa20] to create an instance of [Salsa20Poly1305]
-extension Salsa20ExtentionForPoly1305 on Salsa20 {
+extension Salsa20ExtensionForPoly1305 on Salsa20 {
   /// Create an instance of [Salsa20Poly1305] that uses [Salsa20] for message
   /// encryption and [Poly1305] for MAC (Message Authentication Code) generation
   /// to ensure data integrity.

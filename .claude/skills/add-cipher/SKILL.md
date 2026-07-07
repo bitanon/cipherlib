@@ -105,8 +105,8 @@ House rules that apply here (from AGENTS.md §3.3, §4):
   feeds a MAC: override `resetIV()` to re-derive everything after
   `super.resetIV()`. Missing this causes keystream reuse (AGENTS.md §4.C2).
 - For AEAD: create the `<Cipher>Poly1305 extends AEADStreamCipher` class plus
-  an `extension <Cipher>ExtentionForPoly1305 on <Cipher>` with a `.poly1305()`
-  method. Keep the existing "Extention" spelling.
+  an `extension <Cipher>ExtensionForPoly1305 on <Cipher>` with a `.poly1305()`
+  method.
 
 ## Step 2 — Barrel wiring
 

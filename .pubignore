@@ -1,7 +1,11 @@
 /test
+/test_integration
 /coverage
 /benchmark
 /doc
 /build
 /scripts
 /.github
+/.claude
+AGENTS.md
+CLAUDE.md

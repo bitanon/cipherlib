@@ -1,3 +1,6 @@
+// Copyright (c) 2024, Sudipto Chandra
+// All rights reserved. Check LICENSE file for details.
+
 import 'dart:async';
 
 /// Wrap [input] as a chunked stream with chunks the size of [N].

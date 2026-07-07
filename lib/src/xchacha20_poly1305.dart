@@ -51,7 +51,7 @@ class XChaCha20Poly1305 extends AEADStreamCipher<XChaCha20, Poly1305>
 }
 
 /// Adds [poly1305] to [XChaCha20] to create an instance of [XChaCha20Poly1305]
-extension XChaCha20ExtentionForPoly1305 on XChaCha20 {
+extension XChaCha20ExtensionForPoly1305 on XChaCha20 {
   /// Creates an instance of [XChaCha20Poly1305] that uses [XChaCha20] for
   /// message encryption and [Poly1305] for MAC (Message Authentication Code)
   /// generation to ensure data integrity.
