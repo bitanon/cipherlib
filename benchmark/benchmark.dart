@@ -14,7 +14,9 @@ import 'aes_ige.dart' as aes_ige;
 import 'aes_ofb.dart' as aes_ofb;
 import 'aes_pcbc.dart' as aes_pcbc;
 import 'aes_xts.dart' as aes_xts;
+import 'blowfish.dart' as blowfish;
 import 'chacha20.dart' as chacha20;
+import 'twofish.dart' as twofish;
 import 'xchacha20.dart' as xchacha20;
 import 'xchacha20_poly1305.dart' as xchacha20poly1305;
 import 'xsalsa20.dart' as xsalsa20;
@@ -213,6 +215,30 @@ Future<void> measureSymmetricCiphers() async {
       ],
       "AES-256/XTS": [
         aes_xts.CipherlibBenchmark(size, 32),
+      ],
+      "Blowfish-128/CBC": [
+        blowfish.CipherlibBenchmark(size, 16),
+        blowfish.PointyCastleBenchmark(size, 16),
+      ],
+      "Blowfish-256/CBC": [
+        blowfish.CipherlibBenchmark(size, 32),
+        blowfish.PointyCastleBenchmark(size, 32),
+      ],
+      "Blowfish-448/CBC": [
+        blowfish.CipherlibBenchmark(size, 56),
+        blowfish.PointyCastleBenchmark(size, 56),
+      ],
+      "Twofish-128/CBC": [
+        twofish.CipherlibBenchmark(size, 16),
+        twofish.PointyCastleBenchmark(size, 16),
+      ],
+      "Twofish-192/CBC": [
+        twofish.CipherlibBenchmark(size, 24),
+        twofish.PointyCastleBenchmark(size, 24),
+      ],
+      "Twofish-256/CBC": [
+        twofish.CipherlibBenchmark(size, 32),
+        twofish.PointyCastleBenchmark(size, 32),
       ],
     };
 

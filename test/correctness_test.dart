@@ -257,6 +257,42 @@ void main() {
       P([k, 16]): AES(R(k), Padding.none).xts(R(16)),
     });
   }
+  // ------------------------------------------------------------
+  // Blowfish
+  // ------------------------------------------------------------
+  for (final p in paddingList) {
+    for (final k in [1, 4, 16, 56]) {
+      ciphers.addAll({
+        P([k, p.name]): Blowfish(R(k), p).ecb(),
+        P([k, 8, p.name]): Blowfish(R(k), p).cbc(R(8)),
+      });
+    }
+  }
+  for (final k in [1, 16, 56]) {
+    for (final c in [1, 13, 64]) {
+      ciphers.addAll({
+        P([k, 8, c]): Blowfish(R(k)).ctr(R(8), c),
+      });
+    }
+  }
+  // ------------------------------------------------------------
+  // Twofish
+  // ------------------------------------------------------------
+  for (final p in paddingList) {
+    for (final k in [16, 24, 32]) {
+      ciphers.addAll({
+        P([k, p.name]): Twofish(R(k), p).ecb(),
+        P([k, 16, p.name]): Twofish(R(k), p).cbc(R(16)),
+      });
+    }
+  }
+  for (final k in [16, 24, 32]) {
+    for (final c in [1, 64, 128]) {
+      ciphers.addAll({
+        P([k, 16, c]): Twofish(R(k)).ctr(R(16), c),
+      });
+    }
+  }
 
   // ------------------------------------------------------------
   // Test all ciphers

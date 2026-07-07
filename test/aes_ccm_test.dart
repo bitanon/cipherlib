@@ -49,6 +49,22 @@ void main() {
       expect(() => AES(key).ccm(nonce).decrypt([1, 2, 3]), throwsStateError);
     });
 
+    test('random nonce is used if not provided', () {
+      final aes = AESInCCMMode(key);
+      expect(aes.iv.length, 13);
+      final inp = randomBytes(24);
+      expect(aes.decrypt(aes.encrypt(inp)), equals(inp));
+    });
+
+    test('supports large additional authenticated data', () {
+      // AAD of 0xFF00 bytes and above uses the extended length encoding
+      for (final n in [0xFEFF, 0xFF00, 0x10000]) {
+        final aes = AES(key).ccm(nonce, aad: Uint8List(n), tagSize: 8);
+        final inp = randomBytes(24);
+        expect(aes.decrypt(aes.encrypt(inp)), equals(inp), reason: '[aad: $n]');
+      }
+    });
+
     test('message must fit in the length field', () {
       // RFC 3610: a 13-byte nonce leaves L=2, limiting messages to 2^16 - 1
       final aes = AES(key).ccm(nonce, tagSize: 4);

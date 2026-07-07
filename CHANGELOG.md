@@ -1,3 +1,8 @@
+# 0.6.0
+
+- 🐡 Added **Blowfish** block cipher with `ECB`, `CBC`, and `CTR` modes, supporting variable key sizes from 1 to 56 bytes.
+- 🐟 Added **Twofish** block cipher with `ECB`, `CBC`, and `CTR` modes, supporting 128, 192, and 256-bit keys.
+
 # 0.5.0
 
 - 🔐 Added **AES-CCM** (Counter with CBC-MAC, RFC-3610) support with `AES(key).ccm(nonce)`, accepting a 7 to 13 byte nonce, additional authenticated data, and a configurable tag size.

@@ -25,6 +25,8 @@ A pure-Dart symmetric cryptography library with modern stream ciphers, AEAD supp
 | Ciphers            | Public class and methods                 |    Source     |
 | ------------------ | ---------------------------------------- | :-----------: |
 | AES                | `AES`                                    | NIST.FIPS.197 |
+| Blowfish           | `Blowfish`                               | Blowfish-1993 |
+| Twofish            | `Twofish`                                | Twofish-1998  |
 | XOR                | `XOR`, `xor`                             |   Wikipedia   |
 | ChaCha20           | `ChaCha20`, `chacha20`                   |   RFC-8439    |
 | ChaCha20/Poly1305  | `ChaCha20Poly1305`, `chacha20poly1305`   |   RFC-8439    |
@@ -51,6 +53,8 @@ Available modes for AES:
 - `IGE` : Infinite Garble Extension
 - `PCBC` : Propagating Cipher Block Chaining
 - `XTS` : XEX (XOR-Encrypt-XOR) Tweakable Block Cipher with Ciphertext Stealing
+
+Blowfish and Twofish support the `ECB`, `CBC`, and `CTR` modes.
 
 ## Getting started
 
