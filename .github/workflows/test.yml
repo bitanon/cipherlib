@@ -79,6 +79,12 @@ jobs:
             .dart_tool/package_config.json
           key: ${{ runner.os }}-test-${{ hashFiles('**/pubspec.lock') }}
 
+      # pqcrypto requires Dart SDK 3.10+ and has no 2.19-compatible version;
+      # its tests are already excluded there via the `stable-only` tag.
+      - name: Remove Dart 3 only dependencies
+        if: ${{ matrix.sdk == '2.19' }}
+        run: dart pub remove pqcrypto
+
       - name: Install dependencies
         run: dart pub get
 

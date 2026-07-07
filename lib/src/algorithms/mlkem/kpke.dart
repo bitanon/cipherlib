@@ -26,15 +26,6 @@ class KPKE {
 
   const KPKE(this.k, this.eta1, this.du, this.dv);
 
-  /// Byte length of the K-PKE public key (FIPS 203: `ek_PKE`)
-  int get publicKeyBytes => 384 * k + 32;
-
-  /// Byte length of the K-PKE secret key (FIPS 203: `dk_PKE`)
-  int get secretKeyBytes => 384 * k;
-
-  /// Byte length of the K-PKE ciphertext
-  int get cipherTextBytes => 32 * (du * k + dv);
-
   // SHAKE256 as the PRF of FIPS 203: eta * 64 output bytes
   static const Shake256 _prf128 = Shake256(128);
   static const Shake256 _prf192 = Shake256(192);

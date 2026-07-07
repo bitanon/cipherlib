@@ -10,9 +10,9 @@
 // The encaps vectors are the first 3 "encapsulation" AFT cases per
 // parameter set: (ek, m) -> (c, k), with dk kept to chain a decapsulation
 // check. The key-check vectors are "encapsulationKeyCheck" VAL cases
-// (2 valid, 2 invalid per parameter set); the invalid ones fail the
-// FIPS 203 Section 7.2 modulus check ("noisy linear system values too
-// large") and must be rejected by encaps.
+// (2 valid, 2 invalid per parameter set); the invalid ones ("noisy linear
+// system values too large") are over-length and so must be rejected by the
+// FIPS 203 Section 7.2 input check.
 
 /// ACVP encapsulation AFT vectors for ML-KEM-512: (ek, m) -> (c, k)
 final List<Map<String, String>> mlkemEncaps512Vectors = [

@@ -124,7 +124,10 @@ void main() {
     });
     test('encaps modulus check (FIPS 203, section 7.2)', () {
       // source: NIST ACVP encapsulationKeyCheck VAL vectors; the failing
-      // keys have "noisy linear system values too large"
+      // keys have "noisy linear system values too large". These vectors are
+      // all over-length, so they are rejected by the length half of the
+      // section 7.2 input check; see the coefficient case below for the
+      // modulus half.
       for (final kem in levels) {
         for (final tc in ekCheckVectors[kem]!) {
           final ek = fromHex(tc['ek']!);
@@ -136,6 +139,18 @@ void main() {
                 reason: '${kem.name} tcId: ${tc['tcId']}');
           }
         }
+      }
+    });
+    test('encaps rejects a coefficient >= q (FIPS 203, section 7.2)', () {
+      // The ACVP encapsulationKeyCheck fail vectors are all over-length, so
+      // none exercise the coefficient modulus check on a correctly sized key.
+      // Corrupt a valid key so its first 12-bit coefficient is 0xFFF (4095,
+      // which is >= q = 3329) to reach that check directly.
+      for (final kem in levels) {
+        final ek = Uint8List.fromList(kem.keygen().encapsulationKey);
+        ek[0] = 0xFF;
+        ek[1] = 0xFF; // coeff0 = (0xFF | (0xFF << 8)) & 0xFFF = 0xFFF
+        expect(() => kem.encaps(ek), throwsArgumentError, reason: kem.name);
       }
     });
     test('keygen without seed produces random key pairs', () {
