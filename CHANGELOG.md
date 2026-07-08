@@ -1,3 +1,7 @@
+# 0.7.1
+
+- Bump `hashlib` to `^2.4.2`.
+
 # 0.7.0
 
 - 🔑 Added **ML-KEM** (NIST FIPS 203) post-quantum cryptography with `MLKEM.kem512()`, `MLKEM.kem768()`, and `MLKEM.kem1024()`, supporting key generation, encapsulation, and decapsulation, with deterministic key generation from a 64-byte seed.

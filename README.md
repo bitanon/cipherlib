@@ -39,7 +39,7 @@ primitives it is built on, and that is its only runtime dependency.
 
 ```yaml
 dependencies:
-  cipherlib: ^0.7.0
+  cipherlib: ^0.7.1
 ```
 
 or run `dart pub add cipherlib`. A single import exposes every algorithm:
