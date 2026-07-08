@@ -32,11 +32,11 @@ key encapsulation mechanism (FIPS 203). Published to pub.dev as
 `pubspec_overrides.yaml`):
 
 ```text
-hashlib_codecs  ──►  hashlib  ──►  cipherlib
+convertlib  ──►  hashlib  ──►  cipherlib
 (codecs, ByteCollector)  (Poly1305, HashDigest, random)  (this repo)
 ```
 
-Sibling repos live at `../hashlib` and `../hashlib_codecs`. cipherlib's only
+Sibling repos live at `../hashlib` and `../convertlib`. cipherlib's only
 runtime dependency is `hashlib`. Things cipherlib gets from hashlib and must
 NOT reimplement: `Poly1305`, `HashDigest` (`.bytes`, `.hex()`, `.isEqual`),
 `MACHashBase`, `HashDigestSink`, `randomBytes`/`randomNumbers`/`fillRandom`,
@@ -315,13 +315,13 @@ Do not change an existing error type or message — tests match them.
   `CountingTagReadList` in `test/aes_gcm_test.dart` asserts all 16 tag bytes
   are read on a tampered tag. Rule: never short-circuit a MAC comparison.
 - **D2. `HashDigest.isEqual` IS constant-time for content, but not for
-  length.** hashlib_codecs' `ByteCollector.isEqual` (since 3.3.x) accumulates
+  length.** convertlib' `ByteCollector.isEqual` (since 3.3.x) accumulates
   a running diff over all bytes and exits early only on a length mismatch, so
   the Poly1305 AEAD verify path and KEM shared-secret comparisons may rely on
   it. The ML-KEM decapsulation path still uses its own fixed-length
   `$verify`/`_cmov` mask routines (the re-encrypted ciphertext comparison and
   key selection must be branch-free). Rule: never short-circuit a MAC or
-  secret comparison on content, and verify the shipped hashlib_codecs
+  secret comparison on content, and verify the shipped convertlib
   behavior before relying on it after a dependency bump.
 - **D3. Never log, print, or embed in exception messages** any key, nonce,
   keystream, or intermediate state in `lib/` code. Debug output belongs in
@@ -455,7 +455,7 @@ All of the above, plus:
   logic and no existing spec-sourced vector exercises the changed path. Ask
   for vectors or approval to source them — never validate crypto by
   round-trip.
-- **Stop-2: The fix belongs in hashlib or hashlib_codecs.** Report the
+- **Stop-2: The fix belongs in hashlib or convertlib.** Report the
   cross-repo finding with file:line; do not modify sibling repos or work
   around their bugs with shims here.
 - **Stop-3: Security judgment calls** — anything involving constant-time

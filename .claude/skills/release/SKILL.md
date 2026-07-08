@@ -23,12 +23,12 @@ prepare the repo so that pipeline cannot fail, then push the tag.
 ## Step 1 — Dependency-chain check (bottom-up)
 
 cipherlib depends on hosted `hashlib`, which depends on hosted
-`hashlib_codecs` (never path deps). Before releasing cipherlib:
+`convertlib` (never path deps). Before releasing cipherlib:
 
-1. Check `../hashlib` and `../hashlib_codecs` for commits after their latest
+1. Check `../hashlib` and `../convertlib` for commits after their latest
    tag (`git -C ../hashlib log $(git -C ../hashlib describe --tags --abbrev=0)..HEAD --oneline`).
 2. If cipherlib's changes need an unreleased hashlib change, the chain must
-   ship first: hashlib_codecs → hashlib (bumping its `hashlib_codecs:`
+   ship first: convertlib → hashlib (bumping its `convertlib:`
    constraint) → cipherlib (bumping its `hashlib:` constraint). Each sibling
    follows its own version of this same ritual; confirm with the maintainer
    before touching sibling repos (AGENTS.md §6, Stop-2 applies to code, but

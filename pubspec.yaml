@@ -18,7 +18,7 @@ platforms:
   windows:
 
 dependencies:
-  hashlib: ^2.4.0
+  hashlib: ^2.4.1
 
 dev_dependencies:
   lints: any
