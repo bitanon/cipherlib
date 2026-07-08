@@ -1,8 +1,7 @@
 name: cipherlib
-description: Pure-Dart cryptography package implementing symmetric ciphers (AES
-  with multiple modes, ChaCha20, XChaCha20, Salsa20, XSalsa20, XOR), their
-  AEAD variants with Poly1305, and the ML-KEM post-quantum key encapsulation
-  mechanism (FIPS 203).
+description: Pure-Dart symmetric ciphers (AES modes, ChaCha20, XChaCha20,
+  Salsa20, XSalsa20), their Poly1305 AEAD variants, and ML-KEM post-quantum
+  key encapsulation (FIPS 203).
 repository: https://github.com/bitanon/cipherlib
 version: 0.7.0
 
