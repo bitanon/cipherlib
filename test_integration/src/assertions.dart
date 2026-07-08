@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:cipherlib/codecs.dart';
 
 bool bytesEq(List<int> a, List<int> b) {
@@ -9,7 +11,7 @@ bool bytesEq(List<int> a, List<int> b) {
 }
 
 void expectSameUtf8(List<int> got, String want) {
-  final s = fromUtf8(got);
+  final s = fromUtf8(Uint8List.fromList(got));
   if (s != want) {
     throw StateError('expected UTF-8 "$want", got "$s"');
   }
