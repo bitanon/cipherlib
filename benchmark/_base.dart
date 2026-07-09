@@ -3,9 +3,33 @@
 
 import 'dart:async';
 
-/// Minimum number of milliseconds each benchmark should run to ensure accuracy.
+/// Minimum number of milliseconds the probe runs to size a batch.
 const int warmupDurationMillis = 100;
+
+/// Minimum number of milliseconds the measured exercise runs.
 const int exerciseDurationMillis = 2000;
+
+/// Target wall-clock duration of a single measured batch, in microseconds.
+///
+/// Batches are sized so each one runs for roughly this long. Keeping a batch
+/// well above the platform timer resolution (which is deliberately coarsened
+/// to ~100us-1ms on the web) is what keeps per-batch samples meaningful.
+const int batchTargetMicros = 25000;
+
+/// Sink that consumes every [SyncBenchmark.run]/[AsyncBenchmark.run] result so
+/// the optimizer cannot treat the benchmarked work as dead code and delete it.
+///
+/// It is written on every iteration and read once after measuring (see
+/// [_keepAlive]); the store to this top-level therefore cannot be eliminated.
+Object? _blackhole;
+
+/// Reads [_blackhole] through a comparison the compiler cannot fold away,
+/// forcing every `_blackhole = run()` store to be materialized.
+void _keepAlive() {
+  if (identical(_blackhole, _keepAlive)) {
+    print(_blackhole); // observable use for optimizer; never fires at runtime
+  }
+}
 
 // ------------ Interface Classes ------------
 abstract class Benchmark {
@@ -26,29 +50,33 @@ abstract class Benchmark {
 }
 
 class Measurement {
-  Measurement(this._micros, this._iter, this._bytes);
+  Measurement(this._micros, this._iter, this._bytes, this._bestMicros);
 
   final int _iter;
   final int _bytes;
-  final int _micros;
+  final double _micros;
+  final double _bestMicros;
 
-  /// Total number of iterations.
+  /// Total number of iterations measured.
   late final rounds = _iter;
 
-  /// Average runtime in microseconds.
-  late final runtimeMicros = _micros / _iter;
+  /// Representative (median) runtime of one iteration in microseconds.
+  late final runtimeMicros = _micros;
 
-  /// Average runtime in milliseconds.
+  /// Representative (median) runtime of one iteration in milliseconds.
   late final runtimeMillis = runtimeMicros / 1000;
 
-  /// Average runtime in seconds.
+  /// Representative (median) runtime of one iteration in seconds.
   late final runtimeSeconds = runtimeMillis / 1000;
 
-  /// Number of iterations per second.
-  late double rate = 1e6 * _iter / _micros;
+  /// Fastest observed runtime of one iteration in microseconds.
+  late final bestMicros = _bestMicros;
+
+  /// Number of iterations per second, derived from the median runtime.
+  late final double rate = 1e6 / _micros;
 
   /// Throughput or bandwidth (bytes per second).
-  late double speed = _bytes * rate;
+  late final double speed = _bytes * rate;
 
   /// Size in human readable string.
   late final String sizeString = formatSize(_bytes);
@@ -62,8 +90,9 @@ class Measurement {
 abstract class SyncBenchmark extends Benchmark {
   const SyncBenchmark(super.name, super.size);
 
-  /// The benchmark code.
-  void run();
+  /// The benchmark code. Any returned value is fed to a sink that defeats
+  /// dead-code elimination (see [_blackhole]); returning is optional.
+  dynamic run();
 
   /// Not measured setup code executed prior to the benchmark runs.
   void setup() {}
@@ -75,51 +104,53 @@ abstract class SyncBenchmark extends Benchmark {
   Measurement measure() {
     final watch = Stopwatch()..start();
     final warmupMicros = warmupDurationMillis * 1000;
-    final excerciseMicros = exerciseDurationMillis * 1000;
-    final exerciseJitter = excerciseMicros * 0.1;
+    final exerciseMicros = exerciseDurationMillis * 1000;
 
     // warmup
     setup();
-    run();
+    _blackhole = run();
 
-    // probe: find how many iterations fit in 1ms
+    // probe: measure how many iterations fit in the warmup window
     int iter = 0;
     int micros = 0;
     while (micros < warmupMicros) {
       watch.reset();
-      run();
-      run();
+      _blackhole = run();
+      _blackhole = run();
       micros += watch.elapsedMicroseconds;
       iter += 2;
     }
 
-    // calculate batch size for 1ms runtime (min 10)
-    int batch = (1000 * iter / micros).ceil();
+    // size a batch to ~batchTargetMicros of runtime (min 10 iterations)
+    int batch = (batchTargetMicros * iter / micros).ceil();
     if (batch < 10) batch = 10;
 
-    // exercise: measure time in batches
-    iter = 0;
+    // exercise: collect a per-iteration time sample from each batch
     micros = 0;
-    while (micros + exerciseJitter < excerciseMicros) {
+    final samples = <double>[];
+    while (micros < exerciseMicros) {
       watch.reset();
       for (int i = 0; i < batch; ++i) {
-        run();
+        _blackhole = run();
       }
-      micros += watch.elapsedMicroseconds;
-      iter += batch;
+      final dt = watch.elapsedMicroseconds;
+      samples.add(dt / batch);
+      micros += dt;
     }
 
     watch.stop();
     teardown();
-    return Measurement(micros, iter, size);
+    _keepAlive();
+    return _summarize(samples, batch, size);
   }
 }
 
 abstract class AsyncBenchmark extends Benchmark {
   AsyncBenchmark(super.name, super.size);
 
-  /// The benchmark code.
-  Future<void> run();
+  /// The benchmark code. Any returned value is fed to a sink that defeats
+  /// dead-code elimination (see [_blackhole]); returning is optional.
+  Future<dynamic> run();
 
   /// Not measured setup code executed prior to the benchmark runs.
   Future<void> setup() async {}
@@ -131,44 +162,56 @@ abstract class AsyncBenchmark extends Benchmark {
   Future<Measurement> measure() async {
     final watch = Stopwatch()..start();
     final warmupMicros = warmupDurationMillis * 1000;
-    final excerciseMicros = exerciseDurationMillis * 1000;
-    final exerciseJitter = excerciseMicros * 0.1;
+    final exerciseMicros = exerciseDurationMillis * 1000;
 
     // warmup
     await setup();
-    await run();
+    _blackhole = await run();
 
-    // probe: find how many iterations fit in 1ms
+    // probe: measure how many iterations fit in the warmup window
     int iter = 0;
     int micros = 0;
     while (micros < warmupMicros) {
       watch.reset();
-      await run();
-      await run();
+      _blackhole = await run();
+      _blackhole = await run();
       micros += watch.elapsedMicroseconds;
       iter += 2;
     }
 
-    // calculate batch size for 1ms runtime (min 10)
-    int batch = (1000 * iter / micros).ceil();
+    // size a batch to ~batchTargetMicros of runtime (min 10 iterations)
+    int batch = (batchTargetMicros * iter / micros).ceil();
     if (batch < 10) batch = 10;
 
-    // exercise: measure time in batches
-    iter = 0;
+    // exercise: collect a per-iteration time sample from each batch
     micros = 0;
-    while (micros + exerciseJitter < excerciseMicros) {
+    final samples = <double>[];
+    while (micros < exerciseMicros) {
       watch.reset();
       for (int i = 0; i < batch; ++i) {
-        await run();
+        _blackhole = await run();
       }
-      micros += watch.elapsedMicroseconds;
-      iter += batch;
+      final dt = watch.elapsedMicroseconds;
+      samples.add(dt / batch);
+      micros += dt;
     }
 
     watch.stop();
     await teardown();
-    return Measurement(micros, iter, size);
+    _keepAlive();
+    return _summarize(samples, batch, size);
   }
+}
+
+/// Reduces per-batch samples to a [Measurement] using the median per-iteration
+/// time (robust against GC pauses and scheduler noise) and the fastest sample.
+Measurement _summarize(List<double> samples, int batch, int size) {
+  samples.sort();
+  final n = samples.length;
+  final m = n >>> 1;
+  final median = n.isOdd ? samples[m] : (samples[m - 1] + samples[m]) / 2;
+  final best = samples.first;
+  return Measurement(median, n * batch, size, best);
 }
 
 /// ------------ Utility Functions ------------

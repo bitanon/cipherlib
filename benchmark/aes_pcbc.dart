@@ -21,10 +21,10 @@ class CipherlibBenchmark extends SyncBenchmark {
         super('cipherlib', size);
 
   @override
-  void run() {
+  dynamic run() {
     final aes = AES.pkcs7(key).pcbc(iv);
     final encrypted = aes.encrypt(input);
-    final decrypted = aes.decrypt(encrypted);
+    return aes.decrypt(encrypted);
   }
 }
 

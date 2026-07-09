@@ -22,8 +22,8 @@ class CipherlibBenchmark extends AsyncBenchmark {
         super('cipherlib', size);
 
   @override
-  Future<void> run() async {
-    XChaCha20(key, nonce).poly1305().sign(input);
+  Future<dynamic> run() async {
+    return XChaCha20(key, nonce).poly1305().sign(input);
   }
 }
 

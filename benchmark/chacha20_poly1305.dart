@@ -24,8 +24,8 @@ class CipherlibBenchmark extends AsyncBenchmark {
         super('cipherlib', size);
 
   @override
-  Future<void> run() async {
-    ChaCha20(key, nonce).poly1305().sign(input);
+  Future<dynamic> run() async {
+    return ChaCha20(key, nonce).poly1305().sign(input);
   }
 }
 
@@ -41,8 +41,8 @@ class CryptographyBenchmark extends AsyncBenchmark {
         super('cryptography', size);
 
   @override
-  Future<void> run() async {
-    await crypto.Chacha20.poly1305Aead().encrypt(
+  Future<dynamic> run() async {
+    return await crypto.Chacha20.poly1305Aead().encrypt(
       input,
       secretKey: crypto.SecretKeyData(key),
       nonce: nonce,
@@ -62,12 +62,13 @@ class PointyCastleBenchmark extends AsyncBenchmark {
         super('PointyCastle', size);
 
   @override
-  Future<void> run() async {
+  Future<dynamic> run() async {
     final instance = pc.AEADCipher('ChaCha20-Poly1305');
     final parameters = pc.ParametersWithIV(pc.KeyParameter(key), nonce);
     instance.init(true, parameters);
     final output = Uint8List(input.length);
     instance.processBytes(input, 0, size, output, 0);
+    return output;
   }
 }
 

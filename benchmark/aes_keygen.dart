@@ -21,9 +21,9 @@ class CipherlibBenchmark extends SyncBenchmark {
         super('cipherlib', size);
 
   @override
-  void run() {
+  dynamic run() {
     final key32 = Uint32List.view(key.buffer);
-    cipher.AESCore.$expandDecryptionKey(key32);
+    return cipher.AESCore.$expandDecryptionKey(key32);
   }
 }
 
@@ -34,9 +34,9 @@ class PointyCastleBenchmark extends SyncBenchmark {
         super('PointyCastle', size);
 
   @override
-  void run() {
+  dynamic run() {
     var instance = aes.AESEngine();
-    instance.generateWorkingKey(false, pc.KeyParameter(key));
+    return instance.generateWorkingKey(false, pc.KeyParameter(key));
   }
 }
 
@@ -47,8 +47,8 @@ class CryptographyBenchmark extends SyncBenchmark {
         super('cryptography', size);
 
   @override
-  void run() {
-    aesExpandKeyForDecrypting(crypto.SecretKeyData(key));
+  dynamic run() {
+    return aesExpandKeyForDecrypting(crypto.SecretKeyData(key));
   }
 }
 

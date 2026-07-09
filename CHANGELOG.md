@@ -1,3 +1,11 @@
+# 0.7.2
+
+- Improve the benchmark harness (`benchmark/_base.dart`): it now reports the
+  median per-iteration time sampled across ~25ms batches instead of the
+  arithmetic mean, making results robust against GC pauses and keeping each
+  batch well above the coarsened web timer resolution. Benchmark tooling only;
+  no library code or output is affected.
+
 # 0.7.1
 
 - Bump `hashlib` to `^2.4.2`.

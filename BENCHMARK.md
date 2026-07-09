@@ -110,8 +110,6 @@
 </tbody>
 </table>
 
-> This package comes on top 39 out of 39 times.
-
 ### AES
 
 <table>
@@ -536,8 +534,6 @@
 </tbody>
 </table>
 
-> This package comes on top 189 out of 189 times.
-
 ### Blowfish & Twofish
 
 <table>
@@ -788,8 +784,6 @@
 </tbody>
 </table>
 
-> This package comes on top 104 out of 108 times.
-
 ### Key Encapsulation
 
 <table>
@@ -844,8 +838,6 @@
   </tr>
 </tbody>
 </table>
-
-> This package comes on top 18 out of 18 times.
 
 > All benchmarks are done on 36GB _Apple M3 Pro_ using compiled _exe_
 >

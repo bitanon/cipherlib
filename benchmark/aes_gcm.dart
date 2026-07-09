@@ -23,10 +23,10 @@ class CipherlibBenchmark extends AsyncBenchmark {
         super('cipherlib', size);
 
   @override
-  Future<void> run() async {
+  Future<dynamic> run() async {
     final cbc = AES(key).gcm(iv, tagSize: 16);
     final encrypted = cbc.encrypt(input);
-    final decrypted = cbc.decrypt(encrypted);
+    return cbc.decrypt(encrypted);
   }
 }
 
@@ -42,7 +42,7 @@ class PointyCastleBenchmark extends AsyncBenchmark {
         super('PointyCastle', size);
 
   @override
-  Future<void> run() async {
+  Future<dynamic> run() async {
     final instance = pc.BlockCipher('AES/GCM');
     final params = pc.ParametersWithIV(pc.KeyParameter(key), iv);
 
@@ -52,7 +52,7 @@ class PointyCastleBenchmark extends AsyncBenchmark {
 
     // decrypt
     instance.init(false, params);
-    final decrypted = instance.process(encrypted);
+    return instance.process(encrypted);
   }
 }
 
@@ -68,7 +68,7 @@ class CryptographyBenchmark extends AsyncBenchmark {
         super('cryptography', size);
 
   @override
-  Future<void> run() async {
+  Future<dynamic> run() async {
     final instance = crypto.Cryptography.instance.aesGcm(
       secretKeyLength: key.length,
       nonceLength: 16,
@@ -78,7 +78,7 @@ class CryptographyBenchmark extends AsyncBenchmark {
       secretKey: crypto.SecretKey(key),
       nonce: iv,
     );
-    final decrypted = await instance.decrypt(
+    return await instance.decrypt(
       encrypted,
       secretKey: crypto.SecretKey(key),
     );

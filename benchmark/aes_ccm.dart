@@ -24,10 +24,10 @@ class CipherlibBenchmark extends AsyncBenchmark {
         super('cipherlib', size);
 
   @override
-  Future<void> run() async {
+  Future<dynamic> run() async {
     final ccm = AES(key).ccm(iv, tagSize: 16);
     final encrypted = ccm.encrypt(input);
-    final decrypted = ccm.decrypt(encrypted);
+    return ccm.decrypt(encrypted);
   }
 }
 
@@ -43,7 +43,7 @@ class PointyCastleBenchmark extends AsyncBenchmark {
         super('PointyCastle', size);
 
   @override
-  Future<void> run() async {
+  Future<dynamic> run() async {
     final params = pc.AEADParameters(
       pc.KeyParameter(key),
       128,
@@ -57,7 +57,7 @@ class PointyCastleBenchmark extends AsyncBenchmark {
 
     // decrypt
     final decrypter = CCMBlockCipher(AESEngine())..init(false, params);
-    final decrypted = decrypter.process(encrypted);
+    return decrypter.process(encrypted);
   }
 }
 

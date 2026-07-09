@@ -23,10 +23,10 @@ class CipherlibBenchmark extends AsyncBenchmark {
         super('cipherlib', size);
 
   @override
-  Future<void> run() async {
+  Future<dynamic> run() async {
     final aes = AES(key).ctr(iv, 40);
     final encrypted = aes.encrypt(input);
-    final decrypted = aes.decrypt(encrypted);
+    return aes.decrypt(encrypted);
   }
 }
 
@@ -42,7 +42,7 @@ class PointyCastleBenchmark extends AsyncBenchmark {
         super('PointyCastle', size);
 
   @override
-  Future<void> run() async {
+  Future<dynamic> run() async {
     final instance = pc.PaddedBlockCipher('AES/CTR/PKCS7');
     final params = pc.PaddedBlockCipherParameters(
       pc.ParametersWithIV(pc.KeyParameter(key), iv),
@@ -55,7 +55,7 @@ class PointyCastleBenchmark extends AsyncBenchmark {
 
     // decrypt
     instance.init(false, params);
-    final decrypted = instance.process(encrypted);
+    return instance.process(encrypted);
   }
 }
 
@@ -71,7 +71,7 @@ class CryptographyBenchmark extends AsyncBenchmark {
         super('cryptography', size);
 
   @override
-  Future<void> run() async {
+  Future<dynamic> run() async {
     final instance = crypto.Cryptography.instance.aesCtr(
       macAlgorithm: crypto.MacAlgorithm.empty,
       secretKeyLength: key.length,
@@ -82,7 +82,7 @@ class CryptographyBenchmark extends AsyncBenchmark {
       secretKey: crypto.SecretKey(key),
       nonce: iv,
     );
-    final decrypted = await instance.decrypt(
+    return await instance.decrypt(
       encrypted,
       secretKey: crypto.SecretKey(key),
     );

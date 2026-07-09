@@ -18,11 +18,12 @@ class LoopFillBenchmark extends SyncBenchmark {
         super('loop-fill', size);
 
   @override
-  void run() {
+  dynamic run() {
     final target = Uint8List(size);
     for (int i = 0; i < size; i++) {
       target[i] = input[i];
     }
+    return target;
   }
 }
 
@@ -33,9 +34,10 @@ class FillRangeBenchmark extends SyncBenchmark {
         super('fillRange()', size);
 
   @override
-  void run() {
+  dynamic run() {
     final target = Uint8List(size);
     target.fillRange(0, size, 0x9f);
+    return target;
   }
 }
 
@@ -47,11 +49,12 @@ class LoopSetBenchmark extends SyncBenchmark {
         super('loop-set', size);
 
   @override
-  void run() {
+  dynamic run() {
     final target = Uint8List(size);
     for (int i = 0; i < size; i++) {
       target[i] = input[i];
     }
+    return target;
   }
 }
 
@@ -62,8 +65,9 @@ class SetRangeBenchmark extends SyncBenchmark {
         super('setRange()', size);
 
   @override
-  void run() {
+  dynamic run() {
     final target = Uint8List(size)..setRange(0, size, input);
+    return target;
   }
 }
 
@@ -75,11 +79,12 @@ class LoopReverseBenchmark extends SyncBenchmark {
         super('loop-reverse', size);
 
   @override
-  void run() {
+  dynamic run() {
     final target = Uint8List(size);
     for (int i = 0; i < size; i++) {
       target[i] = input[size - i - 1];
     }
+    return target;
   }
 }
 
@@ -90,8 +95,9 @@ class SetRangeReverseBenchmark extends SyncBenchmark {
         super('setRange()', size);
 
   @override
-  void run() {
+  dynamic run() {
     final target = Uint8List(size)..setRange(0, size, input.reversed);
+    return target;
   }
 }
 
@@ -104,7 +110,7 @@ class CollectInSingleListBenchmark extends SyncBenchmark {
         super('Collect In Single List', size);
 
   @override
-  void run() {
+  dynamic run() {
     List<int> list = [];
     var length = 0;
     for (var i = 0; i < size; i++) {
@@ -112,6 +118,7 @@ class CollectInSingleListBenchmark extends SyncBenchmark {
       length += data.length;
     }
     var result = Uint8List.fromList(list);
+    return result;
   }
 }
 
@@ -123,7 +130,7 @@ class CollectInSingleUint8ListBenchmark extends SyncBenchmark {
         super('Collect In Single Uint8List', size);
 
   @override
-  void run() {
+  dynamic run() {
     Uint8List list = Uint8List(1024);
     var length = 0;
     for (var i = 0; i < size; i++) {
@@ -139,6 +146,7 @@ class CollectInSingleUint8ListBenchmark extends SyncBenchmark {
       length += data.length;
     }
     list = list.sublist(0, length);
+    return list;
   }
 }
 
@@ -150,7 +158,7 @@ class CollectInChunkedListBenchmark extends SyncBenchmark {
         super('Collect In Chunked List', size);
 
   @override
-  void run() {
+  dynamic run() {
     List<List<int>> list = [];
     var length = 0;
     for (int i = 0; i < size; i++) {
@@ -163,6 +171,7 @@ class CollectInChunkedListBenchmark extends SyncBenchmark {
       result.setRange(pos, pos + item.length, item);
       pos += item.length;
     }
+    return result;
   }
 }
 

@@ -24,10 +24,10 @@ class CipherlibBenchmark extends AsyncBenchmark {
         super('cipherlib', size);
 
   @override
-  Future<void> run() async {
+  Future<dynamic> run() async {
     final cbc = Blowfish.noPadding(key).cbc(iv);
     final encrypted = cbc.encrypt(input);
-    final decrypted = cbc.decrypt(encrypted);
+    return cbc.decrypt(encrypted);
   }
 }
 
@@ -43,7 +43,7 @@ class PointyCastleBenchmark extends AsyncBenchmark {
         super('PointyCastle', size);
 
   @override
-  Future<void> run() async {
+  Future<dynamic> run() async {
     final params = pc.ParametersWithIV(pc.KeyParameter(key), iv);
 
     // encrypt
@@ -59,6 +59,7 @@ class PointyCastleBenchmark extends AsyncBenchmark {
     for (int i = 0; i < encrypted.length; i += 8) {
       decrypter.processBlock(encrypted, i, decrypted, i);
     }
+    return decrypted;
   }
 }
 

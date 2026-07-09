@@ -22,10 +22,10 @@ class CipherlibBenchmark extends AsyncBenchmark {
         super('cipherlib', size);
 
   @override
-  Future<void> run() async {
+  Future<dynamic> run() async {
     final cbc = AES.pkcs7(key).ecb();
     final encrypted = cbc.encrypt(input);
-    final decrypted = cbc.decrypt(encrypted);
+    return cbc.decrypt(encrypted);
   }
 }
 
@@ -41,7 +41,7 @@ class PointyCastleBenchmark extends AsyncBenchmark {
         super('PointyCastle', size);
 
   @override
-  Future<void> run() async {
+  Future<dynamic> run() async {
     final instance = pc.PaddedBlockCipher('AES/ECB/PKCS7');
     final params = pc.PaddedBlockCipherParameters(
       pc.KeyParameter(key),
@@ -54,7 +54,7 @@ class PointyCastleBenchmark extends AsyncBenchmark {
 
     // decrypt
     instance.init(false, params);
-    final decrypted = instance.process(encrypted);
+    return instance.process(encrypted);
   }
 }
 

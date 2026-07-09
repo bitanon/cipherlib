@@ -3,7 +3,7 @@ description: Pure-Dart symmetric ciphers (AES modes, ChaCha20, XChaCha20,
   Salsa20, XSalsa20), their Poly1305 AEAD variants, and ML-KEM post-quantum
   key encapsulation (FIPS 203).
 repository: https://github.com/bitanon/cipherlib
-version: 0.7.1
+version: 0.7.2
 
 environment:
   sdk: ">=2.19.0 <4.0.0"

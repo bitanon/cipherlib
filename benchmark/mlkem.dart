@@ -19,8 +19,8 @@ class CipherlibKeygenBenchmark extends SyncBenchmark {
         super('cipherlib', kem.seedSize);
 
   @override
-  void run() {
-    kem.keygen(seed: seed);
+  dynamic run() {
+    return kem.keygen(seed: seed);
   }
 }
 
@@ -32,8 +32,8 @@ class PqcryptoKeygenBenchmark extends SyncBenchmark {
         super('pqcrypto', 64);
 
   @override
-  void run() {
-    kem.generateKeyPair(seed);
+  dynamic run() {
+    return kem.generateKeyPair(seed);
   }
 }
 
@@ -48,8 +48,8 @@ class CipherlibEncapsBenchmark extends SyncBenchmark {
   }
 
   @override
-  void run() {
-    kem.encaps(ek);
+  dynamic run() {
+    return kem.encaps(ek);
   }
 }
 
@@ -66,8 +66,8 @@ class PqcryptoEncapsBenchmark extends SyncBenchmark {
   }
 
   @override
-  void run() {
-    kem.encapsulate(ek);
+  dynamic run() {
+    return kem.encapsulate(ek);
   }
 }
 
@@ -85,8 +85,8 @@ class CipherlibDecapsBenchmark extends SyncBenchmark {
   }
 
   @override
-  void run() {
-    kem.decaps(dk, ct);
+  dynamic run() {
+    return kem.decaps(dk, ct);
   }
 }
 
@@ -106,8 +106,8 @@ class PqcryptoDecapsBenchmark extends SyncBenchmark {
   }
 
   @override
-  void run() {
-    kem.decapsulate(dk, ct);
+  dynamic run() {
+    return kem.decapsulate(dk, ct);
   }
 }
 

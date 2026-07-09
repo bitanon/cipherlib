@@ -17,8 +17,8 @@ class CipherlibBenchmark extends SyncBenchmark {
         super('cipherlib', size);
 
   @override
-  void run() {
-    XOR(key).convert(input);
+  dynamic run() {
+    return XOR(key).convert(input);
   }
 }
 

@@ -20,8 +20,8 @@ class CipherlibBenchmark extends SyncBenchmark {
         super('cipherlib', size);
 
   @override
-  void run() {
-    ChaCha20(key, nonce).convert(input);
+  dynamic run() {
+    return ChaCha20(key, nonce).convert(input);
   }
 }
 
@@ -37,11 +37,11 @@ class PointyCastleBenchmark extends SyncBenchmark {
         super('PointyCastle', size);
 
   @override
-  void run() {
+  dynamic run() {
     final instance = pc.StreamCipher('ChaCha7539/20');
     final parameters = pc.ParametersWithIV(pc.KeyParameter(key), nonce);
     instance.init(true, parameters);
-    instance.process(input);
+    return instance.process(input);
   }
 }
 

@@ -19,8 +19,8 @@ class CipherlibBenchmark extends SyncBenchmark {
         super('cipherlib', size);
 
   @override
-  void run() {
-    XChaCha20(key, nonce).convert(input);
+  dynamic run() {
+    return XChaCha20(key, nonce).convert(input);
   }
 }
 

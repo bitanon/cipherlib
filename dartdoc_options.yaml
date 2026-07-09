@@ -1,7 +1,6 @@
 dartdoc:
   # These libraries only re-export `package:hashlib` and `package:convertlib`
-  # for single-import convenience. Their canonical documentation lives in those
-  # packages.
+  # for convenience. Their canonical documentation lives in those packages.
   exclude:
-    - 'package:cipherlib/hashlib.dart'
-    - 'package:cipherlib/codecs.dart'
+    - "package:cipherlib/hashlib.dart"
+    - "package:cipherlib/codecs.dart"

@@ -22,10 +22,10 @@ class CipherlibBenchmark extends SyncBenchmark {
         super('cipherlib', size);
 
   @override
-  void run() {
+  dynamic run() {
     final aes = AES.pkcs7(key).ofb64(iv);
     final encrypted = aes.encrypt(input);
-    final decrypted = aes.decrypt(encrypted);
+    return aes.decrypt(encrypted);
   }
 }
 
@@ -41,7 +41,7 @@ class PointyCastleBenchmark extends SyncBenchmark {
         super('PointyCastle', size);
 
   @override
-  void run() {
+  dynamic run() {
     final instance = pc.PaddedBlockCipher('AES/OFB-64/PKCS7');
     final params = pc.PaddedBlockCipherParameters(
       pc.ParametersWithIV(pc.KeyParameter(key), iv),
@@ -54,7 +54,7 @@ class PointyCastleBenchmark extends SyncBenchmark {
 
     // decrypt
     instance.init(false, params);
-    final decrypted = instance.process(encrypted);
+    return instance.process(encrypted);
   }
 }
 

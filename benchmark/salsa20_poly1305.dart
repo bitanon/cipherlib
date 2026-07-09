@@ -19,8 +19,8 @@ class CipherlibBenchmark extends SyncBenchmark {
         super('cipherlib', size);
 
   @override
-  void run() {
-    Salsa20(key, nonce).poly1305().convert(input);
+  dynamic run() {
+    return Salsa20(key, nonce).poly1305().convert(input);
   }
 }
 
