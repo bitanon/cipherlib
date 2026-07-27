@@ -1,5 +1,18 @@
 # 0.7.2
 
+- 🐛 Fix **AES-GCM** producing wrong ciphertext on `dart2wasm` for messages of
+  about 1 MiB or larger
+  ([#28](https://github.com/bitanon/cipherlib/issues/28)). The block counter is
+  stored in a `Uint8List`
+  view over another buffer, and dart2wasm skips the modulo-256 truncation when
+  such a view is assigned an out-of-range value, so `counter[i]++` let the carry
+  bleed into the neighbouring byte. From the first 32-bit carry onward the
+  keystream desynchronised, silently breaking interoperability with every other
+  platform (and with other AES-GCM implementations). All stored counter bytes
+  are now masked explicitly.
+- ✅ The `inc32` counter behaviour is now pinned against raw AES-ECB at every
+  byte-carry boundary, plus an end-to-end check across the 1 MiB boundary, and
+  the `dart2wasm` suite runs on every push instead of only at release time.
 - Improve the benchmark harness (`benchmark/_base.dart`): it now reports the
   median per-iteration time sampled across ~25ms batches instead of the
   arithmetic mean, making results robust against GC pauses and keeping each

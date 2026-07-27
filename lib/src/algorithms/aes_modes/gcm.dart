@@ -79,17 +79,21 @@ class AESInGCMModeCipherCore {
     M[3] = t3;
   }
 
-  // Increment a 32-bit counter in little-endian order
+  /// Increment a 32-bit counter in little-endian order
+  ///
+  /// [counter] is a [Uint8List] view over another buffer. on wasm it silently
+  /// desynchronises the keystream past the first 32-bit carry.
+  /// See https://github.com/bitanon/cipherlib/issues/28
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   static void _increment32(Uint8List counter) {
-    counter[15]++;
+    counter[15] = (counter[15] + 1) & 0xFF;
     if (counter[15] == 0) {
-      counter[14]++;
+      counter[14] = (counter[14] + 1) & 0xFF;
       if (counter[14] == 0) {
-        counter[13]++;
+        counter[13] = (counter[13] + 1) & 0xFF;
         if (counter[13] == 0) {
-          counter[12]++;
+          counter[12] = (counter[12] + 1) & 0xFF;
         }
       }
     }
