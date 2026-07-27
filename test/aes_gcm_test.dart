@@ -104,6 +104,86 @@ void main() {
   });
 
   group('AESInGCMModeCipherCore', () {
+    // NIST SP 800-38D section 6.2: GCM's counter uses inc32, which increments
+    // only the rightmost 32 bits of the counter block modulo 2^32 and leaves
+    // the leading 96 bits untouched.
+    //
+    // Each boundary is checked against a raw AES-ECB encryption of the counter
+    // block that inc32 is required to produce, so this pins the counter value
+    // itself rather than merely that some keystream came out. Regression for
+    // https://github.com/bitanon/cipherlib/issues/28, where `counter[i]++` on a
+    // Uint8List view skipped the modulo-256 truncation under dart2wasm and let
+    // the carry bleed into the next byte, desynchronising the keystream from
+    // the first 32-bit carry (~1 MiB) onward on that platform only.
+    test('counter follows inc32 across every byte-carry boundary', () {
+      // NIST SP 800-38D, Appendix B, Test Case 2 key/IV
+      final key = fromHex('feffe9928665731c6d6a8f9467308308');
+      final iv = fromHex('cafebabefacedbaddecaf888');
+      final ecb = AES.noPadding(key).ecb();
+
+      const boundaries = <String, String>{
+        '000000fe': '000000ff', // no carry
+        '000000ff': '00000100', // carry into byte 14
+        '0000ffff': '00010000', // carry into byte 13
+        '00ffffff': '01000000', // carry into byte 12
+        'ffffffff': '00000000', // wrap around modulo 2^32
+      };
+
+      boundaries.forEach((before, after) {
+        final core = AESInGCMModeCipherCore(key, iv, null, 16)..initialize();
+        core.counter.setRange(12, 16, fromHex(before));
+
+        // encrypting an all-zero block exposes the keystream block verbatim
+        final keystream = core.encrypt(Uint8List(16)).sublist(0, 16);
+
+        final expectedBlock = Uint8List(16);
+        expectedBlock.setRange(0, 12, iv);
+        expectedBlock.setRange(12, 16, fromHex(after));
+
+        expect(
+          toHex(keystream),
+          equals(toHex(ecb.encrypt(expectedBlock))),
+          reason: '[counter: $before -> $after]',
+        );
+        expect(
+          toHex(core.counter.sublist(12)),
+          equals(after),
+          reason: '[counter: $before -> $after]',
+        );
+        expect(
+          toHex(core.counter.sublist(0, 12)),
+          equals(toHex(iv)),
+          reason: 'inc32 must not touch the leading 96 bits',
+        );
+      });
+    });
+    // End-to-end guard at the message size reported in issue #28. Block k of
+    // the ciphertext is keyed by counter k + 2 (the counter starts at 1 and is
+    // incremented before each block), so the first carry out of the low 16 bits
+    // lands on block 65534, at byte offset 1048544 of a 1 MiB message.
+    test('keystream stays aligned past the 1 MiB counter carry', () {
+      final key = fromHex('feffe9928665731c6d6a8f9467308308');
+      final iv = fromHex('cafebabefacedbaddecaf888');
+      final ecb = AES.noPadding(key).ecb();
+
+      final cipher = AES(key).gcm(iv).encrypt(Uint8List(1048576));
+      expect(cipher.length, equals(1048576 + 16));
+
+      for (final k in [65532, 65533, 65534, 65535]) {
+        final counter = k + 2;
+        final block = Uint8List(16);
+        block.setRange(0, 12, iv);
+        block[12] = (counter >>> 24) & 0xFF;
+        block[13] = (counter >>> 16) & 0xFF;
+        block[14] = (counter >>> 8) & 0xFF;
+        block[15] = counter & 0xFF;
+        expect(
+          toHex(cipher.sublist(k * 16, k * 16 + 16)),
+          equals(toHex(ecb.encrypt(block))),
+          reason: '[block: $k, counter: $counter]',
+        );
+      }
+    });
     test('core counter increment propagates carry to highest byte', () {
       final core =
           AESInGCMModeCipherCore(Uint8List(16), Uint8List(12), null, 16);
