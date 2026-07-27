@@ -13,6 +13,12 @@
 - ✅ The `inc32` counter behaviour is now pinned against raw AES-ECB at every
   byte-carry boundary, plus an end-to-end check across the 1 MiB boundary, and
   the `dart2wasm` suite runs on every push instead of only at release time.
+- ✅ New cross-cutting `test/counter_boundary_test.dart` asserts counter
+  continuity — block `j` of a run started at counter `C` equals block `0` of a
+  run started at `C + j` — for AES/Twofish/Blowfish CTR, ChaCha20 (32- and
+  64-bit counters), XChaCha20, Salsa20 and XSalsa20. Because the starting
+  counter is an input, this reaches the 32- and 64-bit carries that no
+  achievable message length could walk to, alongside a 1 MiB run per cipher.
 - Improve the benchmark harness (`benchmark/_base.dart`): it now reports the
   median per-iteration time sampled across ~25ms batches instead of the
   arithmetic mean, making results robust against GC pauses and keeping each
